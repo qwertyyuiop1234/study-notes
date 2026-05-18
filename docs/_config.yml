@@ -1,0 +1,40 @@
+title: "Study Notes"
+description: "Personal CS / AI / Math study notes"
+remote_theme: carlosperate/jekyll-theme-rtd@v1.4.0
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+
+# GitHub Pages project site URL
+url: "https://qwertyyuiop1234.github.io"
+baseurl: "/study-notes"
+
+# Site language / metadata
+lang: ko
+locale: ko_KR
+site_author: "qwertyyuiop1234"
+
+# Theme options
+sticky_navigation: true
+prev_next_buttons_location: bottom
+search_enabled: true
+hljs_style: github
+hljs_languages: [python, javascript, bash, yaml, markdown, cpp, c, java, json]
+admonitions: true
+mermaid: true
+edit_on_github: false
+nav_version: false
+
+# Custom assets supported by jekyll-theme-rtd
+extra_css:
+  - assets/css/custom.css
+extra_javascript:
+  - assets/js/mathjax-config.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+
+# Exclude local-only files from site build
+exclude:
+  - scripts/
+  - Gemfile
+  - Gemfile.lock
+  - README.md

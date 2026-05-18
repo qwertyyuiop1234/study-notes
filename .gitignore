@@ -1,0 +1,20 @@
+# Local artifacts
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+Gemfile.lock
+
+# OS/editor
+.DS_Store
+.vscode/
+
+# Do not accidentally publish private source dumps
+private/
+_private/
+work/
+source/
+*.pdf
+*.key
+*.pem
+.env

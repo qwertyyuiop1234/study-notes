@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Representation and Word Embeddings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Consolas', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; }
+    .sidebar-active { border-left: 4px solid #059669; background: rgba(5,150,105,.09); color: #047857; font-weight: 800; }
+    .dark .sidebar-active { background: rgba(5,150,105,.22); color: #34d399; border-left-color: #34d399; }
+    .math-scroll { overflow-x: auto; overflow-y: hidden; }
+  </style>
+  <script>
+    (function () {
+      const saved = localStorage.getItem('study-notes-theme');
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && systemDark)) document.documentElement.classList.add('dark');
+    })();
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors">
+  <header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-emerald-600 dark:bg-emerald-500 text-white p-2 rounded-lg font-black text-lg tracking-wider">ML</div>
+        <div>
+          <h1 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Text Representation</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Interactive word embedding study note</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+          Progress: <span id="progress-text" class="ml-1 font-bold">0%</span>
+        </span>
+        <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm px-3 py-2 border border-slate-200 dark:border-slate-700">Toggle theme</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+      <aside class="w-full lg:w-72 shrink-0">
+        <div class="sticky top-24 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 space-y-6">
+          <div>
+            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Contents</h3>
+            <nav class="space-y-1 text-sm text-slate-600 dark:text-slate-300" id="sidebar-nav">
+              <a href="#intro" class="block px-3 py-2 rounded-lg transition-colors sidebar-active hover:bg-slate-50 dark:hover:bg-slate-800">Overview</a>
+              <a href="#sec1" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">01. One-Hot Encoding</a>
+              <a href="#sec2" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">02. Distributed Representation</a>
+              <a href="#sec3" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">03. SVD</a>
+              <a href="#sec4" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">04. Word2Vec</a>
+              <a href="#sec5" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">05. GloVe</a>
+              <a href="#sec6" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">06. FastText</a>
+              <a href="#compare" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">Comparison</a>
+              <a href="#interactive" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-emerald-600 dark:text-emerald-400 font-bold">Interactive Workshop</a>
+              <a href="#quiz-section" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold">Self-Check Quiz</a>
+            </nav>
+          </div>
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 text-xs text-slate-500 dark:text-slate-400 space-y-2">
+              <p class="font-semibold text-slate-700 dark:text-slate-300">Publication note</p>
+              <p>This draft keeps only conceptual educational content. Source-code scaffolding, private labels, and identifying information were removed.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="flex-1 space-y-12">
+        <section id="intro" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 scroll-mt-24">
+          <div class="max-w-4xl">
+            <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm mb-2"><span>Core Theory</span><span>•</span><span>Foundations of NLP</span></div>
+            <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">What Is Text Representation?</h2>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-lg">Machine learning algorithms operate on numerical matrices. Human language must therefore be converted into numerical objects, usually <strong>vectors</strong>. This process is called <strong>text representation</strong>, and word-level representations are commonly called <strong>word embeddings</strong>.</p>
+            <div class="mt-6 p-4 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/60 text-sm text-slate-700 dark:text-slate-300">
+              <span class="font-bold text-emerald-800 dark:text-emerald-300">Development flow:</span> text representation evolved from discrete one-hot dimensions, to statistical distributed representation with SVD, to prediction-based Word2Vec, global-statistics-based GloVe, and subword-aware FastText.
+            </div>
+          </div>
+        </section>
+
+        <section id="sec1" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">1. Discrete Representation and One-Hot Encoding</h3></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-4">
+              <h4 class="font-bold text-slate-800 dark:text-slate-200">Concept</h4>
+              <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">A vocabulary is built from unique words in a corpus. One-hot encoding uses the vocabulary size as the vector dimension. Each word receives a unique index; that position is set to <code>1</code>, and every other position is <code>0</code>.</p>
+              <div class="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 border border-slate-200 dark:border-slate-800 font-mono text-xs space-y-1.5">
+                <p class="text-slate-400 font-bold tracking-wider uppercase mb-1">Vocabulary $V$ example, size 6</p>
+                <p><code>[dog, cat, wolf, lion, trout, carp]</code></p>
+                <p>dog  = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[1, 0, 0, 0, 0, 0]</span></p>
+                <p>cat  = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[0, 1, 0, 0, 0, 0]</span></p>
+                <p>wolf = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[0, 0, 1, 0, 0, 0]</span></p>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <h4 class="font-bold text-rose-600 dark:text-rose-400">Critical Limitations</h4>
+              <ol class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                <li><strong>1. Sparsity and memory waste.</strong><p class="text-xs text-slate-500 mt-1">If a vocabulary has 13,000,000 words, each vector has 13,000,000 dimensions, but only one nonzero entry.</p></li>
+                <li><strong>2. Orthogonality blocks semantic similarity.</strong><p class="text-xs text-slate-500 mt-1">Different one-hot vectors are geometrically perpendicular, so their dot product is always zero.</p><div class="math-scroll bg-slate-900/90 text-slate-100 p-3 rounded text-xs text-center mt-2">$$\text{Sim}(\text{dog}, \text{wolf}) = [1,0,0,0,0,0] \cdot [0,0,1,0,0,0]^T = 0$$</div></li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section id="sec2" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">2. Distributed Representation and Co-Occurrence Matrices</h3></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-4">
+              <h4 class="font-bold text-slate-800 dark:text-slate-200">Distributional Hypothesis</h4>
+              <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed"><strong>Words appearing in similar contexts tend to have similar meanings.</strong> Distributed representations encode meaning in dense vectors rather than in isolated vocabulary indices.</p>
+              <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/60 text-xs space-y-1">
+                <p class="font-bold text-emerald-900 dark:text-emerald-300">Context example</p>
+                <p>corona: [virus, infection, spread, quarantine]</p>
+                <p>mers: [virus, infection, hospital, patient]</p>
+                <p class="pt-2 border-t border-emerald-200/60 dark:border-emerald-800 text-slate-500 dark:text-slate-400">Shared context words allow nonzero similarity in vector space.</p>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <h4 class="font-bold text-slate-800 dark:text-slate-200">Co-Occurrence Matrix</h4>
+              <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">A co-occurrence matrix records how frequently words appear together inside a selected window size.</p>
+              <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+                <p class="text-slate-400 font-bold mb-1">Sentence, window = 1</p>
+                <p class="italic text-indigo-600 dark:text-indigo-400 mb-2">"I like deep learning. I like NLP. I enjoy flying."</p>
+                <p>(I, like), (like, deep), (deep, learning), (I, enjoy), (enjoy, flying)</p>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-slate-100 dark:border-slate-800 pt-6 space-y-4">
+            <h4 class="font-bold text-slate-800 dark:text-slate-200">Cosine Similarity</h4>
+            <p class="text-slate-600 dark:text-slate-300 text-sm">To reduce distortion from raw frequency magnitude, cosine similarity normalizes by the L2 norms and compares vector direction.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm text-center math-scroll">$$\cos(\vec{X},\vec{Y}) = \frac{\vec{X} \cdot \vec{Y}}{\|\vec{X}\|\|\vec{Y}\|} = \frac{\sum_{i=1}^n x_i y_i}{\sqrt{\sum_{i=1}^n x_i^2} \times \sqrt{\sum_{i=1}^n y_i^2}}$$</div>
+              <div class="text-xs space-y-2 flex flex-col justify-center"><p>• Same direction: <strong class="text-emerald-600 dark:text-emerald-400">1.0</strong></p><p>• Orthogonal/unrelated: <strong>0.0</strong></p><p>• Opposite direction: <strong class="text-rose-600 dark:text-rose-400">-1.0</strong></p></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="sec3" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">3. Singular Value Decomposition</h3></div>
+          <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Co-occurrence matrices can become high-dimensional and sparse. SVD reduces dimensionality by preserving dominant latent components while removing small noisy components.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm"><span class="text-xs font-bold text-slate-400 uppercase">Full SVD</span><div class="py-3 text-center math-scroll">$$X_{n \times m} = U_{n \times n} S_{n \times m} V^T_{m \times m}$$</div><p class="text-xs text-slate-500">$U$ and $V^T$ are orthogonal matrices; $S$ stores singular values sorted by importance.</p></div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm"><span class="text-xs font-bold text-slate-400 uppercase">Truncated SVD</span><div class="py-3 text-center math-scroll">$$\hat{X}_{n \times m} \approx \hat{U}_{n \times k} \hat{S}_{k \times k} \hat{V}^T_{k \times m}$$</div><p class="text-xs text-slate-500">Only the top $k$ singular values are retained to preserve latent semantic structure.</p></div>
+          </div>
+          <div class="space-y-2"><h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Core NumPy Logic</h4><pre class="bg-slate-950 text-slate-300 rounded-xl p-5 text-xs overflow-x-auto"><code>import numpy as np
+
+X = np.array([[0, 2, 1, 0, 0, 0, 0, 0],
+              [2, 0, 0, 1, 0, 1, 0, 0],
+              # ...
+])
+
+U, S, Vt = np.linalg.svd(X, full_matrices=False)
+word_embedding_2d = U[:, :2]</code></pre></div>
+        </section>
+
+        <section id="sec4" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">4. Word2Vec: Prediction-Based Neural Embeddings</h3></div>
+          <div class="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-xl border border-rose-100 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-300 space-y-2"><p class="font-bold">Problems with SVD count-based methods</p><ul class="list-disc list-inside space-y-1"><li><strong>High initial cost:</strong> full matrix factorization can require about $O(mn^2)$ computation.</li><li><strong>Inflexibility:</strong> new words or documents may require rebuilding the matrix and recomputing SVD.</li></ul></div>
+          <p class="text-sm text-slate-600 dark:text-slate-300">Word2Vec trains embeddings by predicting words inside a sliding context window and updating neural-network weights.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><h4 class="font-bold text-sm">CBOW Model</h4><p class="text-[10px] inline-block bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded font-bold mt-1">Context $\rightarrow$ Center</p><p class="text-xs text-slate-500 mt-2">Uses surrounding context words as input, averages or sums their projections, and predicts the center word.</p></div><div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><h4 class="font-bold text-sm">Skip-Gram Model</h4><p class="text-[10px] inline-block bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 px-2 py-0.5 rounded font-bold mt-1">Center $\rightarrow$ Context</p><p class="text-xs text-slate-500 mt-2">Uses a center word to predict multiple surrounding context words, often producing strong vectors for rare words.</p></div></div>
+          <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><span class="text-xs font-bold text-slate-400 uppercase">Cross-Entropy Loss Reduction</span><p class="text-xs text-slate-600 dark:text-slate-300 mt-2">Because the target $y$ is one-hot, multiclass cross entropy reduces to the negative log probability of the correct word.</p><div class="bg-white dark:bg-slate-900 p-3 rounded text-center math-scroll mt-3">$$H(\hat{y}, y) = -\sum_{j=1}^{|V|} y_j \log(\hat{y}_j) \quad \Longrightarrow \quad \text{Loss} = -\log(\hat{y}_i)$$</div></div>
+          <div class="space-y-3"><h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Softmax Bottleneck Optimizations</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs"><div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800"><h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">1. Hierarchical Softmax</h5><p class="text-slate-500">Uses a Huffman binary tree and reduces complexity from $O(V)$ to $O(\log_2 V)$.</p></div><div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800"><h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">2. Negative Sampling</h5><p class="text-slate-500">Uses one true target and $K$ noise words, turning learning into a binary classification task.</p></div><div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800"><h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">3. Subsampling</h5><p class="text-slate-500">Drops overly frequent low-information words with a certain probability to improve speed and quality.</p></div></div></div>
+        </section>
+
+        <section id="sec5" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">5. GloVe: Global Vectors for Word Representation</h3></div>
+          <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Word2Vec focuses on local prediction windows. GloVe uses global co-occurrence statistics, especially probability ratios, to encode semantic relationships.</p>
+          <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl"><table class="w-full text-left text-xs text-slate-600 dark:text-slate-400"><thead class="bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold"><tr><th class="px-4 py-3">Relationship</th><th class="px-4 py-3">$x=\text{solid}$</th><th class="px-4 py-3">$x=\text{gas}$</th><th class="px-4 py-3">$x=\text{water}$</th><th class="px-4 py-3">$x=\text{fashion}$</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr><td class="px-4 py-3 font-semibold">$P(x|\text{ice})$</td><td class="px-4 py-3 text-emerald-600 font-bold">large</td><td class="px-4 py-3 text-rose-600">small</td><td class="px-4 py-3 text-emerald-600">large</td><td class="px-4 py-3 text-rose-600">small</td></tr><tr><td class="px-4 py-3 font-semibold">$P(x|\text{steam})$</td><td class="px-4 py-3 text-rose-600">small</td><td class="px-4 py-3 text-emerald-600 font-bold">large</td><td class="px-4 py-3 text-emerald-600">large</td><td class="px-4 py-3 text-rose-600">small</td></tr><tr class="bg-emerald-50/60 dark:bg-emerald-950/30"><td class="px-4 py-3 font-bold">$\frac{P(x|\text{ice})}{P(x|\text{steam})}$</td><td class="px-4 py-3 font-extrabold text-emerald-700">$\gg 1$</td><td class="px-4 py-3 font-extrabold text-rose-700">$\ll 1$</td><td class="px-4 py-3">$\approx 1$</td><td class="px-4 py-3">$\approx 1$</td></tr></tbody></table></div>
+          <p class="text-xs text-slate-500">Distinguishing words such as “solid” and “gas” separate the meaning of ice and steam; neutral or unrelated words produce ratios close to 1.</p>
+          <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><span class="text-xs font-bold text-slate-400 uppercase">Log-bilinear objective</span><div class="mt-2 text-center math-scroll">$$J = \sum_{i,j=1}^{V} f(X_{ij}) \left( w_i^T \tilde{w}_j + b_i + \tilde{b}_j - \log X_{ij} \right)^2$$</div><p class="text-xs text-slate-500 mt-2">The inner product is fitted to the log co-occurrence count, while $f(X_{ij})$ suppresses overly frequent noisy entries.</p></div>
+        </section>
+
+        <section id="sec6" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">6. FastText: Subword-Based Extension</h3></div>
+          <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Word2Vec and GloVe usually treat each word as an independent unit, making them vulnerable to misspellings and unseen words. This is the <strong>Out-of-Vocabulary (OOV)</strong> problem. FastText decomposes words into character-level <strong>subword n-grams</strong>.</p>
+          <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs"><p class="font-bold text-slate-700 dark:text-slate-300">n-gram split for "apple", $n=3$</p><div class="mt-2 flex flex-wrap gap-2 justify-center font-mono"><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"&lt;ap"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"app"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"ppl"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"ple"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"le&gt;"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border border-emerald-500 rounded font-bold text-emerald-600">"&lt;apple&gt;"</span></div><p class="text-xs text-slate-500 mt-2">The final word vector is treated as the sum of its subword vector components.</p><div class="math-scroll text-center mt-3">$$\vec{v}_{\text{apple}} = \sum_{g \in G(\text{apple})} \vec{z}_g$$</div></div>
+        </section>
+
+        <section id="compare" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white">7. Comparative Summary</h3>
+          <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl"><table class="w-full text-left text-xs text-slate-600 dark:text-slate-400"><thead class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-700 dark:text-slate-300"><tr><th class="px-3 py-2">Category</th><th class="px-3 py-2">Algorithm</th><th class="px-3 py-2">Core Mechanism</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr><td class="px-3 py-3 font-bold">Discrete</td><td class="px-3 py-3">One-Hot Encoding</td><td class="px-3 py-3">Fixed unique dimension; cannot represent semantic similarity.</td></tr><tr><td class="px-3 py-3 font-bold">Count-based</td><td class="px-3 py-3">SVD / LSA</td><td class="px-3 py-3">Global co-occurrence matrix followed by singular-value compression.</td></tr><tr><td class="px-3 py-3 font-bold">Prediction-based</td><td class="px-3 py-3">Word2Vec</td><td class="px-3 py-3">Neural prediction of context using CBOW or Skip-Gram.</td></tr><tr><td class="px-3 py-3 font-bold">Hybrid global</td><td class="px-3 py-3">GloVe</td><td class="px-3 py-3">Optimizes embedding inner products against log co-occurrence statistics.</td></tr><tr><td class="px-3 py-3 font-bold">Subword-extended</td><td class="px-3 py-3">FastText</td><td class="px-3 py-3">Learns character n-gram pieces; robust to typos and OOV words.</td></tr></tbody></table></div>
+        </section>
+
+        <section id="interactive" class="bg-slate-900 text-white rounded-2xl p-8 shadow-md space-y-8 scroll-mt-24">
+          <div><span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Hands-on intuition</span><h3 class="text-2xl font-bold mt-1">Interactive Math Workshop</h3><p class="text-xs text-slate-400 mt-1">Use the controls to inspect the values directly.</p></div>
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4"><h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">Tool 1</span>Cosine Similarity Calculator</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-700 p-4 rounded-lg space-y-2"><label class="block text-xs font-bold text-slate-300 uppercase">Word A</label><select id="calc-word-a" class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm"><option value="NLP" selected>NLP</option><option value="learning">learning</option><option value="deep">deep</option><option value="like">like</option><option value="enjoy">enjoy</option><option value="flying">flying</option><option value=".">.</option></select><div id="vec-a-display" class="bg-slate-900 p-2.5 rounded text-xs font-mono text-emerald-400">Vector: []</div></div><div class="bg-slate-700 p-4 rounded-lg space-y-2"><label class="block text-xs font-bold text-slate-300 uppercase">Word B</label><select id="calc-word-b" class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm"><option value="NLP">NLP</option><option value="learning" selected>learning</option><option value="deep">deep</option><option value="like">like</option><option value="enjoy">enjoy</option><option value="flying">flying</option><option value=".">.</option></select><div id="vec-b-display" class="bg-slate-900 p-2.5 rounded text-xs font-mono text-emerald-400">Vector: []</div></div></div><div class="bg-slate-900 p-4 rounded-lg"><span class="text-xs text-slate-400 font-bold block mb-2 uppercase">Calculation Pipeline</span><div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-center"><div class="bg-slate-800 p-2.5 rounded"><span class="block text-[10px] text-slate-400">1. Dot product</span><p id="calc-step-dot" class="font-mono font-bold text-white text-sm mt-1">0</p></div><div class="bg-slate-800 p-2.5 rounded"><span class="block text-[10px] text-slate-400">2. Norm product</span><p id="calc-step-norm" class="font-mono font-bold text-white text-sm mt-1">0</p></div><div class="bg-slate-800 p-2.5 rounded border-l-4 border-emerald-500"><span class="block text-[10px] text-emerald-400 font-bold">3. Cosine similarity</span><p id="calc-step-sim" class="font-mono font-black text-emerald-400 text-base mt-0.5">0.0000</p></div></div></div></div>
+
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4"><h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">Tool 2</span>Word2Vec Sliding Window Simulator</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="md:col-span-2"><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Sentence</label><input id="sim-text" type="text" value="I like deep learning NLP is great" class="w-full bg-slate-700 border border-slate-600 text-white rounded p-2 text-sm font-mono"></div><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Window radius</label><select id="sim-window" class="w-full bg-slate-700 border border-slate-600 text-white rounded p-2 text-sm"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div></div><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Click a center word</label><div id="sim-tokens-container" class="flex flex-wrap gap-2 py-1"></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-700 p-3 rounded-lg border-t-4 border-slate-500"><h5 class="text-xs font-bold text-slate-200">CBOW input structure</h5><div id="cbow-res-box" class="bg-slate-900 p-2.5 rounded font-mono text-xs mt-2 min-h-[60px]"></div></div><div class="bg-slate-700 p-3 rounded-lg border-t-4 border-emerald-500"><h5 class="text-xs font-bold text-emerald-300">Skip-Gram training pairs</h5><div id="sg-res-box" class="bg-slate-900 p-2.5 rounded font-mono text-xs mt-2 min-h-[60px]"></div></div></div></div>
+
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4"><h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">Tool 3</span>Minimum Sample Size Calculator</h4><p class="text-xs text-slate-400">Estimate the minimum sample size for a corpus evaluation task under worst-case variance $p=0.5$.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-700 p-4 rounded-lg space-y-3"><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Confidence level</label><select id="sample-conf" class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm"><option value="1.645">90% (Z = 1.645)</option><option value="1.96" selected>95% (Z = 1.96)</option><option value="2.576">99% (Z = 2.576)</option></select></div><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Margin of error $E$</label><div class="flex items-center gap-2"><input id="sample-error" type="range" min="1" max="10" value="5" class="w-full accent-emerald-500"><span id="sample-error-val" class="text-sm font-mono font-bold w-12 text-right">5%</span></div></div></div><div class="bg-slate-900 p-4 rounded-lg"><span class="text-xs text-slate-400 font-bold block mb-1">Formula</span><div class="text-center bg-slate-800 p-3 rounded font-mono text-xs my-2 text-slate-300">$$n = \left\lceil \frac{Z^2 \cdot p(1-p)}{E^2} \right\rceil,\quad p=0.5$$<div id="sample-formula-display" class="text-emerald-400 font-bold mt-2"></div></div><div class="text-right"><span class="text-xs text-slate-400 block">Minimum sample size:</span><span id="sample-result" class="text-2xl font-black text-emerald-400 font-mono">0</span></div></div></div></div>
+        </section>
+
+        <section id="quiz-section" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24"><div class="border-b border-slate-100 dark:border-slate-800 pb-4"><span class="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">Achievement Check</span><h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1">Self-Check Quiz</h3><p class="text-xs text-slate-400 mt-1">Solve the questions and inspect the explanations.</p></div><div id="quiz-container" class="space-y-6"></div><div class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800 gap-4"><button id="btn-submit-quiz" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3 rounded-lg shadow-sm transition-colors">Submit answers</button><div id="quiz-result-banner" class="hidden text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg"></div></div></section>
+      </main>
+    </div>
+  </div>
+
+  <footer class="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 mt-16 text-center text-xs space-y-2"><p class="max-w-md mx-auto text-slate-500 px-4">Sanitized educational draft for studying text representation and word embeddings.</p></footer>
+
+  <script>
+    const vocabulary = ["I", "like", "enjoy", "deep", "learning", "NLP", "flying", "."];
+    const coMatrix = {
+      "I": [0, 2, 1, 0, 0, 0, 0, 0],
+      "like": [2, 0, 0, 1, 0, 1, 0, 0],
+      "enjoy": [1, 0, 0, 0, 0, 0, 1, 0],
+      "deep": [0, 1, 0, 0, 1, 0, 0, 0],
+      "learning": [0, 0, 0, 1, 0, 0, 0, 1],
+      "NLP": [0, 1, 0, 0, 0, 0, 0, 1],
+      "flying": [0, 0, 1, 0, 0, 0, 0, 1],
+      ".": [0, 0, 0, 0, 1, 1, 1, 0]
+    };
+
+    function triggerMathJax() {
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise().catch(console.error);
+    }
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('study-notes-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+      triggerMathJax();
+    });
+
+    function calculateSimilarity() {
+      const wordA = document.getElementById("calc-word-a").value;
+      const wordB = document.getElementById("calc-word-b").value;
+      const vecA = coMatrix[wordA];
+      const vecB = coMatrix[wordB];
+      document.getElementById("vec-a-display").innerText = `${wordA} = [ ${vecA.join(', ')} ]`;
+      document.getElementById("vec-b-display").innerText = `${wordB} = [ ${vecB.join(', ')} ]`;
+      let dotProduct = 0, normASq = 0, normBSq = 0;
+      for (let i = 0; i < vecA.length; i++) {
+        dotProduct += vecA[i] * vecB[i];
+        normASq += vecA[i] * vecA[i];
+        normBSq += vecB[i] * vecB[i];
+      }
+      const normA = Math.sqrt(normASq);
+      const normB = Math.sqrt(normBSq);
+      const normProduct = normA * normB;
+      const cosSim = normProduct === 0 ? 0 : dotProduct / normProduct;
+      document.getElementById("calc-step-dot").innerText = dotProduct;
+      document.getElementById("calc-step-norm").innerText = `${normA.toFixed(2)} × ${normB.toFixed(2)} = ${normProduct.toFixed(3)}`;
+      document.getElementById("calc-step-sim").innerText = cosSim.toFixed(4);
+    }
+
+    let selectedCenterIndex = 2;
+    function updateW2VSimulator() {
+      const sentence = document.getElementById("sim-text").value.trim();
+      const windowSize = parseInt(document.getElementById("sim-window").value);
+      const tokens = sentence.split(/\s+/).filter(Boolean);
+      if (!tokens.length) return;
+      if (selectedCenterIndex >= tokens.length) selectedCenterIndex = tokens.length - 1;
+      const container = document.getElementById("sim-tokens-container");
+      container.innerHTML = "";
+      tokens.forEach((token, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const isCenter = idx === selectedCenterIndex;
+        const isContext = !isCenter && Math.abs(idx - selectedCenterIndex) <= windowSize;
+        if (isCenter) btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white ring-2 ring-emerald-400";
+        else if (isContext) btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700";
+        else btn.className = "px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600";
+        btn.innerHTML = isCenter ? `${token} <span class='text-[9px] opacity-80'>(center)</span>` : isContext ? `${token} <span class='text-[9px] text-emerald-600 dark:text-emerald-400'>(context)</span>` : token;
+        btn.onclick = () => { selectedCenterIndex = idx; updateW2VSimulator(); };
+        container.appendChild(btn);
+      });
+      const centerWord = tokens[selectedCenterIndex];
+      const contextWords = [];
+      for (let i = selectedCenterIndex - windowSize; i <= selectedCenterIndex + windowSize; i++) {
+        if (i >= 0 && i < tokens.length && i !== selectedCenterIndex) contextWords.push(tokens[i]);
+      }
+      document.getElementById("cbow-res-box").innerHTML = contextWords.length ? `<div class='space-y-1 text-slate-300'><p class='text-[10px] text-slate-400 font-bold'>Input context set:</p><p class='text-white'>[ ${contextWords.join(', ')} ]</p><p class='text-[10px] text-slate-400 font-bold mt-1'>Predicted center:</p><p class='text-emerald-400 font-bold'>${centerWord}</p></div>` : "<span class='text-rose-400 text-xs'>No valid context words in range.</span>";
+      document.getElementById("sg-res-box").innerHTML = contextWords.length ? `<ul class='space-y-0.5 text-slate-300 text-xs'>${contextWords.map(w => `<li>• input: <span class='text-white font-bold'>${centerWord}</span> → target: <span class='text-emerald-400 font-bold'>${w}</span></li>`).join('')}</ul>` : "<span class='text-rose-400 text-xs'>No valid training pairs in range.</span>";
+    }
+
+    function calculateSampleSize() {
+      const z = parseFloat(document.getElementById("sample-conf").value);
+      const errorPct = parseInt(document.getElementById("sample-error").value);
+      const e = errorPct / 100;
+      document.getElementById("sample-error-val").innerText = `${errorPct}%`;
+      const p = 0.5;
+      const rawN = (z * z * p * (1 - p)) / (e * e);
+      const finalN = Math.ceil(rawN);
+      document.getElementById("sample-result").innerText = finalN.toLocaleString();
+      document.getElementById("sample-formula-display").innerText = `ceil((${z}² × 0.25) / ${e}²) = ceil(${rawN.toFixed(2)}) = ${finalN}`;
+      triggerMathJax();
+    }
+
+    const quizData = [
+      { id: 1, question: "Why is the dot product between different one-hot vectors always zero, and why is this a limitation?", options: ["All word vectors are orthogonal, so semantic similarity cannot be judged.", "Words are not evenly placed in the middle indices of the vocabulary.", "SVD was not computed in advance.", "The dataset is too small, so every L2 norm is zero."], correctIdx: 0, explanation: "Different one-hot vectors have non-overlapping 1 positions, making them orthogonal. Their dot product is therefore zero, even when words are semantically related." },
+      { id: 2, question: "What is the main purpose of truncated SVD?", options: ["To increase dimensionality.", "To preserve dominant latent semantic components and remove noise.", "To perfectly represent OOV words.", "To force all matrices to be square and symmetric."], correctIdx: 1, explanation: "Truncated SVD keeps the largest singular values, preserving major semantic structure while omitting smaller noisy components." },
+      { id: 3, question: "Which Word2Vec model is often better for rare words or small corpora, and why?", options: ["CBOW, because it combines context words and converges quickly.", "GloVe, because global probabilities always guarantee performance.", "Skip-Gram, because one center word creates multiple training pairs with surrounding words.", "FastText, because it is not a Word2Vec model."], correctIdx: 2, explanation: "Skip-Gram predicts several context words from one center word, creating more update opportunities for rare words." },
+      { id: 4, question: "How does GloVe address the local-window limitation of Word2Vec?", options: ["It maximizes cross products.", "It fits embedding inner products to the logarithm of global co-occurrence counts.", "It gives maximum weight to frequent words such as 'the'.", "It simply makes the neural network deeper."], correctIdx: 1, explanation: "GloVe uses corpus-wide co-occurrence statistics and learns vectors whose inner products match log co-occurrence counts." },
+      { id: 5, question: "Why is FastText robust to misspellings and OOV words?", options: ["It uses heavier symmetric matrices.", "It splits words into character-level subword n-grams and composes word vectors from them.", "It combines SVD frequency analysis.", "It ignores words and uses only sentence structure."], correctIdx: 1, explanation: "FastText learns subword components, so unseen or slightly corrupted words can still be represented through shared character n-grams." }
+    ];
+
+    function initQuiz() {
+      const container = document.getElementById("quiz-container");
+      container.innerHTML = "";
+      quizData.forEach((item, index) => {
+        const card = document.createElement("div");
+        card.className = "bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3";
+        const optionsHtml = item.options.map((opt, oIdx) => `<label class="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300 cursor-pointer p-2 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg"><input type="radio" name="q-${item.id}" value="${oIdx}" class="mt-1"><span>${opt}</span></label>`).join('');
+        card.innerHTML = `<p class="font-bold text-slate-900 dark:text-white text-base">Q${index + 1}. ${item.question}</p><div class="space-y-1 pl-2">${optionsHtml}</div><div id="explanation-q-${item.id}" class="hidden p-4 rounded-lg text-xs leading-relaxed border"></div>`;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById("btn-submit-quiz").onclick = function () {
+      let score = 0;
+      quizData.forEach((item) => {
+        const checked = document.querySelector(`input[name="q-${item.id}"]:checked`);
+        const expBox = document.getElementById(`explanation-q-${item.id}`);
+        expBox.classList.remove("hidden");
+        if (checked && parseInt(checked.value) === item.correctIdx) {
+          score++;
+          expBox.className = "p-4 rounded-lg text-xs leading-relaxed bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50 mt-3";
+          expBox.innerHTML = `<strong>Correct.</strong><br>${item.explanation}`;
+        } else {
+          expBox.className = "p-4 rounded-lg text-xs leading-relaxed bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900/50 mt-3";
+          expBox.innerHTML = `<strong>${checked ? 'Incorrect.' : 'No answer selected.'} Correct answer: ${item.options[item.correctIdx]}</strong><br>${item.explanation}`;
+        }
+      });
+      const pct = Math.round((score / quizData.length) * 100);
+      const banner = document.getElementById("quiz-result-banner");
+      banner.classList.remove("hidden");
+      banner.innerHTML = `Score: <span class="text-indigo-600 dark:text-indigo-400 font-black text-base">${score} / ${quizData.length}</span> (${pct}%)`;
+      document.getElementById("progress-text").innerText = `${pct}%`;
+      triggerMathJax();
+    };
+
+    const sections = document.querySelectorAll("section[id]");
+    const navAnchors = document.querySelectorAll("#sidebar-nav a");
+    window.addEventListener('scroll', () => {
+      let currentId = "";
+      sections.forEach(sec => { if (window.pageYOffset >= sec.offsetTop - 150) currentId = sec.id; });
+      navAnchors.forEach(anchor => {
+        anchor.classList.remove("sidebar-active");
+        if (anchor.getAttribute("href") === `#${currentId}`) anchor.classList.add("sidebar-active");
+      });
+    });
+
+    window.addEventListener('load', () => {
+      document.getElementById("calc-word-a").onchange = calculateSimilarity;
+      document.getElementById("calc-word-b").onchange = calculateSimilarity;
+      document.getElementById("sim-text").oninput = updateW2VSimulator;
+      document.getElementById("sim-window").onchange = updateW2VSimulator;
+      document.getElementById("sample-conf").onchange = calculateSampleSize;
+      document.getElementById("sample-error").oninput = calculateSampleSize;
+      calculateSimilarity();
+      updateW2VSimulator();
+      calculateSampleSize();
+      initQuiz();
+    });
+  </script>
+</body>
+</html>
