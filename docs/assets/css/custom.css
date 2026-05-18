@@ -64,7 +64,22 @@ code, pre {
 }
 
 .wy-menu-vertical {
-  padding-bottom: 72px;
+  padding-bottom: 120px;
+}
+
+.wy-nav-side {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, .42) transparent;
+}
+
+.wy-nav-side::-webkit-scrollbar {
+  width: 8px;
+}
+
+.wy-nav-side::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, .36);
+  border-radius: 999px;
 }
 
 .wy-menu-vertical a {
@@ -145,9 +160,8 @@ code, pre {
   padding: 42px 48px;
 }
 
-.rst-content .breadcrumbs,
 .rst-content footer {
-  opacity: .72;
+  display: none !important;
 }
 
 .rst-content a {

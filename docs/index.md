@@ -21,7 +21,7 @@ nav_order: 1
     <div class="hero-stats" aria-label="site summary">
       <div><strong>4</strong><span>Subjects</span></div>
       <div><strong>1</strong><span>Interactive note</span></div>
-      <div><strong>MathJax</strong><span>Equations ready</span></div>
+      <div><strong>Ready</strong><span>MathJax equations</span></div>
     </div>
   </section>
 
