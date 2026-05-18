@@ -21,7 +21,12 @@ body {
   font-family: "Geist", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.75;
   word-break: keep-all;
-  background: var(--study-bg);
+  background: linear-gradient(90deg, #0b1020 0 300px, var(--study-bg) 300px);
+}
+
+.wy-grid-for-nav {
+  min-height: 100vh;
+  background: linear-gradient(90deg, #0b1020 0 300px, #f8fafc 300px);
 }
 
 p, li {
