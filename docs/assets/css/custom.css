@@ -63,6 +63,10 @@ code, pre {
   color: rgba(255,255,255,.58);
 }
 
+.wy-menu-vertical {
+  padding-bottom: 72px;
+}
+
 .wy-menu-vertical a {
   color: rgba(226, 232, 240, 0.82);
   border-radius: 10px;
@@ -73,9 +77,45 @@ code, pre {
 .wy-menu-vertical a:hover,
 .wy-menu-vertical li.current > a,
 .wy-menu-vertical li.on a {
-  background: rgba(24, 226, 153, 0.12);
-  color: #ffffff;
+  background: rgba(24, 226, 153, 0.12) !important;
+  color: #ffffff !important;
   transform: translateX(2px);
+}
+
+.wy-menu-vertical li.current {
+  background: transparent !important;
+}
+
+.wy-menu-vertical li.current > ul {
+  background: transparent !important;
+}
+
+.wy-menu-vertical li.current a,
+.wy-menu-vertical li.toctree-l2 a,
+.wy-menu-vertical li.toctree-l3 a {
+  border: 0 !important;
+  color: rgba(203, 213, 225, 0.78) !important;
+  background: transparent !important;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.wy-menu-vertical li.toctree-l2 a {
+  margin-left: 16px;
+  padding: 8px 12px 8px 16px;
+}
+
+.wy-menu-vertical li.toctree-l3 a {
+  margin-left: 26px;
+  padding: 6px 12px 6px 16px;
+  color: rgba(148, 163, 184, 0.84) !important;
+}
+
+.wy-menu-vertical li.current a:hover,
+.wy-menu-vertical li.toctree-l2 a:hover,
+.wy-menu-vertical li.toctree-l3 a:hover {
+  background: rgba(24, 226, 153, 0.12) !important;
+  color: #ffffff !important;
 }
 
 .wy-menu-vertical p.caption {
@@ -84,6 +124,15 @@ code, pre {
   font-size: 11px;
   letter-spacing: .08em;
   margin: 18px 16px 6px;
+}
+
+.rst-versions {
+  display: none !important;
+}
+
+.wy-breadcrumbs-aside,
+.rst-footer-buttons {
+  display: none !important;
 }
 
 .wy-nav-content-wrap {
