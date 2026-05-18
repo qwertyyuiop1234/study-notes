@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computer Architecture · Study Notes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'Noto Sans KR', 'system-ui', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'Consolas', 'monospace']
+          },
+          animation: {
+            'float': 'float 12s ease-in-out infinite',
+            'float-delayed': 'float 14s ease-in-out 2s infinite',
+            'float-slow': 'float 18s ease-in-out 4s infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+              '33%': { transform: 'translate(30px, -30px) scale(1.05)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+            },
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      const saved = localStorage.getItem('study-notes-theme');
+      if (saved === 'light') document.documentElement.classList.remove('dark');
+    })();
+  </script>
+  <style>
+    .bg-mesh {
+      position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+    }
+    .bg-mesh .orb {
+      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.3;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(96,165,250,0.3) 0%, transparent 70%);
+      top: -200px; left: -100px;
+      animation: float 12s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(52,211,153,0.25) 0%, transparent 70%);
+      bottom: -150px; right: -150px;
+      animation: float-delayed 14s ease-in-out infinite;
+    }
+    .dot-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 70%);
+    }
+    .glass-strong {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .glass-card {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
+    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+
+  <div class="bg-mesh">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+  <div class="dot-grid"></div>
+
+  <header class="sticky top-0 z-50 glass-strong border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/study-notes/" class="flex items-center gap-3 group no-underline">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center font-black text-sm text-white shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-shadow">SN</div>
+        </a>
+        <span class="text-white/15">/</span>
+        <span class="text-sm font-semibold text-white/70 tracking-tight">Computer Architecture</span>
+      </div>
+      <button id="theme-toggle" type="button"
+        class="text-white/50 hover:text-white/80 hover:bg-white/5 rounded-lg text-sm px-3 py-2 border border-white/10 transition-all">
+        <span class="dark:hidden">🌙</span><span class="hidden dark:inline">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="relative z-10 max-w-6xl mx-auto px-6 lg:px-8 py-24">
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-widest
+      bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-6">
+      Computer Architecture
+    </div>
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-white mb-3">컴퓨터구조</h1>
+    <p class="text-lg text-white/30 max-w-xl mb-12 font-light">Pipeline, cache, memory hierarchy, ISA, and hardware-level reasoning.</p>
+
+    <div class="glass-card rounded-2xl p-10 text-center max-w-lg">
+      <div class="text-5xl mb-5 opacity-40">🏗️</div>
+      <h2 class="text-lg font-bold text-white/60 mb-2">Coming soon</h2>
+      <p class="text-sm text-white/25 font-light">HTML 노트가 준비되면 여기에 추가됩니다.</p>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      localStorage.setItem('study-notes-theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>

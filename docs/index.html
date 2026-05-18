@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Notes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'Noto Sans KR', 'system-ui', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'Consolas', 'monospace']
+          },
+          animation: {
+            'float': 'float 12s ease-in-out infinite',
+            'float-delayed': 'float 14s ease-in-out 2s infinite',
+            'float-slow': 'float 18s ease-in-out 4s infinite',
+            'fade-in': 'fadeIn 0.7s ease-out forwards',
+            'fade-in-up': 'fadeInUp 0.7s ease-out forwards',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+              '33%': { transform: 'translate(30px, -30px) scale(1.05)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(24px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      const saved = localStorage.getItem('study-notes-theme');
+      if (saved === 'light') document.documentElement.classList.remove('dark');
+    })();
+  </script>
+  <style>
+    /* Animated gradient orbs */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .bg-mesh .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.3;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(52,211,153,0.4) 0%, transparent 70%);
+      top: -200px; left: -100px;
+      animation: float 12s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(96,165,250,0.35) 0%, transparent 70%);
+      bottom: -150px; right: -150px;
+      animation: float-delayed 14s ease-in-out infinite;
+    }
+    .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(167,139,250,0.3) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: float-slow 18s ease-in-out infinite;
+    }
+
+    /* Dot grid overlay */
+    .dot-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 70%);
+    }
+
+    /* Glass card */
+    .glass {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .glass-strong {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .glass-card {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    .glass-card:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.14);
+      transform: translateY(-4px);
+      box-shadow: 0 24px 60px -12px rgba(0,0,0,0.5), 0 0 40px -10px var(--glow, rgba(52,211,153,0.15));
+    }
+
+    /* Fade-in stagger */
+    .fade-stagger > * {
+      opacity: 0;
+      animation: fadeInUp 0.6s ease-out forwards;
+    }
+    .fade-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+    .fade-stagger > *:nth-child(2) { animation-delay: 0.12s; }
+    .fade-stagger > *:nth-child(3) { animation-delay: 0.19s; }
+    .fade-stagger > *:nth-child(4) { animation-delay: 0.26s; }
+    .fade-stagger > *:nth-child(5) { animation-delay: 0.33s; }
+
+    /* Accent glow utils */
+    .glow-blue  { --glow: rgba(96,165,250,0.2); }
+    .glow-violet { --glow: rgba(167,139,250,0.2); }
+    .glow-emerald { --glow: rgba(52,211,153,0.2); }
+    .glow-rose  { --glow: rgba(244,114,182,0.2); }
+
+    /* Smooth scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    html { scroll-behavior: smooth; }
+    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+
+  <!-- Animated background -->
+  <div class="bg-mesh">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="dot-grid"></div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 glass-strong border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="/study-notes/" class="flex items-center gap-3 group no-underline">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center font-black text-sm text-white shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-shadow">SN</div>
+        <span class="text-sm font-semibold text-white/80 hidden sm:block tracking-tight">Study Notes</span>
+      </a>
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/qwertyyuiop1234/study-notes" target="_blank" rel="noopener"
+          class="text-white/40 hover:text-white/70 transition-colors" aria-label="GitHub">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+        </a>
+        <button id="theme-toggle" type="button"
+          class="text-white/50 hover:text-white/80 hover:bg-white/5 rounded-lg text-sm px-3 py-2 border border-white/10 transition-all"
+          aria-label="Toggle theme">
+          <span class="dark:hidden">🌙</span>
+          <span class="hidden dark:inline">☀️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative z-10 max-w-6xl mx-auto px-6 lg:px-8 pt-24 pb-12 md:pt-36 md:pb-16">
+    <div class="max-w-3xl">
+      <div class="fade-stagger">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-widest
+          bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          CS · AI · Math
+        </div>
+        <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tighter text-white leading-[0.9] mb-6">
+          Study<br>Notes
+        </h1>
+        <p class="text-lg sm:text-xl text-white/40 max-w-lg leading-relaxed font-light">
+          Polished concept notes, interactive visualizations, and exam-ready explanations — built for deep review.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Subjects -->
+  <section class="relative z-10 max-w-6xl mx-auto px-6 lg:px-8 pb-16">
+    <div class="fade-stagger">
+      <h2 class="text-xs font-mono font-bold uppercase tracking-[0.2em] text-white/30 mb-6">Subjects</h2>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 fade-stagger">
+      <!-- CA -->
+      <a href="computer-architecture/" class="glass-card glow-blue rounded-2xl p-6 relative overflow-hidden group no-underline">
+        <div class="relative z-10">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-5
+            group-hover:bg-blue-500/20 transition-colors">
+            <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-white mb-1.5 tracking-tight">Computer Architecture</h3>
+          <p class="text-[13px] text-white/30 leading-relaxed">Pipeline, cache, memory hierarchy, ISA.</p>
+        </div>
+        <div class="absolute bottom-4 right-4 text-white/15 group-hover:text-blue-400 transition-colors text-sm">→</div>
+      </a>
+      <!-- OS -->
+      <a href="operating-system/" class="glass-card glow-violet rounded-2xl p-6 relative overflow-hidden group no-underline">
+        <div class="relative z-10">
+          <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center mb-5
+            group-hover:bg-violet-500/20 transition-colors">
+            <svg class="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-white mb-1.5 tracking-tight">Operating System</h3>
+          <p class="text-[13px] text-white/30 leading-relaxed">Scheduling, sync, memory, filesystems.</p>
+        </div>
+        <div class="absolute bottom-4 right-4 text-white/15 group-hover:text-violet-400 transition-colors text-sm">→</div>
+      </a>
+      <!-- PS -->
+      <a href="probability-and-statistics/" class="glass-card glow-emerald rounded-2xl p-6 relative overflow-hidden group no-underline">
+        <div class="relative z-10">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-5
+            group-hover:bg-emerald-500/20 transition-colors">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-white mb-1.5 tracking-tight">Probability & Statistics</h3>
+          <p class="text-[13px] text-white/30 leading-relaxed">Distributions, expectation, inference.</p>
+        </div>
+        <div class="absolute bottom-4 right-4 text-white/15 group-hover:text-emerald-400 transition-colors text-sm">→</div>
+      </a>
+      <!-- ML -->
+      <a href="machine-learning/" class="glass-card glow-rose rounded-2xl p-6 relative overflow-hidden group no-underline ring-1 ring-rose-500/20">
+        <div class="absolute top-3 right-3 z-20">
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-rose-500/20 text-rose-400 border border-rose-500/30">Active</span>
+        </div>
+        <div class="relative z-10">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center mb-5
+            group-hover:bg-rose-500/20 transition-colors">
+            <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-white mb-1.5 tracking-tight">Machine Learning</h3>
+          <p class="text-[13px] text-white/30 leading-relaxed">Embeddings, optimization, NLP, interactive demos.</p>
+        </div>
+        <div class="absolute bottom-4 right-4 text-white/15 group-hover:text-rose-400 transition-colors text-sm">→</div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Latest Note -->
+  <section class="relative z-10 max-w-6xl mx-auto px-6 lg:px-8 pb-20">
+    <div class="fade-stagger">
+      <h2 class="text-xs font-mono font-bold uppercase tracking-[0.2em] text-white/30 mb-6">Latest Note</h2>
+    </div>
+    <div class="fade-stagger">
+      <a href="machine-learning/html/text-representation/"
+        class="glass-strong rounded-2xl p-8 md:p-10 block relative overflow-hidden group no-underline
+        hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-300">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[11px] font-mono font-bold uppercase tracking-widest text-emerald-400/70">New</span>
+          </div>
+          <h3 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white mb-3 tracking-tight leading-tight">
+            Text Representation &<br class="hidden sm:block"> Word Embeddings
+          </h3>
+          <p class="text-white/35 max-w-2xl leading-relaxed text-sm sm:text-base font-light">
+            Interactive study note covering one-hot encoding, co-occurrence matrices, SVD, Word2Vec, GloVe, FastText —
+            with live calculators, quizzes, and simulators.
+          </p>
+          <div class="flex flex-wrap gap-2 mt-5">
+            <span class="px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06]">Cosine similarity calculator</span>
+            <span class="px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06]">Word2Vec simulator</span>
+            <span class="px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06]">Self-check quiz</span>
+            <span class="px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06]">Live calculators</span>
+          </div>
+          <div class="inline-flex items-center gap-2 mt-6 text-sm font-semibold text-emerald-400 group-hover:text-emerald-300 transition-colors">
+            Open interactive page
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+            </svg>
+          </div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="relative z-10 border-t border-white/[0.04] py-8">
+    <div class="max-w-6xl mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-xs text-white/20 font-light">Study Notes · Clean public concept notes for personal review</p>
+      <p class="text-xs text-white/15 font-mono">built with 🦞</p>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('theme-toggle');
+    toggle.addEventListener('click', () => {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      localStorage.setItem('study-notes-theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>
