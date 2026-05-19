@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Common Concurrency Problems · Operating System</title>
+  <meta name="description" content="Interactive public study note on atomicity violations, order violations, and deadlock in concurrent programs." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans KR', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+          },
+          colors: {
+            osviolet: '#8b5cf6'
+          },
+          animation: {
+            float: 'float 14s ease-in-out infinite',
+            'float-delayed': 'float 18s ease-in-out 2s infinite',
+            'fade-in-up': 'fadeInUp 0.7s ease-out forwards'
+          },
+          keyframes: {
+            float: {
+              '0%,100%': { transform: 'translate(0,0) scale(1)' },
+              '33%': { transform: 'translate(26px,-34px) scale(1.06)' },
+              '66%': { transform: 'translate(-18px,22px) scale(.96)' }
+            },
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(22px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      const saved = localStorage.getItem('study-notes-theme');
+      if (saved === 'light') document.documentElement.classList.remove('dark');
+    })();
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    html:not(.dark) { color-scheme: light; }
+    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    .bg-mesh { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .orb { position: absolute; border-radius: 9999px; filter: blur(118px); opacity: .32; }
+    .orb-1 { width: 620px; height: 620px; background: radial-gradient(circle, rgba(139,92,246,.43), transparent 68%); top: -220px; left: -140px; animation: float 14s ease-in-out infinite; }
+    .orb-2 { width: 520px; height: 520px; background: radial-gradient(circle, rgba(34,211,238,.26), transparent 68%); right: -170px; bottom: -170px; animation: float-delayed 18s ease-in-out infinite; }
+    .orb-3 { width: 420px; height: 420px; background: radial-gradient(circle, rgba(16,185,129,.18), transparent 70%); left: 44%; top: 28%; animation: float 20s ease-in-out infinite reverse; }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px); background-size: 32px 32px; mask-image: radial-gradient(ellipse 80% 62% at 50% 32%, black 25%, transparent 72%); }
+    html:not(.dark) .dot-grid { background-image: radial-gradient(rgba(15,23,42,.08) 1px, transparent 1px); }
+    .glass { background: rgba(255,255,255,.045); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.09); }
+    .glass-strong { background: rgba(255,255,255,.065); backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px); border: 1px solid rgba(255,255,255,.12); }
+    html:not(.dark) .glass, html:not(.dark) .glass-strong { background: rgba(255,255,255,.78); border-color: rgba(15,23,42,.10); box-shadow: 0 24px 70px -38px rgba(15,23,42,.28); }
+    .code { background: rgba(2,6,23,.82); border: 1px solid rgba(255,255,255,.09); }
+    html:not(.dark) .code { background: #0f172a; color: #e2e8f0; }
+    .tab.active { background: rgba(139,92,246,.18); color: rgb(221,214,254); border-color: rgba(167,139,250,.35); }
+    html:not(.dark) .tab.active { background: rgba(124,58,237,.12); color: rgb(91,33,182); border-color: rgba(124,58,237,.22); }
+    .step.active { border-color: rgba(139,92,246,.65); background: rgba(139,92,246,.13); }
+    .quiz-option.correct { border-color: rgba(16,185,129,.75); background: rgba(16,185,129,.14); }
+    .quiz-option.wrong { border-color: rgba(248,113,113,.75); background: rgba(248,113,113,.13); }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.45); border-radius: 999px; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans">
+  <div class="bg-mesh"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+  <div class="dot-grid"></div>
+
+  <header class="sticky top-0 z-50 glass-strong border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-4 min-w-0">
+        <a href="/study-notes/" class="flex items-center gap-3 no-underline group">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-emerald-500/20">SN</div>
+          <span class="hidden sm:block text-sm font-semibold text-slate-700 dark:text-white/80">Study Notes</span>
+        </a>
+        <span class="text-slate-300 dark:text-white/15">/</span>
+        <a href="../../" class="text-sm font-medium text-violet-700 dark:text-violet-300 hover:underline">Operating System</a>
+      </div>
+      <button id="theme-toggle" type="button" class="rounded-lg px-3 py-2 text-sm border border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/5" aria-label="Toggle dark mode">
+        <span class="dark:hidden">🌙 Dark</span><span class="hidden dark:inline">☀️ Light</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="relative z-10 max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-14 lg:py-20">
+    <section class="grid lg:grid-cols-[1.05fr_.95fr] gap-8 items-center mb-14">
+      <div class="animate-fade-in-up">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-widest bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20 mb-6">
+          <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"></span>
+          OS · Concurrency · Public Concept Note
+        </div>
+        <h1 class="text-5xl sm:text-6xl lg:text-7xl font-black tracking-[-0.055em] leading-[0.9] text-slate-950 dark:text-white mb-6">
+          Common<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 via-fuchsia-400 to-cyan-300">Concurrency</span><br>Problems
+        </h1>
+        <p class="text-lg sm:text-xl text-slate-600 dark:text-white/45 max-w-2xl leading-relaxed font-light">
+          A sanitized, English study note focused only on the core concepts: atomicity violations, order violations, deadlock, and practical prevention strategies.
+        </p>
+        <div class="flex flex-wrap gap-2 mt-6">
+          <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-white/[.05] border border-slate-200 dark:border-white/[.08] text-slate-600 dark:text-white/55">Atomicity</span>
+          <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-white/[.05] border border-slate-200 dark:border-white/[.08] text-slate-600 dark:text-white/55">Ordering</span>
+          <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-white/[.05] border border-slate-200 dark:border-white/[.08] text-slate-600 dark:text-white/55">Deadlock</span>
+          <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-white/[.05] border border-slate-200 dark:border-white/[.08] text-slate-600 dark:text-white/55">CAS</span>
+        </div>
+      </div>
+      <div class="glass-strong rounded-3xl p-5 sm:p-7 shadow-2xl shadow-violet-950/20">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-2xl p-5 bg-violet-500/10 border border-violet-500/20"><div class="text-3xl font-black text-violet-400">2</div><div class="text-sm text-slate-500 dark:text-white/45">non-deadlock bug families</div></div>
+          <div class="rounded-2xl p-5 bg-cyan-500/10 border border-cyan-500/20"><div class="text-3xl font-black text-cyan-400">4</div><div class="text-sm text-slate-500 dark:text-white/45">deadlock conditions</div></div>
+          <div class="col-span-2 rounded-2xl p-5 bg-slate-900 dark:bg-black/30 border border-slate-800 dark:border-white/10">
+            <div class="text-xs font-mono text-slate-400 dark:text-white/35 mb-3">mental model</div>
+            <div class="flex flex-wrap items-center gap-2 text-sm font-semibold">
+              <span class="px-3 py-2 rounded-xl bg-white/10 text-white">interleaving</span>
+              <span class="text-violet-300">→</span>
+              <span class="px-3 py-2 rounded-xl bg-white/10 text-white">shared state</span>
+              <span class="text-violet-300">→</span>
+              <span class="px-3 py-2 rounded-xl bg-white/10 text-white">wrong guarantee</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="glass rounded-3xl p-6 sm:p-8 mb-10">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">1. Three classes of concurrency problems</h2>
+          <p class="text-slate-600 dark:text-white/45 mt-2">Use this classification first before choosing a synchronization tool.</p>
+        </div>
+        <div class="flex flex-wrap gap-2" id="tabs">
+          <button class="tab active px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-bold" data-tab="atomicity">Atomicity</button>
+          <button class="tab px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-bold" data-tab="order">Order</button>
+          <button class="tab px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-bold" data-tab="deadlock">Deadlock</button>
+        </div>
+      </div>
+      <div id="tab-content" class="grid lg:grid-cols-[.95fr_1.05fr] gap-6"></div>
+    </section>
+
+    <section class="grid lg:grid-cols-2 gap-6 mb-10">
+      <div class="glass rounded-3xl p-6 sm:p-8">
+        <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-3">2. Deadlock: the four necessary conditions</h2>
+        <p class="text-slate-600 dark:text-white/45 mb-5">Deadlock can occur only when all four conditions hold simultaneously. Prevention breaks at least one.</p>
+        <div class="space-y-3" id="deadlock-conditions"></div>
+      </div>
+      <div class="glass rounded-3xl p-6 sm:p-8">
+        <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-3">3. Trylock and livelock simulator</h2>
+        <p class="text-slate-600 dark:text-white/45 mb-5">Two threads may avoid deadlock by releasing and retrying, but if they keep retrying in sync, no one progresses.</p>
+        <div class="code rounded-2xl p-4 mb-4 text-sm font-mono overflow-x-auto"><pre id="sim-code">T1: lock(L1), trylock(L2)
+T2: lock(L2), trylock(L1)</pre></div>
+        <div class="grid sm:grid-cols-3 gap-3 mb-4">
+          <button id="sim-deadlock" class="px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold">Show deadlock</button>
+          <button id="sim-livelock" class="px-4 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Show livelock</button>
+          <button id="sim-random" class="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold">Add random delay</button>
+        </div>
+        <ol id="sim-output" class="space-y-2 text-sm text-slate-700 dark:text-white/60 list-decimal pl-5"></ol>
+      </div>
+    </section>
+
+    <section class="glass rounded-3xl p-6 sm:p-8 mb-10">
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white mb-3">4. Prevention strategies mapped to conditions</h2>
+      <p class="text-slate-600 dark:text-white/45 mb-6">The exam-level answer is not just naming the four conditions; it is connecting each condition to a design move and its trade-off.</p>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]"><h3 class="font-extrabold text-violet-600 dark:text-violet-300">Break circular wait</h3><p class="text-sm text-slate-600 dark:text-white/45 mt-2">Impose a global or partial lock ordering. Example: always acquire L1 before L2.</p></article>
+        <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]"><h3 class="font-extrabold text-violet-600 dark:text-violet-300">Break hold-and-wait</h3><p class="text-sm text-slate-600 dark:text-white/45 mt-2">Acquire all required locks in one atomic acquisition phase. Simpler reasoning, less concurrency.</p></article>
+        <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]"><h3 class="font-extrabold text-violet-600 dark:text-violet-300">Relax no preemption</h3><p class="text-sm text-slate-600 dark:text-white/45 mt-2">Use trylock, release what you hold on failure, then retry. Beware livelock and cleanup.</p></article>
+        <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]"><h3 class="font-extrabold text-violet-600 dark:text-violet-300">Reduce mutual exclusion</h3><p class="text-sm text-slate-600 dark:text-white/45 mt-2">Use lock-free atomic primitives such as compare-and-swap when appropriate.</p></article>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-[1fr_.85fr] gap-6 mb-10">
+      <div class="glass rounded-3xl p-6 sm:p-8">
+        <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-3">5. Compare-and-swap intuition</h2>
+        <p class="text-slate-600 dark:text-white/45 mb-5">CAS succeeds only if the memory location still contains the value you expected. Otherwise, another thread changed it, so retry with the new state.</p>
+        <div class="code rounded-2xl p-4 text-sm font-mono overflow-x-auto"><pre><code>do {
+    old_head = head;
+    new_node-&gt;next = old_head;
+} while (CompareAndSwap(&amp;head, old_head, new_node) == 0);</code></pre></div>
+      </div>
+      <div class="glass rounded-3xl p-6 sm:p-8">
+        <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-4">Quick self-check</h2>
+        <div id="quiz" class="space-y-3"></div>
+        <div id="quiz-feedback" class="mt-4 text-sm font-semibold text-slate-600 dark:text-white/55"></div>
+      </div>
+    </section>
+
+    <section class="glass-strong rounded-3xl p-6 sm:p-8">
+      <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-4">Sanitization check</h2>
+      <ul class="space-y-2 text-sm text-slate-600 dark:text-white/50">
+        <li>✓ Removed course-institution, instructor, e-mail, and copyright notice pages.</li>
+        <li>✓ Kept only public conceptual content: bug types, examples, synchronization patterns, and trade-offs.</li>
+        <li>✓ Rewrote the material in original English explanations instead of copying slide wording verbatim.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="relative z-10 border-t border-slate-200 dark:border-white/[.05] py-8 mt-10">
+    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-xs text-slate-500 dark:text-white/25">Study Notes · Operating System · Common Concurrency Problems</p>
+      <a href="../../" class="text-xs font-mono text-violet-600 dark:text-violet-300 hover:underline">Back to OS notes</a>
+    </div>
+  </footer>
+
+  <script>
+    const tabs = {
+      atomicity: {
+        title: 'Atomicity violation',
+        badge: 'check-then-use hazard',
+        summary: 'A group of memory operations was intended to behave like one indivisible critical section, but another thread ran in the middle.',
+        code: `// Thread 1\nif (ptr != NULL) {\n    use(ptr);\n}\n\n// Thread 2\nptr = NULL;`,
+        bullets: ['The bug is not merely that two threads exist; it is that the check and the use must be serialized together.', 'Fix by protecting every related access to the shared state with the same lock discipline.', 'Typical symptom: stale check, null dereference, lost update, or inconsistent state.']
+      },
+      order: {
+        title: 'Order violation',
+        badge: 'missing happens-before',
+        summary: 'Operation A must happen before operation B, but the program never enforces that ordering.',
+        code: `// Thread 1\nthread = createThread(worker);\ninitialized = true;\n\n// Thread 2\nstate = thread->state;`,
+        bullets: ['Thread creation does not mean the creator will finish initialization before the new thread runs.', 'Fix with condition variables, semaphores, join, or another ordering primitive.', 'Use a while loop around condition-variable waits to re-check the predicate.']
+      },
+      deadlock: {
+        title: 'Deadlock',
+        badge: 'circular dependency',
+        summary: 'Threads wait forever because each is holding a resource the next thread needs.',
+        code: `// Thread 1\nlock(L1); lock(L2);\n\n// Thread 2\nlock(L2); lock(L1);`,
+        bullets: ['Deadlock is about a wait-for cycle, not simply about slow progress.', 'Large systems make cycles easy because modules hide locks behind abstractions.', 'Prevention breaks at least one of the four necessary conditions.']
+      }
+    };
+
+    function renderTab(key) {
+      const data = tabs[key];
+      document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === key));
+      document.getElementById('tab-content').innerHTML = `
+        <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
+          <div class="text-xs font-mono font-bold uppercase tracking-widest text-violet-600 dark:text-violet-300 mb-3">${data.badge}</div>
+          <h3 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-3">${data.title}</h3>
+          <p class="text-slate-600 dark:text-white/50 leading-relaxed">${data.summary}</p>
+          <ul class="mt-5 space-y-3 text-sm text-slate-600 dark:text-white/50">${data.bullets.map(x => `<li class="flex gap-3"><span class="text-violet-500">•</span><span>${x}</span></li>`).join('')}</ul>
+        </div>
+        <div class="code rounded-2xl p-5 overflow-x-auto"><pre><code>${data.code.replaceAll('<','&lt;').replaceAll('>','&gt;')}</code></pre></div>`;
+    }
+    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => renderTab(btn.dataset.tab)));
+    renderTab('atomicity');
+
+    const conditions = [
+      ['Mutual exclusion', 'At least one resource can be held by only one thread at a time.'],
+      ['Hold-and-wait', 'A thread holds one resource while waiting to acquire another.'],
+      ['No preemption', 'The system cannot forcibly take a resource away from a holder.'],
+      ['Circular wait', 'There is a cycle of threads, each waiting for a resource held by the next.']
+    ];
+    document.getElementById('deadlock-conditions').innerHTML = conditions.map((c, i) => `<button class="step w-full text-left rounded-2xl p-4 border border-slate-200 dark:border-white/[.08] hover:border-violet-400/60 transition" data-i="${i}"><div class="flex items-center justify-between"><span class="font-extrabold text-slate-900 dark:text-white">${i+1}. ${c[0]}</span><span class="text-violet-500">+</span></div><p class="hidden mt-2 text-sm text-slate-600 dark:text-white/50">${c[1]}</p></button>`).join('');
+    document.querySelectorAll('.step').forEach(btn => btn.addEventListener('click', () => { btn.classList.toggle('active'); btn.querySelector('p').classList.toggle('hidden'); }));
+
+    const simOutput = document.getElementById('sim-output');
+    function showSim(lines) { simOutput.innerHTML = lines.map(x => `<li>${x}</li>`).join(''); }
+    document.getElementById('sim-deadlock').addEventListener('click', () => showSim(['T1 acquires L1.', 'T2 acquires L2.', 'T1 waits for L2 while holding L1.', 'T2 waits for L1 while holding L2.', 'The wait-for graph has a cycle: deadlock.']));
+    document.getElementById('sim-livelock').addEventListener('click', () => showSim(['T1 gets L1 and fails trylock(L2), so it releases L1.', 'T2 gets L2 and fails trylock(L1), so it releases L2.', 'Both retry at the same time.', 'They keep politely stepping aside together: livelock.']));
+    document.getElementById('sim-random').addEventListener('click', () => showSim(['T1 fails and waits a random delay.', 'T2 retries earlier and acquires both locks.', 'After T2 finishes, T1 retries and succeeds.', 'Random backoff breaks synchronized retry patterns.']));
+
+    const quiz = [
+      { q: 'Which bug type is best described as “check succeeded, but the value changed before use”?', options: ['Order violation', 'Atomicity violation', 'Deadlock'], answer: 1 },
+      { q: 'Which deadlock condition does global lock ordering directly break?', options: ['Circular wait', 'Mutual exclusion', 'No preemption'], answer: 0 },
+      { q: 'What is the main risk of a naive trylock-and-retry loop?', options: ['It can never release locks', 'It may create livelock', 'It removes all race conditions'], answer: 1 }
+    ];
+    document.getElementById('quiz').innerHTML = quiz.map((item, qi) => `<div class="rounded-2xl p-4 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]"><p class="font-bold text-slate-900 dark:text-white mb-3">${qi+1}. ${item.q}</p><div class="space-y-2">${item.options.map((o, oi) => `<button class="quiz-option w-full text-left rounded-xl px-3 py-2 border border-slate-200 dark:border-white/[.08] text-sm" data-q="${qi}" data-o="${oi}">${o}</button>`).join('')}</div></div>`).join('');
+    document.querySelectorAll('.quiz-option').forEach(btn => btn.addEventListener('click', () => {
+      const qi = Number(btn.dataset.q), oi = Number(btn.dataset.o);
+      document.querySelectorAll(`.quiz-option[data-q="${qi}"]`).forEach(b => b.classList.remove('correct','wrong'));
+      btn.classList.add(oi === quiz[qi].answer ? 'correct' : 'wrong');
+      document.getElementById('quiz-feedback').textContent = oi === quiz[qi].answer ? 'Correct. Keep connecting symptoms to the violated guarantee.' : 'Not quite. Re-read the classification and try again.';
+    }));
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      localStorage.setItem('study-notes-theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>
