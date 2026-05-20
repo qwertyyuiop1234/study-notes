@@ -1,27 +1,43 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+
+<html class="scroll-smooth" lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Text Representation and Word Embeddings</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Text Representation — 머신러닝 10주차</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'Noto Sans', 'system-ui', 'sans-serif'],
+            sans: ['Inter', 'Noto Sans KR', 'system-ui', 'sans-serif'],
             mono: ['JetBrains Mono', 'Consolas', 'monospace']
+          },
+          animation: {
+            'float': 'float 12s ease-in-out infinite',
+            'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+              '33%': { transform: 'translate(30px, -30px) scale(1.05)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+            },
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(24px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
           }
         }
       }
     };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&amp;family=JetBrains+Mono:wght@300;400;600;700&amp;family=Noto+Sans+KR:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<script>
     window.MathJax = {
       tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -31,204 +47,587 @@
       options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
     };
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <style>
-    body { font-family: Inter, system-ui, sans-serif; }
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+    body { font-family: Inter, 'Noto Sans KR', system-ui, sans-serif; }
     .sidebar-active { border-left: 4px solid #059669; background: rgba(5,150,105,.09); color: #047857; font-weight: 800; }
     .dark .sidebar-active { background: rgba(5,150,105,.22); color: #34d399; border-left-color: #34d399; }
     .math-scroll { overflow-x: auto; overflow-y: hidden; }
   </style>
-  <script>
+<script>
     (function () {
       const saved = localStorage.getItem('study-notes-theme');
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (saved === 'dark' || (!saved && systemDark)) document.documentElement.classList.add('dark');
     })();
   </script>
-  <link rel="stylesheet" href="../../../assets/css/pro-max.css" />
-  <link rel="stylesheet" href="../../../assets/css/learning-os-v2.css" />
-  <script defer src="../../../assets/js/pro-max.js"></script>
-  <script defer src="../../../assets/js/learning-os-v2.js"></script>
+<link href="../../../assets/css/pro-max.css" rel="stylesheet">
+<link href="../../../assets/css/learning-os-v2.css" rel="stylesheet">
+<script defer="" src="../../../assets/js/pro-max.js"></script>
+<script defer="" src="../../../assets/js/learning-os-v2.js"></script>
+<link href="../../../assets/css/study-os-pro.css" rel="stylesheet"/>
+<script defer src="../../../assets/js/study-os-pro.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors">
-  <header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="bg-emerald-600 dark:bg-emerald-500 text-white p-2 rounded-lg font-black text-lg tracking-wider">ML</div>
-        <div>
-          <h1 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Text Representation</h1>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Interactive word embedding study note</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-          Progress: <span id="progress-text" class="ml-1 font-bold">0%</span>
-        </span>
-        <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm px-3 py-2 border border-slate-200 dark:border-slate-700">Toggle theme</button>
-      </div>
-    </div>
-  </header>
-
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="flex flex-col lg:flex-row gap-8">
-      <aside class="w-full lg:w-72 shrink-0">
-        <div class="sticky top-24 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 space-y-6">
-          <div>
-            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Contents</h3>
-            <nav class="space-y-1 text-sm text-slate-600 dark:text-slate-300" id="sidebar-nav">
-              <a href="#intro" class="block px-3 py-2 rounded-lg transition-colors sidebar-active hover:bg-slate-50 dark:hover:bg-slate-800">Overview</a>
-              <a href="#sec1" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">01. One-Hot Encoding</a>
-              <a href="#sec2" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">02. Distributed Representation</a>
-              <a href="#sec3" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">03. SVD</a>
-              <a href="#sec4" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">04. Word2Vec</a>
-              <a href="#sec5" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">05. GloVe</a>
-              <a href="#sec6" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">06. FastText</a>
-              <a href="#compare" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">Comparison</a>
-              <a href="#interactive" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-emerald-600 dark:text-emerald-400 font-bold">Interactive Workshop</a>
-              <a href="#quiz-section" class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold">Self-Check Quiz</a>
-            </nav>
-          </div>
-          <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <div class="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 text-xs text-slate-500 dark:text-slate-400 space-y-2">
-              <p class="font-semibold text-slate-700 dark:text-slate-300">Publication note</p>
-              <p>This draft keeps only conceptual educational content. Source-code scaffolding, private labels, and identifying information were removed.</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <main class="flex-1 space-y-12">
-        <section id="intro" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 scroll-mt-24">
-          <div class="max-w-4xl">
-            <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm mb-2"><span>Core Theory</span><span>•</span><span>Foundations of NLP</span></div>
-            <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">What Is Text Representation?</h2>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-lg">Machine learning algorithms operate on numerical matrices. Human language must therefore be converted into numerical objects, usually <strong>vectors</strong>. This process is called <strong>text representation</strong>, and word-level representations are commonly called <strong>word embeddings</strong>.</p>
-            <div class="mt-6 p-4 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/60 text-sm text-slate-700 dark:text-slate-300">
-              <span class="font-bold text-emerald-800 dark:text-emerald-300">Development flow:</span> text representation evolved from discrete one-hot dimensions, to statistical distributed representation with SVD, to prediction-based Word2Vec, global-statistics-based GloVe, and subword-aware FastText.
-            </div>
-          </div>
-        </section>
-
-        <section id="sec1" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
-          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">1. Discrete Representation and One-Hot Encoding</h3></div>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="space-y-4">
-              <h4 class="font-bold text-slate-800 dark:text-slate-200">Concept</h4>
-              <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">A vocabulary is built from unique words in a corpus. One-hot encoding uses the vocabulary size as the vector dimension. Each word receives a unique index; that position is set to <code>1</code>, and every other position is <code>0</code>.</p>
-              <div class="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 border border-slate-200 dark:border-slate-800 font-mono text-xs space-y-1.5">
-                <p class="text-slate-400 font-bold tracking-wider uppercase mb-1">Vocabulary $V$ example, size 6</p>
-                <p><code>[dog, cat, wolf, lion, trout, carp]</code></p>
-                <p>dog  = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[1, 0, 0, 0, 0, 0]</span></p>
-                <p>cat  = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[0, 1, 0, 0, 0, 0]</span></p>
-                <p>wolf = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[0, 0, 1, 0, 0, 0]</span></p>
+<header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-600 dark:bg-emerald-500 text-white p-2 rounded-lg font-black text-lg tracking-wider">ML</div>
+<div>
+<h1 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Text Representation</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">건국대 기계학습 10주차 — 김학수 교수</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+          Progress: <span class="ml-1 font-bold" id="progress-text">0%</span>
+</span>
+<button class="text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm px-3 py-2 border border-slate-200 dark:border-slate-700" id="theme-toggle" type="button">☀️/🌙</button>
+</div>
+</div>
+</header>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="flex flex-col lg:flex-row gap-8">
+<aside class="w-full lg:w-72 shrink-0">
+<div class="sticky top-24 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 space-y-6">
+<div>
+<h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Contents</h3>
+<nav class="space-y-1 text-sm text-slate-600 dark:text-slate-300" id="sidebar-nav">
+<a class="block px-3 py-2 rounded-lg transition-colors sidebar-active hover:bg-slate-50 dark:hover:bg-slate-800" href="#intro">📖 개요</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec1">01. 원-핫 인코딩</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec2">02. 분산 표현 &amp; 공기 행렬</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec3">03. SVD 차원 축소</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec4">04. Word2Vec 예측 모델</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec5">05. SoftMax 최적화</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec6">06. GloVe 전역 통계</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec7">07. FastText 부분 단어</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#compare">📊 모델 비교</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-emerald-600 dark:text-emerald-400 font-bold" href="#interactive">🧪 실습 도구</a>
+<a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold" href="#quiz-section">📝 셀프 체크</a>
+</nav>
+</div>
+<div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+<div class="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 text-xs text-slate-500 dark:text-slate-400 space-y-2">
+<p class="font-semibold text-slate-700 dark:text-slate-300">📌 강의 정보</p>
+<p>건국대학교 기계학습 10주차<br/>김학수 교수 · Text Representation</p>
+<p class="pt-1 text-emerald-600 dark:text-emerald-400">🎯 19 slides 완전 분석</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 space-y-12">
+<!-- ===== INTRO ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 scroll-mt-24" id="intro">
+<div class="max-w-4xl">
+<div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm mb-2"><span>🎬 Core Theory</span><span>•</span><span>Foundations of NLP</span></div>
+<h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">텍스트 표현 (Text Representation)이란?</h2>
+<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-base">기계학습 알고리즘은 수치 행렬만 처리할 수 있다. 따라서 인간의 언어를 반드시 수치 객체(numerical objects), 보통은 <strong>벡터(vector)</strong>로 변환해야 한다. 이 과정을 <strong>텍스트 표현(text representation)</strong>이라고 하며, 단어 수준의 표현을 <strong>워드 임베딩(word embedding)</strong>이라 부른다.</p>
+<div class="mt-6 p-4 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/60 text-sm">
+<span class="font-bold text-emerald-800 dark:text-emerald-300">📈 발전 흐름:</span>
+<span class="text-slate-700 dark:text-slate-300"> 이산(discrete) 원-핫 차원 → 통계적 분산 표현 + SVD → 예측 기반 Word2Vec → 전역 통계 GloVe → 부분 단어 기반 FastText</span>
+</div>
+</div>
+</section>
+<!-- ===== SECTION 1: ONE-HOT ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec1">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">1. 이산 표현 &amp; 원-핫 인코딩</h3>
+<p class="text-xs text-slate-400 mt-1">Discrete Representation — One-Hot Encoding</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<div class="space-y-4">
+<h4 class="font-bold text-slate-800 dark:text-slate-200">📌 개념</h4>
+<p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">말뭉치(corpus)에서 고유 단어로 <strong>사전(dictionary/vocabulary)</strong>을 구성한다. 각 단어는 사전 크기만큼의 차원을 가지며, 해당 단어의 인덱스만 1, 나머지는 0으로 표현한다.<br/><span class="text-xs text-slate-400">단어를 벡터로 표현하는 가장 간단한 방법이다.</span></p>
+<div class="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 border border-slate-200 dark:border-slate-800 font-mono text-xs space-y-1.5">
+<p class="text-slate-400 font-bold tracking-wider uppercase mb-1">📖 사전 크기 |V| = 6</p>
+<p><code>[개, 고양이, 늑대, 사자, 송어, 잉어]</code></p>
+<p>개     = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[1, 0, 0, 0, 0, 0]</span></p>
+<p>고양이 = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[0, 1, 0, 0, 0, 0]</span></p>
+<p>늑대   = <span class="text-emerald-600 dark:text-emerald-400 font-bold">[0, 0, 1, 0, 0, 0]</span></p>
+</div>
+</div>
+<div class="space-y-4">
+<h4 class="font-bold text-rose-600 dark:text-rose-400">⚠️ 치명적 한계</h4>
+<ol class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+<li><strong>1. 대용량 메모리 필요</strong>
+<div class="text-xs text-slate-500 mt-1 space-y-1">
+<p>• 음성 인식: 20K, 구문 분석: 50K, 대용량 사전: 500K</p>
+<p>• <strong>구글 1T 말뭉치: 13M</strong> — 벡터 하나가 1300만 차원!</p>
+</div>
+</li>
+<li><strong>2. 유사성 비교 불가능</strong>
+<p class="text-xs text-slate-500 mt-1">서로 다른 원-핫 벡터는 기하학적으로 직교(orthogonal)하므로 내적(dot product)이 항상 0이다.</p>
+<div class="math-scroll bg-slate-900/90 text-slate-100 p-3 rounded text-xs text-center mt-2">
+                    $$ \begin{aligned} \text{Sim(개, 늑대)} &amp;= [1,0,0,0,0,0] \cdot [0,0,1,0,0,0]^\mathsf{T} = 0 \\ \text{Sim(개, 잉어)} &amp;= [1,0,0,0,0,0] \cdot [0,0,0,0,0,1]^\mathsf{T} = 0 \end{aligned} $$
+                  </div>
+<p class="text-xs text-rose-500 mt-1">개=늑대=잉어? 😱 의미적 유사성을 전혀 반영하지 못함!</p>
+</li>
+</ol>
+</div>
+</div>
+</section>
+<!-- ===== SECTION 2: DISTRIBUTED REP & CO-OCCURRENCE ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec2">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">2. 분산 표현 &amp; 공기 행렬</h3>
+<p class="text-xs text-slate-400 mt-1">Distributed Representation &amp; Co-Occurrence Matrix</p>
+</div>
+<!-- Distributional Hypothesis -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<div class="space-y-4">
+<h4 class="font-bold text-slate-800 dark:text-slate-200">📖 분포 가설 (Distributional Hypothesis)</h4>
+<p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed"><strong>"비슷한 문맥에서 등장하는 단어는 비슷한 의미를 가질 것이다."</strong> 분산 표현은 이 가정에서 출발하여 밀집 벡터(dense vector)로 의미를 인코딩한다.</p>
+<!-- COVID vs MERS example from the lecture -->
+<div class="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-100 dark:border-amber-900/60 text-xs space-y-2">
+<p class="font-bold text-amber-800 dark:text-amber-300">🦠 강의 실제 예시 — 코로나 vs 메르스</p>
+<div class="space-y-1.5">
+<p class="text-slate-600 dark:text-slate-400">문장 A: <em>"신종 코로나 바이러스 집단 감염증이 일상생활을 통해 지속 확산되고 있다."</em></p>
+<p class="text-slate-600 dark:text-slate-400">→ 코로나 주변 문맥: {신종, 바이러스, 집단, 감염, 확산, 일상, 생활}</p>
+<p class="text-slate-600 dark:text-slate-400">문장 B: <em>"프랑스는 북부도시 릴에서 2명의 메르스 바이러스 감염환자가 발생했다."</em></p>
+<p class="text-slate-600 dark:text-slate-400">→ 메르스 주변 문맥: {바이러스, 감염, 프랑스, 환자, 발생}</p>
+<p class="pt-2 border-t border-amber-200/60 dark:border-amber-800 font-bold text-amber-700 dark:text-amber-400">
+                    ✅ Sim(코로나, 메르스) ≠ 0 — 공유 문맥 단어(바이러스, 감염) 덕분에 유사도가 0이 아님!
+                  </p>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h4 class="font-bold text-slate-800 dark:text-slate-200">📊 공기 행렬 (Co-Occurrence Matrix)</h4>
+<p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">선택한 윈도우 크기 내에서 단어들이 함께 등장하는 빈도를 기록한 행렬.</p>
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+<p class="text-slate-400 font-bold mb-1">🔤 예문 (Window size = 1)</p>
+<p class="italic text-indigo-600 dark:text-indigo-400 mb-2">"I like deep learning. I like NLP. I enjoy flying."</p>
+<p class="text-slate-600">(I, like), (like, deep), (deep, learning), (I, enjoy), (enjoy, flying)</p>
+<p class="text-slate-500 mt-1">→ Sim(NLP, learning) = ? (아래 코사인 유사도 참고)</p>
+</div>
+</div>
+</div>
+<!-- Cosine Similarity -->
+<div class="border-t border-slate-100 dark:border-slate-800 pt-6 space-y-4">
+<h4 class="font-bold text-slate-800 dark:text-slate-200">📐 코사인 유사도 (Cosine Similarity)</h4>
+<p class="text-slate-600 dark:text-slate-300 text-sm">두 벡터 사이의 유사도를 측정하는 척도. <strong>길이로 정규화된 내적</strong>을 기반으로 하여 방향성만 비교하므로, 빈도의 절대적 크기에 영향받지 않는다.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm text-center math-scroll">
+                $$ \cos(\vec{X},\vec{Y}) = \frac{\vec{X} \cdot \vec{Y}}{\|\vec{X}\|\|\vec{Y}\|} = \frac{\sum_{i=1}^n x_i y_i}{\sqrt{\sum_{i=1}^n x_i^2} \times \sqrt{\sum_{i=1}^n y_i^2}} $$
+                <p class="text-xs text-slate-400 mt-2">두 벡터가 동일 방향 → 1, 직각 → 0, 반대 방향 → -1</p>
+</div>
+<div class="text-xs space-y-2 flex flex-col justify-center">
+<p>• 🟢 두 벡터가 동일: <strong class="text-emerald-600 dark:text-emerald-400">cos = 1</strong></p>
+<p>• ⚪ 두 벡터가 직각(무관): <strong>cos = 0</strong></p>
+<p>• 🔴 두 벡터가 반대: <strong class="text-rose-600 dark:text-rose-400">cos = -1</strong></p>
+<p class="pt-2 text-slate-400">💡 Sim(NLP, learning) = 1/2 = <strong>0.5</strong></p>
+</div>
+</div>
+</div>
+</section>
+<!-- ===== SECTION 3: SVD ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec3">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">3. 특이값 분해 (SVD)</h3>
+<p class="text-xs text-slate-400 mt-1">Singular Value Decomposition — 차원의 저주 해결</p>
+</div>
+<!-- Curse of Dimensionality -->
+<div class="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900/60 text-sm space-y-2">
+<h4 class="font-bold text-rose-800 dark:text-rose-300">⚠️ 공기 벡터의 문제점 — 차원의 저주</h4>
+<p class="text-slate-600 dark:text-slate-300 text-xs">차원이 증가하면서 학습데이터의 수가 차원의 수보다 적어져 성능이 저하되는 현상. 즉 <strong>희소 데이터 문제(sparse data problem)</strong>를 야기한다. 공기 행렬은 단어 수만큼의 차원을 가지므로 매우 고차원 &amp; 희소하다.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">🔢 SVD의 수학적 정의</h4>
+<p class="text-xs text-slate-500 mt-1">행렬을 특정한 구조로 분해하는 방식. $n \times m$ 행렬을 세 행렬의 곱으로 분해:</p>
+<div class="bg-white dark:bg-slate-900 p-3 rounded shadow-sm mt-2 text-center math-scroll">
+                $$ X_{n \times m} = U_{n \times n} \, S_{n \times m} \, V^\mathsf{T}_{m \times m} $$
               </div>
-            </div>
-            <div class="space-y-4">
-              <h4 class="font-bold text-rose-600 dark:text-rose-400">Critical Limitations</h4>
-              <ol class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                <li><strong>1. Sparsity and memory waste.</strong><p class="text-xs text-slate-500 mt-1">If a vocabulary has 13,000,000 words, each vector has 13,000,000 dimensions, but only one nonzero entry.</p></li>
-                <li><strong>2. Orthogonality blocks semantic similarity.</strong><p class="text-xs text-slate-500 mt-1">Different one-hot vectors are geometrically perpendicular, so their dot product is always zero.</p><div class="math-scroll bg-slate-900/90 text-slate-100 p-3 rounded text-xs text-center mt-2">$$\text{Sim}(\text{dog}, \text{wolf}) = [1,0,0,0,0,0] \cdot [0,0,1,0,0,0]^T = 0$$</div></li>
-              </ol>
-            </div>
-          </div>
-        </section>
-
-        <section id="sec2" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
-          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">2. Distributed Representation and Co-Occurrence Matrices</h3></div>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="space-y-4">
-              <h4 class="font-bold text-slate-800 dark:text-slate-200">Distributional Hypothesis</h4>
-              <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed"><strong>Words appearing in similar contexts tend to have similar meanings.</strong> Distributed representations encode meaning in dense vectors rather than in isolated vocabulary indices.</p>
-              <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/60 text-xs space-y-1">
-                <p class="font-bold text-emerald-900 dark:text-emerald-300">Context example</p>
-                <p>corona: [virus, infection, spread, quarantine]</p>
-                <p>mers: [virus, infection, hospital, patient]</p>
-                <p class="pt-2 border-t border-emerald-200/60 dark:border-emerald-800 text-slate-500 dark:text-slate-400">Shared context words allow nonzero similarity in vector space.</p>
+<p class="text-xs text-slate-500 mt-1">$U$, $V^\mathsf{T}$는 직교 행렬(orthogonal), $S$는 특이값을 중요도 순으로 정렬한 대각 행렬.</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">✂️ 절단된 SVD (Truncated SVD)</h4>
+<p class="text-xs text-slate-500 mt-1">상위 $k$개의 특이값만 유지하여 잠재 의미 구조(latent semantic structure)를 보존하면서 차원을 축소:</p>
+<div class="bg-white dark:bg-slate-900 p-3 rounded shadow-sm mt-2 text-center math-scroll">
+                $$ \hat{X}_{n \times m} \approx \hat{U}_{n \times k} \, \hat{S}_{k \times k} \, \hat{V}^\mathsf{T}_{k \times m} $$
               </div>
-            </div>
-            <div class="space-y-4">
-              <h4 class="font-bold text-slate-800 dark:text-slate-200">Co-Occurrence Matrix</h4>
-              <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">A co-occurrence matrix records how frequently words appear together inside a selected window size.</p>
-              <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
-                <p class="text-slate-400 font-bold mb-1">Sentence, window = 1</p>
-                <p class="italic text-indigo-600 dark:text-indigo-400 mb-2">"I like deep learning. I like NLP. I enjoy flying."</p>
-                <p>(I, like), (like, deep), (deep, learning), (I, enjoy), (enjoy, flying)</p>
-              </div>
-            </div>
-          </div>
-          <div class="border-t border-slate-100 dark:border-slate-800 pt-6 space-y-4">
-            <h4 class="font-bold text-slate-800 dark:text-slate-200">Cosine Similarity</h4>
-            <p class="text-slate-600 dark:text-slate-300 text-sm">To reduce distortion from raw frequency magnitude, cosine similarity normalizes by the L2 norms and compares vector direction.</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
-              <div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm text-center math-scroll">$$\cos(\vec{X},\vec{Y}) = \frac{\vec{X} \cdot \vec{Y}}{\|\vec{X}\|\|\vec{Y}\|} = \frac{\sum_{i=1}^n x_i y_i}{\sqrt{\sum_{i=1}^n x_i^2} \times \sqrt{\sum_{i=1}^n y_i^2}}$$</div>
-              <div class="text-xs space-y-2 flex flex-col justify-center"><p>• Same direction: <strong class="text-emerald-600 dark:text-emerald-400">1.0</strong></p><p>• Orthogonal/unrelated: <strong>0.0</strong></p><p>• Opposite direction: <strong class="text-rose-600 dark:text-rose-400">-1.0</strong></p></div>
-            </div>
-          </div>
-        </section>
+<p class="text-xs text-slate-500 mt-1">작은 노이즈 성분을 제거하고, 지배적인(dominant) 성분만 보존한다.</p>
+</div>
+</div>
+<!-- SVD Python example from lecture -->
+<div class="space-y-3">
+<h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">🐍 Python SVD 예제 (강의 Slide 9)</h4>
+<pre class="bg-slate-950 text-slate-300 rounded-xl p-5 text-xs overflow-x-auto"><code>import numpy as np
 
-        <section id="sec3" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
-          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">3. Singular Value Decomposition</h3></div>
-          <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Co-occurrence matrices can become high-dimensional and sparse. SVD reduces dimensionality by preserving dominant latent components while removing small noisy components.</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm"><span class="text-xs font-bold text-slate-400 uppercase">Full SVD</span><div class="py-3 text-center math-scroll">$$X_{n \times m} = U_{n \times n} S_{n \times m} V^T_{m \times m}$$</div><p class="text-xs text-slate-500">$U$ and $V^T$ are orthogonal matrices; $S$ stores singular values sorted by importance.</p></div>
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm"><span class="text-xs font-bold text-slate-400 uppercase">Truncated SVD</span><div class="py-3 text-center math-scroll">$$\hat{X}_{n \times m} \approx \hat{U}_{n \times k} \hat{S}_{k \times k} \hat{V}^T_{k \times m}$$</div><p class="text-xs text-slate-500">Only the top $k$ singular values are retained to preserve latent semantic structure.</p></div>
-          </div>
-          <div class="space-y-2"><h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Core NumPy Logic</h4><pre class="bg-slate-950 text-slate-300 rounded-xl p-5 text-xs overflow-x-auto"><code>import numpy as np
-
-X = np.array([[0, 2, 1, 0, 0, 0, 0, 0],
-              [2, 0, 0, 1, 0, 1, 0, 0],
-              # ...
+# 예문: "I like deep learning. I like NLP. I enjoy flying."
+# Window size 1로 만든 공기 행렬
+X = np.array([
+    [0, 2, 1, 0, 0, 0, 0, 0],   # I
+    [2, 0, 0, 1, 0, 1, 0, 0],   # like
+    [1, 0, 0, 0, 0, 0, 1, 0],   # enjoy
+    [0, 1, 0, 0, 1, 0, 0, 0],   # deep
+    [0, 0, 0, 1, 0, 0, 0, 1],   # learning
+    [0, 1, 0, 0, 0, 0, 0, 1],   # NLP
+    [0, 0, 1, 0, 0, 0, 0, 1],   # flying
+    [0, 0, 0, 0, 1, 1, 1, 0],   # .
 ])
 
 U, S, Vt = np.linalg.svd(X, full_matrices=False)
-word_embedding_2d = U[:, :2]</code></pre></div>
-        </section>
 
-        <section id="sec4" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
-          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">4. Word2Vec: Prediction-Based Neural Embeddings</h3></div>
-          <div class="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-xl border border-rose-100 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-300 space-y-2"><p class="font-bold">Problems with SVD count-based methods</p><ul class="list-disc list-inside space-y-1"><li><strong>High initial cost:</strong> full matrix factorization can require about $O(mn^2)$ computation.</li><li><strong>Inflexibility:</strong> new words or documents may require rebuilding the matrix and recomputing SVD.</li></ul></div>
-          <p class="text-sm text-slate-600 dark:text-slate-300">Word2Vec trains embeddings by predicting words inside a sliding context window and updating neural-network weights.</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><h4 class="font-bold text-sm">CBOW Model</h4><p class="text-[10px] inline-block bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded font-bold mt-1">Context $\rightarrow$ Center</p><p class="text-xs text-slate-500 mt-2">Uses surrounding context words as input, averages or sums their projections, and predicts the center word.</p></div><div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><h4 class="font-bold text-sm">Skip-Gram Model</h4><p class="text-[10px] inline-block bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 px-2 py-0.5 rounded font-bold mt-1">Center $\rightarrow$ Context</p><p class="text-xs text-slate-500 mt-2">Uses a center word to predict multiple surrounding context words, often producing strong vectors for rare words.</p></div></div>
-          <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><span class="text-xs font-bold text-slate-400 uppercase">Cross-Entropy Loss Reduction</span><p class="text-xs text-slate-600 dark:text-slate-300 mt-2">Because the target $y$ is one-hot, multiclass cross entropy reduces to the negative log probability of the correct word.</p><div class="bg-white dark:bg-slate-900 p-3 rounded text-center math-scroll mt-3">$$H(\hat{y}, y) = -\sum_{j=1}^{|V|} y_j \log(\hat{y}_j) \quad \Longrightarrow \quad \text{Loss} = -\log(\hat{y}_i)$$</div></div>
-          <div class="space-y-3"><h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Softmax Bottleneck Optimizations</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs"><div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800"><h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">1. Hierarchical Softmax</h5><p class="text-slate-500">Uses a Huffman binary tree and reduces complexity from $O(V)$ to $O(\log_2 V)$.</p></div><div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800"><h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">2. Negative Sampling</h5><p class="text-slate-500">Uses one true target and $K$ noise words, turning learning into a binary classification task.</p></div><div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800"><h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">3. Subsampling</h5><p class="text-slate-500">Drops overly frequent low-information words with a certain probability to improve speed and quality.</p></div></div></div>
-        </section>
-
-        <section id="sec5" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
-          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">5. GloVe: Global Vectors for Word Representation</h3></div>
-          <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Word2Vec focuses on local prediction windows. GloVe uses global co-occurrence statistics, especially probability ratios, to encode semantic relationships.</p>
-          <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl"><table class="w-full text-left text-xs text-slate-600 dark:text-slate-400"><thead class="bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold"><tr><th class="px-4 py-3">Relationship</th><th class="px-4 py-3">$x=\text{solid}$</th><th class="px-4 py-3">$x=\text{gas}$</th><th class="px-4 py-3">$x=\text{water}$</th><th class="px-4 py-3">$x=\text{fashion}$</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr><td class="px-4 py-3 font-semibold">$P(x|\text{ice})$</td><td class="px-4 py-3 text-emerald-600 font-bold">large</td><td class="px-4 py-3 text-rose-600">small</td><td class="px-4 py-3 text-emerald-600">large</td><td class="px-4 py-3 text-rose-600">small</td></tr><tr><td class="px-4 py-3 font-semibold">$P(x|\text{steam})$</td><td class="px-4 py-3 text-rose-600">small</td><td class="px-4 py-3 text-emerald-600 font-bold">large</td><td class="px-4 py-3 text-emerald-600">large</td><td class="px-4 py-3 text-rose-600">small</td></tr><tr class="bg-emerald-50/60 dark:bg-emerald-950/30"><td class="px-4 py-3 font-bold">$\frac{P(x|\text{ice})}{P(x|\text{steam})}$</td><td class="px-4 py-3 font-extrabold text-emerald-700">$\gg 1$</td><td class="px-4 py-3 font-extrabold text-rose-700">$\ll 1$</td><td class="px-4 py-3">$\approx 1$</td><td class="px-4 py-3">$\approx 1$</td></tr></tbody></table></div>
-          <p class="text-xs text-slate-500">Distinguishing words such as “solid” and “gas” separate the meaning of ice and steam; neutral or unrelated words produce ratios close to 1.</p>
-          <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800"><span class="text-xs font-bold text-slate-400 uppercase">Log-bilinear objective</span><div class="mt-2 text-center math-scroll">$$J = \sum_{i,j=1}^{V} f(X_{ij}) \left( w_i^T \tilde{w}_j + b_i + \tilde{b}_j - \log X_{ij} \right)^2$$</div><p class="text-xs text-slate-500 mt-2">The inner product is fitted to the log co-occurrence count, while $f(X_{ij})$ suppresses overly frequent noisy entries.</p></div>
-        </section>
-
-        <section id="sec6" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
-          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h3 class="text-2xl font-bold text-slate-900 dark:text-white">6. FastText: Subword-Based Extension</h3></div>
-          <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Word2Vec and GloVe usually treat each word as an independent unit, making them vulnerable to misspellings and unseen words. This is the <strong>Out-of-Vocabulary (OOV)</strong> problem. FastText decomposes words into character-level <strong>subword n-grams</strong>.</p>
-          <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs"><p class="font-bold text-slate-700 dark:text-slate-300">n-gram split for "apple", $n=3$</p><div class="mt-2 flex flex-wrap gap-2 justify-center font-mono"><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"&lt;ap"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"app"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"ppl"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"ple"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"le&gt;"</span><span class="bg-white dark:bg-slate-900 px-2 py-1 border border-emerald-500 rounded font-bold text-emerald-600">"&lt;apple&gt;"</span></div><p class="text-xs text-slate-500 mt-2">The final word vector is treated as the sum of its subword vector components.</p><div class="math-scroll text-center mt-3">$$\vec{v}_{\text{apple}} = \sum_{g \in G(\text{apple})} \vec{z}_g$$</div></div>
-        </section>
-
-        <section id="compare" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24">
-          <h3 class="text-2xl font-bold text-slate-900 dark:text-white">7. Comparative Summary</h3>
-          <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl"><table class="w-full text-left text-xs text-slate-600 dark:text-slate-400"><thead class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-700 dark:text-slate-300"><tr><th class="px-3 py-2">Category</th><th class="px-3 py-2">Algorithm</th><th class="px-3 py-2">Core Mechanism</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr><td class="px-3 py-3 font-bold">Discrete</td><td class="px-3 py-3">One-Hot Encoding</td><td class="px-3 py-3">Fixed unique dimension; cannot represent semantic similarity.</td></tr><tr><td class="px-3 py-3 font-bold">Count-based</td><td class="px-3 py-3">SVD / LSA</td><td class="px-3 py-3">Global co-occurrence matrix followed by singular-value compression.</td></tr><tr><td class="px-3 py-3 font-bold">Prediction-based</td><td class="px-3 py-3">Word2Vec</td><td class="px-3 py-3">Neural prediction of context using CBOW or Skip-Gram.</td></tr><tr><td class="px-3 py-3 font-bold">Hybrid global</td><td class="px-3 py-3">GloVe</td><td class="px-3 py-3">Optimizes embedding inner products against log co-occurrence statistics.</td></tr><tr><td class="px-3 py-3 font-bold">Subword-extended</td><td class="px-3 py-3">FastText</td><td class="px-3 py-3">Learns character n-gram pieces; robust to typos and OOV words.</td></tr></tbody></table></div>
-        </section>
-
-        <section id="interactive" class="bg-slate-900 text-white rounded-2xl p-8 shadow-md space-y-8 scroll-mt-24">
-          <div><span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Hands-on intuition</span><h3 class="text-2xl font-bold mt-1">Interactive Math Workshop</h3><p class="text-xs text-slate-400 mt-1">Use the controls to inspect the values directly.</p></div>
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4"><h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">Tool 1</span>Cosine Similarity Calculator</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-700 p-4 rounded-lg space-y-2"><label class="block text-xs font-bold text-slate-300 uppercase">Word A</label><select id="calc-word-a" class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm"><option value="NLP" selected>NLP</option><option value="learning">learning</option><option value="deep">deep</option><option value="like">like</option><option value="enjoy">enjoy</option><option value="flying">flying</option><option value=".">.</option></select><div id="vec-a-display" class="bg-slate-900 p-2.5 rounded text-xs font-mono text-emerald-400">Vector: []</div></div><div class="bg-slate-700 p-4 rounded-lg space-y-2"><label class="block text-xs font-bold text-slate-300 uppercase">Word B</label><select id="calc-word-b" class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm"><option value="NLP">NLP</option><option value="learning" selected>learning</option><option value="deep">deep</option><option value="like">like</option><option value="enjoy">enjoy</option><option value="flying">flying</option><option value=".">.</option></select><div id="vec-b-display" class="bg-slate-900 p-2.5 rounded text-xs font-mono text-emerald-400">Vector: []</div></div></div><div class="bg-slate-900 p-4 rounded-lg"><span class="text-xs text-slate-400 font-bold block mb-2 uppercase">Calculation Pipeline</span><div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-center"><div class="bg-slate-800 p-2.5 rounded"><span class="block text-[10px] text-slate-400">1. Dot product</span><p id="calc-step-dot" class="font-mono font-bold text-white text-sm mt-1">0</p></div><div class="bg-slate-800 p-2.5 rounded"><span class="block text-[10px] text-slate-400">2. Norm product</span><p id="calc-step-norm" class="font-mono font-bold text-white text-sm mt-1">0</p></div><div class="bg-slate-800 p-2.5 rounded border-l-4 border-emerald-500"><span class="block text-[10px] text-emerald-400 font-bold">3. Cosine similarity</span><p id="calc-step-sim" class="font-mono font-black text-emerald-400 text-base mt-0.5">0.0000</p></div></div></div></div>
-
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4"><h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">Tool 2</span>Word2Vec Sliding Window Simulator</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="md:col-span-2"><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Sentence</label><input id="sim-text" type="text" value="I like deep learning NLP is great" class="w-full bg-slate-700 border border-slate-600 text-white rounded p-2 text-sm font-mono"></div><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Window radius</label><select id="sim-window" class="w-full bg-slate-700 border border-slate-600 text-white rounded p-2 text-sm"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div></div><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Click a center word</label><div id="sim-tokens-container" class="flex flex-wrap gap-2 py-1"></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-700 p-3 rounded-lg border-t-4 border-slate-500"><h5 class="text-xs font-bold text-slate-200">CBOW input structure</h5><div id="cbow-res-box" class="bg-slate-900 p-2.5 rounded font-mono text-xs mt-2 min-h-[60px]"></div></div><div class="bg-slate-700 p-3 rounded-lg border-t-4 border-emerald-500"><h5 class="text-xs font-bold text-emerald-300">Skip-Gram training pairs</h5><div id="sg-res-box" class="bg-slate-900 p-2.5 rounded font-mono text-xs mt-2 min-h-[60px]"></div></div></div></div>
-
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4"><h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">Tool 3</span>Minimum Sample Size Calculator</h4><p class="text-xs text-slate-400">Estimate the minimum sample size for a corpus evaluation task under worst-case variance $p=0.5$.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-700 p-4 rounded-lg space-y-3"><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Confidence level</label><select id="sample-conf" class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm"><option value="1.645">90% (Z = 1.645)</option><option value="1.96" selected>95% (Z = 1.96)</option><option value="2.576">99% (Z = 2.576)</option></select></div><div><label class="block text-xs font-bold text-slate-300 uppercase mb-1">Margin of error $E$</label><div class="flex items-center gap-2"><input id="sample-error" type="range" min="1" max="10" value="5" class="w-full accent-emerald-500"><span id="sample-error-val" class="text-sm font-mono font-bold w-12 text-right">5%</span></div></div></div><div class="bg-slate-900 p-4 rounded-lg"><span class="text-xs text-slate-400 font-bold block mb-1">Formula</span><div class="text-center bg-slate-800 p-3 rounded font-mono text-xs my-2 text-slate-300">$$n = \left\lceil \frac{Z^2 \cdot p(1-p)}{E^2} \right\rceil,\quad p=0.5$$<div id="sample-formula-display" class="text-emerald-400 font-bold mt-2"></div></div><div class="text-right"><span class="text-xs text-slate-400 block">Minimum sample size:</span><span id="sample-result" class="text-2xl font-black text-emerald-400 font-mono">0</span></div></div></div></div>
-        </section>
-
-        <section id="quiz-section" class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24"><div class="border-b border-slate-100 dark:border-slate-800 pb-4"><span class="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">Achievement Check</span><h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1">Self-Check Quiz</h3><p class="text-xs text-slate-400 mt-1">Solve the questions and inspect the explanations.</p></div><div id="quiz-container" class="space-y-6"></div><div class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800 gap-4"><button id="btn-submit-quiz" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3 rounded-lg shadow-sm transition-colors">Submit answers</button><div id="quiz-result-banner" class="hidden text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg"></div></div></section>
-      </main>
-    </div>
-  </div>
-
-  <footer class="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 mt-16 text-center text-xs space-y-2"><p class="max-w-md mx-auto text-slate-500 px-4">Sanitized educational draft for studying text representation and word embeddings.</p></footer>
-
-  <script>
+# 2차원으로 축소된 word embedding
+word_embedding_2d = U[:, :2]
+print(word_embedding_2d)</code></pre>
+</div>
+</section>
+<!-- ===== SECTION 4: FROM SVD TO WORD2VEC ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec4">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">4. SVD → Word2Vec: 예측 기반 워드 임베딩</h3>
+<p class="text-xs text-slate-400 mt-1">From SVD To Word2Vec — Prediction-Based Neural Embeddings</p>
+</div>
+<!-- Problems with SVD -->
+<div class="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-xl border border-rose-100 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-300 space-y-2">
+<p class="font-bold">❌ SVD（카운트 기반 방법)의 문제점</p>
+<ul class="list-disc list-inside space-y-1">
+<li><strong>높은 계산 비용:</strong> $n \times m$ 행렬 계산 → $O(mn^2)$ — 말뭉치가 커지면 사실상 불가능</li>
+<li><strong>유연성 부족:</strong> 새로운 단어나 문서가 추가될 경우 SVD를 처음부터 다시 수행해야 함</li>
+</ul>
+</div>
+<!-- Historical Timeline -->
+<div class="space-y-2">
+<h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">📜 역사적 발전 타임라인</h4>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+<div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
+<span class="font-black text-emerald-600 dark:text-emerald-400 block">1986</span>
+<p class="text-slate-500 mt-1">Rumelhart et al.<br/>Back-propagation</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
+<span class="font-black text-emerald-600 dark:text-emerald-400 block">2003</span>
+<p class="text-slate-500 mt-1">Bengio et al.<br/>Neural Probabilistic<br/>Language Model</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
+<span class="font-black text-emerald-600 dark:text-emerald-400 block">2008</span>
+<p class="text-slate-500 mt-1">Collobert &amp; Weston<br/>NLP from Scratch</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-emerald-400 dark:border-emerald-600 text-center ring-2 ring-emerald-400/30">
+<span class="font-black text-emerald-600 dark:text-emerald-400 block">2013 ⭐</span>
+<p class="text-slate-500 mt-1">Mikolov et al.<br/><strong>Word2Vec</strong></p>
+</div>
+</div>
+<p class="text-xs text-slate-500 mt-2">💡 핵심 전환: <strong>"동시 등장 횟수(count)를 직접 포착하는 대신, 모든 단어의 주변 단어를 예측(predict)하자!"</strong></p>
+</div>
+<!-- Word2Vec: CBOW vs Skip-Gram -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<h4 class="font-bold text-sm">🧩 CBOW (Continuous Bag-of-Words)</h4>
+<p class="text-[10px] inline-block bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded font-bold mt-1">Context → Center</p>
+<p class="text-xs text-slate-500 mt-2">주변 문맥 단어들을 입력으로 받아, 이들의 프로젝션을 합산(average/sum)한 후 중심 단어를 예측한다. <strong>큰 말뭉치에서 빠르게 수렴</strong>.</p>
+<div class="bg-white dark:bg-slate-900 p-3 rounded mt-3 text-center text-xs font-mono">
+<p class="text-slate-400">Input: w(t-1), w(t+1) → <span class="text-emerald-600 font-bold">SUM</span> → Output: w(t)</p>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<h4 class="font-bold text-sm">🎯 Skip-Gram</h4>
+<p class="text-[10px] inline-block bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 px-2 py-0.5 rounded font-bold mt-1">Center → Context</p>
+<p class="text-xs text-slate-500 mt-2">중심 단어 하나로 주변 여러 문맥 단어들을 예측한다. 하나의 중심 단어가 여러 학습 쌍을 생성하므로 <strong>희귀 단어(rare word)에 강함</strong>.</p>
+<div class="bg-white dark:bg-slate-900 p-3 rounded mt-3 text-center text-xs font-mono">
+<p class="text-slate-400">Input: w(t) → Output: w(t-1), w(t+1)</p>
+</div>
+</div>
+</div>
+<!-- How Word2Vec works -->
+<div class="space-y-3">
+<h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">⚙️ Word2Vec 작동 원리</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<p class="font-bold text-slate-700 dark:text-slate-300">1️⃣ 투영 (Projection)</p>
+<p class="text-slate-500 mt-1">$x_k$: $V$차원 one-hot vector → $N$차원 word embedding으로 축소</p>
+<div class="bg-white dark:bg-slate-900 p-2 rounded mt-2 text-center font-mono text-slate-600">
+                  $V\text{-dim} \xrightarrow{\text{projection}} N\text{-dim}$
+                </div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<p class="font-bold text-slate-700 dark:text-slate-300">2️⃣ 출력 &amp; 비용 함수</p>
+<p class="text-slate-500 mt-1">$y_k$: $V$차원 one-hot vector. 목표는 Cross Entropy 최소화.</p>
+<div class="bg-white dark:bg-slate-900 p-2 rounded mt-2 text-center math-scroll">
+                  $$ \text{Loss} = -\log(\hat{y}_i) $$
+                </div>
+<p class="text-slate-400 mt-1">정답 단어의 로그 확률을 최대화하는 방향으로 학습</p>
+</div>
+</div>
+</div>
+</section>
+<!-- ===== SECTION 5: SOFTMAX OPTIMIZATION ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec5">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">5. SoftMax 시간을 단축하는 방법</h3>
+<p class="text-xs text-slate-400 mt-1">SoftMax Optimization — |V|만큼의 계산이 필요! 어떻게 해결할까?</p>
+</div>
+<p class="text-slate-600 dark:text-slate-300 text-sm">SoftMax는 모든 단어 $V$개에 대한 확률을 계산해야 하므로 $O(V)$의 시간이 걸린다. 사전 크기가 수십만~수백만인 경우 현실적으로 불가능. 이를 해결하기 위한 3가지 기법:</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">🌲 1. Hierarchical SoftMax</h5>
+<p class="text-slate-500"><strong>트리 구조를 이용한 탐색.</strong> 허프만 이진 트리(Huffman binary tree)를 사용하여 복잡도를 $O(V)$에서 $O(\log_2 V)$로 줄인다. 각 노드는 이진 분류기를 학습한다.</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">🎲 2. Negative Sampling</h5>
+<p class="text-slate-500"><strong>주변 대표 단어만 샘플링.</strong> 하나의 정답(target)과 $K$개의 노이즈(noise) 단어만 사용하여 이진 분류(binary classification) 문제로 변환. 즉, 모든 $V$개 단어를 업데이트하지 않고 일부만!</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<h5 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">📉 3. Sub-Sampling</h5>
+<p class="text-slate-500"><strong>빈번 단어 서브샘플링.</strong> "the", "a" 등 과도하게 자주 등장하는 저정보(low-information) 단어를 일정 확률로 드롭하여 학습 속도와 품질을 개선.</p>
+</div>
+</div>
+</section>
+<!-- ===== SECTION 6: GloVe ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec6">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">6. GloVe: 전역 벡터</h3>
+<p class="text-xs text-slate-400 mt-1">Global Vectors for Word Representation — Stanford</p>
+</div>
+<!-- Key difference -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-3">
+<h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">🤔 Word2Vec과 GloVe의 가장 큰 차이점</h4>
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+<p class="font-bold text-slate-700 dark:text-slate-300">Word2Vec: <span class="text-rose-500">Prediction</span> 기반</p>
+<p class="text-slate-500 mt-1">로컬 윈도우 내에서 주변 단어를 예측하는 방식 → 지역적 문맥만 포착</p>
+<p class="font-bold text-slate-700 dark:text-slate-300 mt-2">GloVe: <span class="text-emerald-500">Probability</span> 기반</p>
+<p class="text-slate-500 mt-1">말뭉치 전체의 <strong>전역 동시 등장 정보(global co-occurrence)</strong>를 활용하면서 단어 벡터를 학습</p>
+</div>
+</div>
+<div class="space-y-3">
+<h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">💡 GloVe의 핵심 통찰</h4>
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+<p><strong>동시 등장 확률의 비율(ratio)이 의미를 인코딩한다!</strong></p>
+<p class="text-slate-500 mt-1">예: $x=\text{solid}$가 주어졌을 때, $\text{ice}$와 $\text{steam}$의 확률 비율:</p>
+<p class="text-slate-500">$\frac{P(\text{solid}|\text{ice})}{P(\text{solid}|\text{steam})} \gg 1$ → solid는 ice와 관련, steam과는 무관</p>
+<p class="text-slate-500 mt-1">즉, <strong>확률의 내적(dot product)으로 표현</strong>하여 학습 → 내적이 로그 동시 등장 확률과 같아지도록 학습</p>
+</div>
+</div>
+</div>
+<!-- Ice/Steam probability ratio table -->
+<div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+<table class="w-full text-left text-xs text-slate-600 dark:text-slate-400">
+<thead class="bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold">
+<tr><th class="px-4 py-3">관계</th><th class="px-4 py-3">$x=\text{solid}$</th><th class="px-4 py-3">$x=\text{gas}$</th><th class="px-4 py-3">$x=\text{water}$</th><th class="px-4 py-3">$x=\text{fashion}$</th></tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr><td class="px-4 py-3 font-semibold">$P(x|\text{ice})$</td><td class="px-4 py-3 text-emerald-600 font-bold">큼</td><td class="px-4 py-3 text-rose-600">작음</td><td class="px-4 py-3 text-emerald-600">큼</td><td class="px-4 py-3 text-rose-600">작음</td></tr>
+<tr><td class="px-4 py-3 font-semibold">$P(x|\text{steam})$</td><td class="px-4 py-3 text-rose-600">작음</td><td class="px-4 py-3 text-emerald-600 font-bold">큼</td><td class="px-4 py-3 text-emerald-600">큼</td><td class="px-4 py-3 text-rose-600">작음</td></tr>
+<tr class="bg-emerald-50/60 dark:bg-emerald-950/30">
+<td class="px-4 py-3 font-bold">$\frac{P(x|\text{ice})}{P(x|\text{steam})}$</td><td class="px-4 py-3 font-extrabold text-emerald-700">$\gg 1$</td><td class="px-4 py-3 font-extrabold text-rose-700">$\ll 1$</td><td class="px-4 py-3">$\approx 1$</td><td class="px-4 py-3">$\approx 1$</td></tr>
+</tbody>
+</table>
+</div>
+<p class="text-xs text-slate-500">"solid"와 "gas" 같은 변별 단어가 ice와 steam의 의미를 구분해준다. 중립적이거나 무관한 단어는 비율이 1에 가깝다.</p>
+<!-- Objective function -->
+<div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<span class="text-xs font-bold text-slate-400 uppercase">🎯 GloVe 목적 함수 (Objective Function)</span>
+<div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm text-center math-scroll">
+                $$ J = \sum_{i,j=1}^{V} f(X_{ij}) \left( w_i^\mathsf{T} \tilde{w}_j + b_i + \tilde{b}_j - \log X_{ij} \right)^2 $$
+              </div>
+<div class="space-y-1 text-slate-500">
+<p>• $X_{ij}$: 단어 $i$와 $j$의 동시 등장 횟수</p>
+<p>• $w_i$, $\tilde{w}_j$: 학습되는 주 단어·문맥 벡터</p>
+<p>• $b_i$, $\tilde{b}_j$: 편향(bias) 항</p>
+<p>• $f(X_{ij})$: 가중치 함수 — 과도하게 빈번한 쌍의 노이즈 억제</p>
+</div>
+</div>
+<p class="text-xs text-slate-500 mt-2">핵심: 내적(dot product)이 로그 동시 등장 확률(log co-occurrence probability)과 같아지도록 fitting</p>
+</div>
+</section>
+<!-- ===== SECTION 7: FastText ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec7">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">7. FastText: 부분 단어 기반 확장</h3>
+<p class="text-xs text-slate-400 mt-1">by Facebook ← Word2Vec by Google (강의 Slide 18)</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-3">
+<p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Word2Vec과 GloVe는 각 단어를 독립적인 단위로 취급하므로, <strong>오탈자(misspelling)</strong>나 <strong>미등록 단어(OOV; Out-of-Vocabulary)</strong>에 취약하다. FastText는 문자 수준의 <strong>부분 단어 n-gram(subword n-gram)</strong>으로 단어를 분해하여 학습한다.</p>
+<div class="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/60 text-xs">
+<p class="font-bold text-indigo-700 dark:text-indigo-300">🔑 노이즈에 강한 이유</p>
+<p class="text-slate-500 mt-1">부분 단어로 학습하므로, 완전히 새로운 단어나 약간 변형된 단어도 공유된 문자 n-gram을 통해 표현할 수 있다. 즉 <strong>OOV 문제에 강건(robust)</strong>하다.</p>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+<p class="font-bold text-slate-700 dark:text-slate-300">🔤 "apple"의 3-gram 분해</p>
+<div class="mt-2 flex flex-wrap gap-2 justify-center font-mono">
+<span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"&lt;ap"</span>
+<span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"app"</span>
+<span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"ppl"</span>
+<span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"ple"</span>
+<span class="bg-white dark:bg-slate-900 px-2 py-1 border rounded">"le&gt;"</span>
+<span class="bg-white dark:bg-slate-900 px-2 py-1 border border-emerald-500 rounded font-bold text-emerald-600">"&lt;apple&gt;"</span>
+</div>
+<p class="text-xs text-slate-500 mt-2">최종 단어 벡터는 모든 부분 단어 벡터의 합:</p>
+<div class="math-scroll text-center mt-2">
+                $$ \vec{v}_{\text{apple}} = \sum_{g \in G(\text{apple})} \vec{z}_g $$
+              </div>
+<p class="text-xs text-slate-500 mt-2">$G(\text{apple})$: apple의 모든 n-gram 집합</p>
+</div>
+</div>
+</section>
+<!-- ===== COMPARISON TABLE ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="compare">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">📊 최종 비교: One-hot → Distributed Representation</h3>
+<p class="text-xs text-slate-400 mt-1">강의 Slide 18: From One-hot Rep. to Distributed Rep.</p>
+<div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+<table class="w-full text-left text-xs text-slate-600 dark:text-slate-400">
+<thead class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-700 dark:text-slate-300">
+<tr><th class="px-3 py-2">분류</th><th class="px-3 py-2">알고리즘</th><th class="px-3 py-2">핵심 메커니즘</th><th class="px-3 py-2">한계</th></tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr><td class="px-3 py-3 font-bold">이산</td><td class="px-3 py-3">원-핫 인코딩</td><td class="px-3 py-3">고유 차원 할당</td><td class="px-3 py-3">유사성 비교 불가, 대용량 메모리</td></tr>
+<tr><td class="px-3 py-3 font-bold">카운트 기반</td><td class="px-3 py-3">SVD / LSA</td><td class="px-3 py-3">전역 공기 행렬 → SVD 압축</td><td class="px-3 py-3">$O(mn^2)$, 새로운 데이터에 재계산 필요</td></tr>
+<tr><td class="px-3 py-3 font-bold">예측 기반</td><td class="px-3 py-3">Word2Vec (Google 2013)</td><td class="px-3 py-3">신경망으로 문맥 예측 (CBOW/Skip-Gram)</td><td class="px-3 py-3">로컬 윈도우만 봄, OOV 취약</td></tr>
+<tr><td class="px-3 py-3 font-bold">하이브리드 전역</td><td class="px-3 py-3">GloVe (Stanford 2014)</td><td class="px-3 py-3">내적 = 로그 동시 등장 확률</td><td class="px-3 py-3">OOV 취약</td></tr>
+<tr><td class="px-3 py-3 font-bold">부분 단어</td><td class="px-3 py-3">FastText (Facebook)</td><td class="px-3 py-3">문자 n-gram 학습 → 노이즈 강건</td><td class="px-3 py-3">더 많은 메모리 (부분 단어 벡터 저장)</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- ===== INTERACTIVE WORKSHOP ===== -->
+<section class="bg-slate-900 text-white rounded-2xl p-8 shadow-md space-y-8 scroll-mt-24" id="interactive">
+<div><span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">🧪 Hands-on intuition</span><h3 class="text-2xl font-bold mt-1">인터랙티브 실습 도구</h3><p class="text-xs text-slate-400 mt-1">직접 계산해보며 개념을 체득하세요.</p></div>
+<!-- Tool 1: Cosine Similarity Calculator -->
+<div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4">
+<h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">도구 1</span>코사인 유사도 계산기</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-slate-700 p-4 rounded-lg space-y-2">
+<label class="block text-xs font-bold text-slate-300 uppercase">단어 A</label>
+<select class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm" id="calc-word-a">
+<option selected="" value="NLP">NLP</option>
+<option value="learning">learning</option>
+<option value="deep">deep</option>
+<option value="like">like</option>
+<option value="enjoy">enjoy</option>
+<option value="flying">flying</option>
+<option value=".">.</option>
+</select>
+<div class="bg-slate-900 p-2.5 rounded text-xs font-mono text-emerald-400" id="vec-a-display">Vector: []</div>
+</div>
+<div class="bg-slate-700 p-4 rounded-lg space-y-2">
+<label class="block text-xs font-bold text-slate-300 uppercase">단어 B</label>
+<select class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm" id="calc-word-b">
+<option value="NLP">NLP</option>
+<option selected="" value="learning">learning</option>
+<option value="deep">deep</option>
+<option value="like">like</option>
+<option value="enjoy">enjoy</option>
+<option value="flying">flying</option>
+<option value=".">.</option>
+</select>
+<div class="bg-slate-900 p-2.5 rounded text-xs font-mono text-emerald-400" id="vec-b-display">Vector: []</div>
+</div>
+</div>
+<div class="bg-slate-900 p-4 rounded-lg">
+<span class="text-xs text-slate-400 font-bold block mb-2 uppercase">계산 파이프라인</span>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-center">
+<div class="bg-slate-800 p-2.5 rounded">
+<span class="block text-[10px] text-slate-400">1. 내적 (Dot product)</span>
+<p class="font-mono font-bold text-white text-sm mt-1" id="calc-step-dot">0</p>
+</div>
+<div class="bg-slate-800 p-2.5 rounded">
+<span class="block text-[10px] text-slate-400">2. 놈곱 (||A|| × ||B||)</span>
+<p class="font-mono font-bold text-white text-sm mt-1" id="calc-step-norm">0.00</p>
+</div>
+<div class="bg-slate-800 p-2.5 rounded ring-2 ring-emerald-500/30">
+<span class="block text-[10px] text-slate-400">3. ✅ 코사인 유사도</span>
+<p class="font-mono font-bold text-emerald-400 text-lg mt-1" id="calc-step-sim">0.0000</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Tool 2: Word2Vec Sliding Window -->
+<div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4">
+<h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">도구 2</span>Word2Vec 슬라이딩 윈도우 시뮬레이터</h4>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="md:col-span-2">
+<label class="block text-xs font-bold text-slate-300 uppercase mb-1">문장 입력</label>
+<input class="w-full bg-slate-700 border border-slate-600 text-white rounded p-2 text-sm font-mono" id="sim-text" type="text" value="I like deep learning NLP is great"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-300 uppercase mb-1">윈도우 반경</label>
+<select class="w-full bg-slate-700 border border-slate-600 text-white rounded p-2 text-sm" id="sim-window">
+<option value="1">1</option>
+<option selected="" value="2">2</option>
+<option value="3">3</option>
+</select>
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-300 uppercase mb-1">👇 중심 단어 클릭</label>
+<div class="flex flex-wrap gap-2 py-1" id="sim-tokens-container"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-slate-700 p-3 rounded-lg border-t-4 border-slate-500">
+<h5 class="text-xs font-bold text-slate-200">🧩 CBOW 입력 구조</h5>
+<p class="text-[10px] text-slate-400">Context → Center</p>
+<div class="bg-slate-900 p-2.5 rounded font-mono text-xs mt-2 min-h-[60px]" id="cbow-res-box"></div>
+</div>
+<div class="bg-slate-700 p-3 rounded-lg border-t-4 border-emerald-500">
+<h5 class="text-xs font-bold text-emerald-300">🎯 Skip-Gram 학습 쌍</h5>
+<p class="text-[10px] text-emerald-400">Center → Context</p>
+<div class="bg-slate-900 p-2.5 rounded font-mono text-xs mt-2 min-h-[60px]" id="sg-res-box"></div>
+</div>
+</div>
+</div>
+<!-- Tool 3: Minimum Sample Size -->
+<div class="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-4">
+<h4 class="font-bold text-sm"><span class="bg-emerald-500 px-2 py-0.5 rounded text-xs mr-2">도구 3</span>최소 표본 크기 계산기</h4>
+<p class="text-xs text-slate-400">말뭉치 평가 과업의 최소 표본 크기를 추정합니다 (최악 분산 $p=0.5$ 가정).</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-slate-700 p-4 rounded-lg space-y-3">
+<div>
+<label class="block text-xs font-bold text-slate-300 uppercase mb-1">신뢰 수준</label>
+<select class="w-full bg-slate-800 border border-slate-600 text-white rounded p-2 text-sm" id="sample-conf">
+<option value="1.645">90% (Z = 1.645)</option>
+<option selected="" value="1.96">95% (Z = 1.96)</option>
+<option value="2.576">99% (Z = 2.576)</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-300 uppercase mb-1">허용 오차 $E$</label>
+<div class="flex items-center gap-2">
+<input class="w-full accent-emerald-500" id="sample-error" max="10" min="1" type="range" value="5"/>
+<span class="text-sm font-mono font-bold w-12 text-right" id="sample-error-val">5%</span>
+</div>
+</div>
+</div>
+<div class="bg-slate-900 p-4 rounded-lg">
+<span class="text-xs text-slate-400 font-bold block mb-1">공식</span>
+<div class="text-center bg-slate-800 p-3 rounded font-mono text-xs my-2 text-slate-300">
+                  $$ n = \left\lceil \frac{Z^2 \cdot p(1-p)}{E^2} \right\rceil, \quad p=0.5 $$
+                  <div class="text-emerald-400 font-bold mt-2" id="sample-formula-display"></div>
+</div>
+<div class="text-right">
+<span class="text-xs text-slate-400 block">최소 표본 크기:</span>
+<span class="text-2xl font-black text-emerald-400 font-mono" id="sample-result">0</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ===== QUIZ ===== -->
+<section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="quiz-section">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+<span class="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">📝 Achievement Check</span>
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1">셀프 체크 퀴즈</h3>
+<p class="text-xs text-slate-400 mt-1">강의 내용을 이해했는지 확인해보세요.</p>
+</div>
+<div class="space-y-6" id="quiz-container"></div>
+<div class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800 gap-4">
+<button class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3 rounded-lg shadow-sm transition-colors" id="btn-submit-quiz">제출 &amp; 채점</button>
+<div class="hidden text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg" id="quiz-result-banner"></div>
+</div>
+</section>
+</main>
+</div>
+</div>
+<footer class="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 mt-16 text-center text-xs space-y-2">
+<p class="max-w-md mx-auto text-slate-500 px-4">건국대학교 기계학습 10주차 · Text Representation · 김학수 교수 · 19 slides 완전 분석</p>
+<p class="text-slate-600">📚 Study companion by 가재 🦞</p>
+</footer>
+<script>
+    // ---- DATA ----
     const vocabulary = ["I", "like", "enjoy", "deep", "learning", "NLP", "flying", "."];
     const coMatrix = {
       "I": [0, 2, 1, 0, 0, 0, 0, 0],
@@ -241,6 +640,7 @@ word_embedding_2d = U[:, :2]</code></pre></div>
       ".": [0, 0, 0, 0, 1, 1, 1, 0]
     };
 
+    // ---- UTILITY ----
     function triggerMathJax() {
       if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise().catch(console.error);
     }
@@ -251,6 +651,7 @@ word_embedding_2d = U[:, :2]</code></pre></div>
       triggerMathJax();
     });
 
+    // ---- TOOL 1: COSINE SIMILARITY ----
     function calculateSimilarity() {
       const wordA = document.getElementById("calc-word-a").value;
       const wordB = document.getElementById("calc-word-b").value;
@@ -273,6 +674,7 @@ word_embedding_2d = U[:, :2]</code></pre></div>
       document.getElementById("calc-step-sim").innerText = cosSim.toFixed(4);
     }
 
+    // ---- TOOL 2: W2V SIMULATOR ----
     let selectedCenterIndex = 2;
     function updateW2VSimulator() {
       const sentence = document.getElementById("sim-text").value.trim();
@@ -299,10 +701,15 @@ word_embedding_2d = U[:, :2]</code></pre></div>
       for (let i = selectedCenterIndex - windowSize; i <= selectedCenterIndex + windowSize; i++) {
         if (i >= 0 && i < tokens.length && i !== selectedCenterIndex) contextWords.push(tokens[i]);
       }
-      document.getElementById("cbow-res-box").innerHTML = contextWords.length ? `<div class='space-y-1 text-slate-300'><p class='text-[10px] text-slate-400 font-bold'>Input context set:</p><p class='text-white'>[ ${contextWords.join(', ')} ]</p><p class='text-[10px] text-slate-400 font-bold mt-1'>Predicted center:</p><p class='text-emerald-400 font-bold'>${centerWord}</p></div>` : "<span class='text-rose-400 text-xs'>No valid context words in range.</span>";
-      document.getElementById("sg-res-box").innerHTML = contextWords.length ? `<ul class='space-y-0.5 text-slate-300 text-xs'>${contextWords.map(w => `<li>• input: <span class='text-white font-bold'>${centerWord}</span> → target: <span class='text-emerald-400 font-bold'>${w}</span></li>`).join('')}</ul>` : "<span class='text-rose-400 text-xs'>No valid training pairs in range.</span>";
+      document.getElementById("cbow-res-box").innerHTML = contextWords.length
+        ? `<div class='space-y-1 text-slate-300'><p class='text-[10px] text-slate-400 font-bold'>문맥 집합:</p><p class='text-white'>[ ${contextWords.join(', ')} ]</p><p class='text-[10px] text-slate-400 font-bold mt-1'>예측 중심 단어:</p><p class='text-emerald-400 font-bold'>${centerWord}</p></div>`
+        : "<span class='text-rose-400 text-xs'>유효한 문맥 단어가 없습니다.</span>";
+      document.getElementById("sg-res-box").innerHTML = contextWords.length
+        ? `<ul class='space-y-0.5 text-slate-300 text-xs'>${contextWords.map(w => `<li>• 입력: <span class='text-white font-bold'>${centerWord}</span> → 예측: <span class='text-emerald-400 font-bold'>${w}</span></li>`).join('')}</ul>`
+        : "<span class='text-rose-400 text-xs'>유효한 학습 쌍이 없습니다.</span>";
     }
 
+    // ---- TOOL 3: SAMPLE SIZE CALCULATOR ----
     function calculateSampleSize() {
       const z = parseFloat(document.getElementById("sample-conf").value);
       const errorPct = parseInt(document.getElementById("sample-error").value);
@@ -316,12 +723,14 @@ word_embedding_2d = U[:, :2]</code></pre></div>
       triggerMathJax();
     }
 
+    // ---- QUIZ ----
     const quizData = [
-      { id: 1, question: "Why is the dot product between different one-hot vectors always zero, and why is this a limitation?", options: ["All word vectors are orthogonal, so semantic similarity cannot be judged.", "Words are not evenly placed in the middle indices of the vocabulary.", "SVD was not computed in advance.", "The dataset is too small, so every L2 norm is zero."], correctIdx: 0, explanation: "Different one-hot vectors have non-overlapping 1 positions, making them orthogonal. Their dot product is therefore zero, even when words are semantically related." },
-      { id: 2, question: "What is the main purpose of truncated SVD?", options: ["To increase dimensionality.", "To preserve dominant latent semantic components and remove noise.", "To perfectly represent OOV words.", "To force all matrices to be square and symmetric."], correctIdx: 1, explanation: "Truncated SVD keeps the largest singular values, preserving major semantic structure while omitting smaller noisy components." },
-      { id: 3, question: "Which Word2Vec model is often better for rare words or small corpora, and why?", options: ["CBOW, because it combines context words and converges quickly.", "GloVe, because global probabilities always guarantee performance.", "Skip-Gram, because one center word creates multiple training pairs with surrounding words.", "FastText, because it is not a Word2Vec model."], correctIdx: 2, explanation: "Skip-Gram predicts several context words from one center word, creating more update opportunities for rare words." },
-      { id: 4, question: "How does GloVe address the local-window limitation of Word2Vec?", options: ["It maximizes cross products.", "It fits embedding inner products to the logarithm of global co-occurrence counts.", "It gives maximum weight to frequent words such as 'the'.", "It simply makes the neural network deeper."], correctIdx: 1, explanation: "GloVe uses corpus-wide co-occurrence statistics and learns vectors whose inner products match log co-occurrence counts." },
-      { id: 5, question: "Why is FastText robust to misspellings and OOV words?", options: ["It uses heavier symmetric matrices.", "It splits words into character-level subword n-grams and composes word vectors from them.", "It combines SVD frequency analysis.", "It ignores words and uses only sentence structure."], correctIdx: 1, explanation: "FastText learns subword components, so unseen or slightly corrupted words can still be represented through shared character n-grams." }
+      { id: 1, question: "원-핫 인코딩의 가장 큰 한계는 무엇인가?", options: ["벡터 차원이 너무 작아서 정보 손실이 발생한다", "서로 다른 원-핫 벡터는 항상 직교(orthogonal)하므로 의미적 유사성을 측정할 수 없다", "단어의 순서 정보를 보존할 수 있다", "학습 속도가 너무 느리다"], correctIdx: 1, explanation: "서로 다른 원-핫 벡터는 1의 위치가 겹치지 않으므로 항상 직교하며, 내적이 항상 0이다. 따라서 '개'와 '늑대'의 유사도나 '개'와 '잉어'의 유사도가 모두 0으로 동일하게 나온다." },
+      { id: 2, question: "분포 가설(Distributional Hypothesis)이란?", options: ["단어는 독립적으로 존재한다", "비슷한 문맥에서 등장하는 단어는 비슷한 의미를 가진다", "모든 단어는 동일한 빈도로 등장한다", "단어의 길이가 의미를 결정한다"], correctIdx: 1, explanation: "분산 표현의 핵심 가정이다. 코로나와 메르스가 공유 문맥(바이러스, 감염) 때문에 유사도를 가질 수 있는 이유가 이 가정 때문이다." },
+      { id: 3, question: "SVD에서 Word2Vec으로 전환하게 된 주된 이유는?", options: ["SVD는 O(mn²)의 높은 계산 비용과 새로운 데이터 추가 시 재계산이 필요해서 유연성이 떨어지기 때문", "SVD의 성능이 Word2Vec보다 항상 나빴기 때문", "Word2Vec이 더 적은 데이터로 학습 가능했기 때문", "SVD는 오픈소스 라이브러리가 없었기 때문"], correctIdx: 0, explanation: "SVD는 행렬 분해에 O(mn²)이 필요하고, 새로운 단어/문서 추가 시 전체를 재계산해야 하는 유연성 문제가 있었다. Word2Vec은 예측 기반 학습으로 이 문제를 해결했다." },
+      { id: 4, question: "Skip-Gram이 CBOW보다 희귀 단어(rare word)에 강한 이유는?", options: ["CBOW가 더 작은 신경망을 사용해서", "하나의 중심 단어가 여러 주변 단어 쌍을 생성하므로 희귀 단어도 많은 업데이트 기회를 얻기 때문", "Skip-Gram이 더 많은 데이터를 필요로 하기 때문", "CBOW는 빈도수 높은 단어만 처리할 수 있기 때문"], correctIdx: 1, explanation: "Skip-Gram은 하나의 중심 단어로부터 여러 개의 (중심, 문맥) 학습 쌍을 생성하므로, 드물게 등장하는 단어도 충분한 학습 기회를 가질 수 있다." },
+      { id: 5, question: "GloVe가 Word2Vec과 다른 핵심 차별점은?", options: ["더 깊은 신경망을 사용한다", "로컬 윈도우 대신 말뭉치 전체의 전역 동시 등장 통계(global co-occurrence)를 활용한다", "단어 대신 문자를 학습한다", "비지도 학습이 아니라 지도 학습을 사용한다"], correctIdx: 1, explanation: "Word2Vec은 로컬 윈도우 내에서만 단어를 예측하지만, GloVe는 전체 말뭉치의 동시 등장 확률 비율을 내적으로 학습하여 전역 정보를 포착한다." },
+      { id: 6, question: "FastText가 오탈자(misspelling)와 OOV 단어에 강건(robust)한 이유는?", options: ["더 큰 사전을 사용하기 때문", "단어를 문자 n-gram으로 분해하여, 변형된 단어도 공유된 부분 단어로 표현 가능하기 때문", "SVD를 추가로 수행하기 때문", "모든 단어를 소문자로 변환하기 때문"], correctIdx: 1, explanation: "FastText는 'apple'을 ['<ap', 'app', 'ppl', 'ple', 'le>', '<apple>'] 등으로 분해한다. 'appple' 같은 오타가 있어도 'app', 'ppl' 등 공유된 n-gram을 통해 유사한 벡터를 얻을 수 있다." }
     ];
 
     function initQuiz() {
@@ -330,7 +739,9 @@ word_embedding_2d = U[:, :2]</code></pre></div>
       quizData.forEach((item, index) => {
         const card = document.createElement("div");
         card.className = "bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3";
-        const optionsHtml = item.options.map((opt, oIdx) => `<label class="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300 cursor-pointer p-2 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg"><input type="radio" name="q-${item.id}" value="${oIdx}" class="mt-1"><span>${opt}</span></label>`).join('');
+        const optionsHtml = item.options.map((opt, oIdx) =>
+          `<label class="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300 cursor-pointer p-2 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg"><input type="radio" name="q-${item.id}" value="${oIdx}" class="mt-1"><span>${opt}</span></label>`
+        ).join('');
         card.innerHTML = `<p class="font-bold text-slate-900 dark:text-white text-base">Q${index + 1}. ${item.question}</p><div class="space-y-1 pl-2">${optionsHtml}</div><div id="explanation-q-${item.id}" class="hidden p-4 rounded-lg text-xs leading-relaxed border"></div>`;
         container.appendChild(card);
       });
@@ -345,20 +756,21 @@ word_embedding_2d = U[:, :2]</code></pre></div>
         if (checked && parseInt(checked.value) === item.correctIdx) {
           score++;
           expBox.className = "p-4 rounded-lg text-xs leading-relaxed bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50 mt-3";
-          expBox.innerHTML = `<strong>Correct.</strong><br>${item.explanation}`;
+          expBox.innerHTML = `<strong>✅ 정답!</strong><br>${item.explanation}`;
         } else {
           expBox.className = "p-4 rounded-lg text-xs leading-relaxed bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900/50 mt-3";
-          expBox.innerHTML = `<strong>${checked ? 'Incorrect.' : 'No answer selected.'} Correct answer: ${item.options[item.correctIdx]}</strong><br>${item.explanation}`;
+          expBox.innerHTML = `<strong>❌ ${checked ? '오답입니다.' : '선택하지 않았습니다.'}</strong><br>정답: ${item.options[item.correctIdx]}<br><br>${item.explanation}`;
         }
       });
       const pct = Math.round((score / quizData.length) * 100);
       const banner = document.getElementById("quiz-result-banner");
       banner.classList.remove("hidden");
-      banner.innerHTML = `Score: <span class="text-indigo-600 dark:text-indigo-400 font-black text-base">${score} / ${quizData.length}</span> (${pct}%)`;
+      banner.innerHTML = `점수: <span class="text-indigo-600 dark:text-indigo-400 font-black text-base">${score} / ${quizData.length}</span> (${pct}%)`;
       document.getElementById("progress-text").innerText = `${pct}%`;
       triggerMathJax();
     };
 
+    // ---- SIDEBAR ACTIVE STATE ----
     const sections = document.querySelectorAll("section[id]");
     const navAnchors = document.querySelectorAll("#sidebar-nav a");
     window.addEventListener('scroll', () => {
@@ -370,6 +782,7 @@ word_embedding_2d = U[:, :2]</code></pre></div>
       });
     });
 
+    // ---- INIT ----
     window.addEventListener('load', () => {
       document.getElementById("calc-word-a").onchange = calculateSimilarity;
       document.getElementById("calc-word-b").onchange = calculateSimilarity;
