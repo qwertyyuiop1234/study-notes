@@ -49,7 +49,8 @@
     });
   }
   const saved = localStorage.getItem('study-notes-theme');
-  applyTheme(saved || (root.classList.contains('dark') ? 'dark' : 'dark'));
+  applyTheme(saved || (root.classList.contains('dark') ? 'dark' : 'light'));
+  if (!saved) applyTheme('light');
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('#theme-toggle, [data-sop-theme], .los-theme-toggle, [data-los-theme-toggle]');
     if (!btn) return;
@@ -62,7 +63,7 @@
     topbar.className = 'sop-topbar';
     topbar.innerHTML = `<div class="sop-topbar-inner">
       <a class="sop-brand" href="${prefix}">
-        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">Study Notes</span><span class="sop-brand-kicker">Learning OS</span></span>
+        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">Study Notes</span><span class="sop-brand-kicker">Soft Study</span></span>
       </a>
       <div class="sop-nav" aria-label="Main navigation">
         <a href="${prefix}computer-architecture/">Architecture</a>
@@ -112,8 +113,8 @@
       const cockpit = document.createElement('aside');
       cockpit.className = 'sop-cockpit sop-glass';
       cockpit.innerHTML = `<h2>Study Cockpit</h2>
-        <div style="font-weight:900;font-size:20px;letter-spacing:-.04em">Deep Reading Mode</div>
-        <p style="color:var(--sop-muted);font-size:13px;line-height:1.55;margin:8px 0 0">본문 개념은 그대로 두고, 읽기 폭·진도·목차만 학습용으로 재구성했어.</p>
+        <div style="font-weight:900;font-size:20px;letter-spacing:-.04em">Soft Reading Mode</div>
+        <p style="color:var(--sop-muted);font-size:13px;line-height:1.55;margin:8px 0 0">본문 개념은 그대로 두고, 읽기 폭·진도·목차를 CNN 노트처럼 차분하게 정리했어.</p>
         <div class="sop-progress-track"><div class="sop-progress-fill"></div></div>
         <div style="display:flex;justify-content:space-between;color:var(--sop-faint);font:800 11px var(--sop-mono)"><span>PROGRESS</span><span data-sop-progress>0%</span></div>
         <div class="sop-tools"><button data-sop-focus>Focus</button><button data-sop-wide>Wide</button><button data-sop-small>A−</button><button data-sop-large>A+</button></div>`;

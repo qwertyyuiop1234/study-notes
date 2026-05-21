@@ -58,13 +58,9 @@
     (function () {
       const saved = localStorage.getItem('study-notes-theme');
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (saved === 'dark' || (!saved && systemDark)) document.documentElement.classList.add('dark');
+      if (saved === 'dark') document.documentElement.classList.add('dark');
     })();
   </script>
-<link href="../../../assets/css/pro-max.css" rel="stylesheet">
-<link href="../../../assets/css/learning-os-v2.css" rel="stylesheet">
-<script defer="" src="../../../assets/js/pro-max.js"></script>
-<script defer="" src="../../../assets/js/learning-os-v2.js"></script>
 <link href="../../../assets/css/study-os-pro.css" rel="stylesheet"/>
 <script defer src="../../../assets/js/study-os-pro.js"></script>
 </head>
