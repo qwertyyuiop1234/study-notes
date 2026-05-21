@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Semaphores · Operating System</title>
+<meta name="description" content="Sanitized public study note on semaphores: binary/counting/ordering use, producer-consumer, deadlock, reader-writer locks, and semaphore implementation." />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','Noto Sans KR','system-ui','sans-serif'],mono:['JetBrains Mono','ui-monospace','monospace']}}}};</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : true);})();</script>
+<style>
+body{font-family:Inter,'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.orb{position:absolute;border-radius:9999px;filter:blur(110px);opacity:.35}.orb-1{width:620px;height:620px;background:radial-gradient(circle,rgba(139,92,246,.42),transparent 68%);top:-220px;left:-140px}.orb-2{width:520px;height:520px;background:radial-gradient(circle,rgba(34,211,238,.24),transparent 68%);right:-170px;bottom:-170px}.dot-grid{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 80% 62% at 50% 32%,black 25%,transparent 72%)}
+.glass{background:rgba(255,255,255,.055);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.10)}html:not(.dark) .glass{background:rgba(255,255,255,.86);border-color:rgba(15,23,42,.10);box-shadow:0 24px 70px -38px rgba(15,23,42,.28)}
+.prose-study h3{font-size:1.35rem;line-height:1.75rem;font-weight:900;margin-top:2rem;margin-bottom:.75rem;color:rgb(196 181 253)}html:not(.dark) .prose-study h3{color:rgb(109 40 217)}.prose-study h4{font-size:1.05rem;font-weight:800;margin-top:1.2rem;color:white}html:not(.dark) .prose-study h4{color:#111827}.prose-study p{margin-top:.75rem;line-height:1.82;color:rgba(255,255,255,.70)}html:not(.dark) .prose-study p{color:#475569}.prose-study ul,.prose-study ol{margin-top:.75rem;padding-left:1.35rem;line-height:1.75;color:rgba(255,255,255,.68)}html:not(.dark) .prose-study ul,html:not(.dark) .prose-study ol{color:#475569}.prose-study li{margin-top:.35rem}.prose-study code{font-family:'JetBrains Mono',monospace;background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.10);border-radius:.45rem;padding:.1rem .35rem;color:#c4b5fd}.prose-study pre{background:#020617;border:1px solid rgba(255,255,255,.12);border-radius:1rem;padding:1rem;overflow:auto;color:#e2e8f0;margin-top:.8rem}.deep-callout{margin:1rem 0;padding:1rem;border-radius:1rem;background:rgba(139,92,246,.12);border:1px solid rgba(167,139,250,.25)}.prose-study hr{border:0;border-top:1px solid rgba(255,255,255,.10);margin:1.6rem 0}
+</style>
+</head>
+<body class="min-h-screen bg-slate-950 text-white dark:bg-slate-950 bg-slate-50 dark:text-white text-slate-950">
+<div class="bg-mesh"><div class="orb orb-1"></div><div class="orb orb-2"></div></div><div class="dot-grid"></div>
+<header class="relative z-10 max-w-6xl mx-auto px-5 py-6 flex items-center justify-between"><a href="../../" class="font-black tracking-tight">SN · Operating System</a><button id="theme-toggle" class="glass rounded-full px-4 py-2 text-sm font-bold">Toggle theme</button></header>
+<main class="relative z-10 max-w-6xl mx-auto px-5 pb-20">
+<section class="glass rounded-[2rem] p-8 md:p-12 mb-8"><p class="text-violet-300 font-black uppercase tracking-[.28em] text-xs">Synchronization Primitive</p><h1 class="text-4xl md:text-6xl font-black tracking-tight mt-4">Semaphores</h1><p class="mt-5 max-w-3xl text-lg leading-8 text-white/68 dark:text-white/68">정수 token, atomic wait/post, waiting queue로 mutual exclusion, event ordering, resource counting을 표현하는 운영체제 동기화 노트.</p><div class="mt-6 flex flex-wrap gap-2 text-sm"><span class="glass rounded-full px-3 py-1">Binary</span><span class="glass rounded-full px-3 py-1">Counting</span><span class="glass rounded-full px-3 py-1">Producer/Consumer</span><span class="glass rounded-full px-3 py-1">Deadlock</span><span class="glass rounded-full px-3 py-1">Reader-Writer</span></div></section>
+<div class="grid lg:grid-cols-[260px_1fr] gap-6"><aside class="glass rounded-3xl p-5 h-fit sticky top-5"><h2 class="font-black text-lg">Concept Map</h2><nav class="mt-4 space-y-2 text-sm text-white/70"><a class="block hover:text-violet-300" href="#big-picture">큰 그림</a><a class="block hover:text-violet-300" href="#producerconsumer">Producer/Consumer</a><a class="block hover:text-violet-300" href="#readerwriter">Reader-Writer</a><a class="block hover:text-violet-300" href="#quiz">Self-check</a></nav><div class="mt-6 rounded-2xl bg-violet-500/10 border border-violet-300/20 p-4 text-sm leading-6 text-white/70">공개용 페이지에서는 강의 개념과 직접 관련 없는 표지·저작권·기관·강사 식별 정보와 raw 추출 텍스트를 제거하고 개념 설명만 남겼어.</div></aside><article class="glass rounded-3xl p-6 md:p-10 prose-study"><h2 id="big-picture" class="text-2xl md:text-3xl font-black">Core Explanation</h2>
+
+<h3>0. 이 노트에서 반드시 잡아야 하는 큰 그림</h3>
+<p>이 노트의 핵심은 <strong>semaphore가 단순히 lock의 다른 이름이 아니라, 정수값을 이용해 여러 종류의 동기화 문제를 표현하는 일반적인 primitive</strong>라는 점이다. 이전 노트에서 다룬 lock과 condition variable은 각각 역할이 비교적 분명했다.</p>
+<ul>
+<li><strong>Lock</strong>: critical section에 동시에 하나의 thread만 들어가게 한다.</li>
+<li><strong>Condition variable</strong>: 어떤 조건이 참이 될 때까지 thread를 잠재웠다가, 조건을 바꾼 thread가 깨운다.</li>
+</ul>
+<p>Semaphore는 이 둘을 모두 흉내낼 수 있다. 단, 이것이 장점이면서 동시에 위험한 점이다. semaphore 하나로 여러 의미를 표현할 수 있기 때문에, 코드만 보고도 “이 semaphore는 lock 역할인가, event ordering 역할인가, resource count 역할인가?”를 구분해야 한다.</p>
+<div class="deep-callout"><p>핵심 사고법</p><p>Semaphore의 value는 “지금 당장 통과 가능한 허가증(token)의 개수”라고 생각하면 좋다. <code>sem_wait()</code>는 허가증 하나를 가져가는 연산이고, 허가증이 없으면 기다린다. <code>sem_post()</code>는 허가증 하나를 돌려주는 연산이며, 기다리는 thread가 있으면 하나를 깨울 수 있다.</p></div>
+<hr/>
+<h3>1. 지난 시간 복습: Condition Variable과 Join 패턴</h3>
+<p>첫 예제는 condition variable을 이용해 parent thread가 child thread의 종료를 기다리는 패턴을 다시 보여준다.</p>
+<pre><code>void thr_exit() {
+    pthread_mutex_lock(&amp;m);
+    done = 1;
+    pthread_cond_signal(&amp;c);
+    pthread_mutex_unlock(&amp;m);
+}
+
+void thr_join() {
+    pthread_mutex_lock(&amp;m);
+    while (done == 0)
+        pthread_cond_wait(&amp;c, &amp;m);
+    pthread_mutex_unlock(&amp;m);
+}</code></pre>
+<p>여기서 핵심은 <code>done</code>이라는 공유 변수가 condition이고, mutex <code>m</code>이 그 condition을 보호한다는 점이다.</p>
+<h4>왜 <code>while (done == 0)</code>인가?</h4>
+<p><code>pthread_cond_wait()</code>에서 깨어났다고 해서 곧바로 조건이 참이라고 보장할 수 없다. 이유는 여러 가지다.</p>
+<ol>
+<li><strong>Spurious wakeup</strong>: 실제 signal이 없었는데도 깨어날 수 있다.</li>
+<li><strong>경쟁 상황</strong>: signal을 받은 뒤 lock을 다시 얻기 전에 다른 thread가 상태를 바꿀 수 있다.</li>
+<li><strong>여러 대기자</strong>: signal/broadcast 후 깨어난 thread 중 일부만 조건을 만족할 수 있다.</li>
+</ol>
+<p>따라서 condition variable 패턴에서는 항상 <code>if</code>보다 <code>while</code>을 사용해 조건을 다시 확인하는 것이 안전하다.</p>
+<h4>Semaphore와의 연결</h4>
+<p>이 노트에서는 이 join 패턴을 semaphore로 훨씬 간단하게 표현할 수 있음을 보게 된다. 예를 들어 child가 끝나기 전까지 parent를 기다리게 하고 싶다면, 초기값 0인 semaphore를 두고 parent는 <code>sem_wait()</code>, child는 <code>sem_post()</code>를 호출하면 된다.</p>
+<hr/>
+<h3>2. POSIX Semaphore API의 의미</h3>
+<p>API 예제는 POSIX semaphore의 기본 API를 소개한다.</p>
+<pre><code>int sem_init(sem_t *s, int pshared, unsigned int value);
+int sem_wait(sem_t *s);
+int sem_post(sem_t *s);</code></pre>
+<h4><code>sem_init()</code></h4>
+<p><code>sem_init(&amp;s, 0, value)</code>는 semaphore <code>s</code>를 초기값 <code>value</code>로 초기화한다.</p>
+<ul>
+<li><code>pshared = 0</code>: 같은 process 내부의 thread들이 semaphore를 공유한다.</li>
+<li><code>pshared != 0</code>: 서로 다른 process들이 semaphore를 공유한다. 이 경우 semaphore 객체는 shared memory 영역에 있어야 한다.</li>
+</ul>
+<p>OS 수업에서 대부분의 예제는 pthread 기반 thread 동기화이므로 <code>pshared = 0</code>을 사용한다.</p>
+<h4><code>sem_wait()</code></h4>
+<p><code>sem_wait()</code>는 전통적으로 P 연산 또는 down 연산이라고 부른다. 직관적으로는 다음과 같다.</p>
+<ol>
+<li>semaphore value가 양수이면 value를 1 감소시키고 통과한다.</li>
+<li>value가 0이면 통과할 token이 없으므로 sleep/block 상태로 들어간다.</li>
+<li>나중에 다른 thread가 <code>sem_post()</code>를 호출하면 깨어나 다시 진행한다.</li>
+</ol>
+<p>즉 <code>sem_wait()</code>는 “자원을 하나 확보하고 들어가기”에 해당한다.</p>
+<h4><code>sem_post()</code></h4>
+<p><code>sem_post()</code>는 V 연산 또는 up 연산이라고 부른다.</p>
+<ol>
+<li>semaphore value를 1 증가시킨다.</li>
+<li>기다리는 thread가 있으면 그중 하나를 깨운다.</li>
+</ol>
+<p>즉 <code>sem_post()</code>는 “자원을 하나 반환하거나 event 발생을 알리기”에 해당한다.</p>
+<h4>“negative value” 설명</h4>
+<p>일부 설명에서는 <code>sem_wait()</code>가 값을 감소시키고, value가 negative이면 기다린다고 설명되어 있다. 이는 고전적인 semaphore 명세에서 자주 쓰는 설명이다. 이 모델에서는 value가 음수일 때 그 절댓값이 기다리는 thread 수를 나타낼 수 있다.</p>
+<p>하지만 실제 Linux 구현에서는 value를 0 아래로 내리지 않고, 대기자 수는 별도의 wait queue로 관리할 수 있다. 시험에서는 보통 다음처럼 정리하면 안전하다.</p>
+<div class="deep-callout"><p>정리</p><p>개념적으로 semaphore value는 사용 가능한 resource/token 수를 나타낸다. 구현에 따라 value가 음수가 되어 waiting thread 수를 반영한다고 설명할 수도 있고, Linux처럼 value는 0 미만으로 내려가지 않고 대기 큐를 따로 관리할 수도 있다.</p></div>
+<hr/>
+<h3>3. Binary Semaphore: Lock으로 쓰는 경우</h3>
+<p>binary semaphore 예제는 semaphore를 lock처럼 사용하는 예시이다.</p>
+<pre><code>sem_t m;
+sem_init(&amp;m, 0, 1);
+
+sem_wait(&amp;m);
+// critical section here
+sem_post(&amp;m);</code></pre>
+<p>초기값이 1이라는 것은 “critical section에 들어갈 수 있는 허가증이 하나 있다”는 뜻이다.</p>
+<h4>실행 흐름</h4>
+<ol>
+<li>처음 value는 1이다.</li>
+<li>Thread A가 <code>sem_wait(&amp;m)</code>을 호출한다.</li>
+<li>value가 1이므로 A는 통과하고 value는 0이 된다.</li>
+<li>Thread A가 critical section을 실행한다.</li>
+<li>그 사이 Thread B가 <code>sem_wait(&amp;m)</code>을 호출하면 value가 0이므로 기다린다.</li>
+<li>A가 critical section을 끝내고 <code>sem_post(&amp;m)</code>을 호출한다.</li>
+<li>value가 증가하고, 기다리던 B가 깨어나 critical section에 들어간다.</li>
+</ol>
+<h4>왜 binary semaphore인가?</h4>
+<p>value가 실질적으로 0 또는 1 상태만 오가기 때문이다.</p>
+<ul>
+<li>1: 아무도 critical section에 없으므로 들어갈 수 있다.</li>
+<li>0: 누군가 critical section에 있으므로 기다려야 한다.</li>
+</ul>
+<h4>Lock과 완전히 같은가?</h4>
+<p>용도는 비슷하지만 완전히 같은 개념은 아니다. 일반적인 mutex lock은 “lock을 잡은 thread가 unlock해야 한다”는 ownership 개념이 강하다. 반면 semaphore는 한 thread가 <code>wait</code>하고 다른 thread가 <code>post</code>하는 방식도 자연스럽게 가능하다. 이 차이 때문에 semaphore는 lock뿐 아니라 ordering에도 사용할 수 있다.</p>
+<div class="deep-callout"><p>시험 함정</p><p>“Semaphore는 lock이다”라고 쓰면 부족하다. 정확히는 “초기값 1인 semaphore를 critical section 앞뒤에 <code>wait/post</code>로 배치하면 binary lock처럼 mutual exclusion을 제공한다”라고 써야 한다.</p></div>
+<hr/>
+<h3>4. Semaphore로 Ordering 표현하기</h3>
+<p>ordering 예제는 semaphore를 condition variable처럼 사용하는 예제이다.</p>
+<pre><code>sem_t s;
+
+void *child(void *arg) {
+    printf("child\n");
+    sem_post(&amp;s);
+    return NULL;
+}
+
+int main(int argc, char *argv[]) {
+    pthread_t c;
+    sem_init(&amp;s, 0, X); // what should X be?
+    printf("parent: begin\n");
+    pthread_create(&amp;c, NULL, child, NULL);
+    sem_wait(&amp;s);
+    printf("parent: end\n");
+    return 0;
+}</code></pre>
+<p>목표는 출력 순서를 다음처럼 강제하는 것이다.</p>
+<pre><code>parent: begin
+child
+parent: end</code></pre>
+<h4>X는 왜 0이어야 하는가?</h4>
+<p><code>sem_init(&amp;s, 0, 0)</code>이면 처음에는 통과 가능한 token이 없다. parent는 child를 만든 뒤 <code>sem_wait(&amp;s)</code>를 호출하지만, value가 0이므로 기다린다. child가 실행되어 <code>child</code>를 출력하고 <code>sem_post(&amp;s)</code>를 호출하면 token이 하나 생기고 parent가 깨어난다. 그 뒤에야 <code>parent: end</code>가 출력된다.</p>
+<p>반면 <code>X = 1</code>이면 parent는 <code>sem_wait(&amp;s)</code>에서 바로 통과할 수 있다. 그러면 child가 아직 실행되지 않았는데도 <code>parent: end</code>가 먼저 출력될 수 있다. 따라서 ordering 보장이 깨진다.</p>
+<h4>Condition variable과 비교</h4>
+<p>condition variable로 같은 일을 하려면 <code>done</code> 변수, mutex, condvar가 필요했다. semaphore는 초기값 0 자체가 “아직 event가 발생하지 않음”을 표현하므로 코드가 더 짧아진다.</p>
+<p>하지만 condition variable은 명시적인 predicate, 예를 들어 <code>done == 1</code>, <code>count &gt; 0</code> 같은 조건을 함께 두는 스타일이다. semaphore는 value 안에 조건 상태를 압축해서 넣는다. 그래서 간단한 ordering에는 편하지만, 복잡한 조건에서는 condition variable이 더 명확할 때도 있다.</p>
+<hr/>
+<h3 id="producerconsumer">5. Producer/Consumer Problem의 본질</h3>
+<p>bounded buffer 기반 Producer/Consumer 문제를 다룬다. 이 문제는 OS 동시성에서 매우 중요하다.</p>
+<ul>
+<li>Producer는 buffer에 item을 넣는다.</li>
+<li>Consumer는 buffer에서 item을 꺼낸다.</li>
+<li>Buffer 크기는 <code>MAX</code>로 제한되어 있다.</li>
+</ul>
+<p>따라서 두 종류의 조건이 생긴다.</p>
+<ol>
+<li>Producer는 buffer가 가득 차 있으면 기다려야 한다.</li>
+<li>Consumer는 buffer가 비어 있으면 기다려야 한다.</li>
+</ol>
+<p>또한 buffer 자체는 공유 자료구조이므로, 여러 producer/consumer가 동시에 <code>fill</code>, <code>use</code>, <code>buffer</code>를 건드리면 race condition이 생긴다.</p>
+<p>즉 Producer/Consumer 문제에는 두 문제가 동시에 존재한다.</p>
+<ul>
+<li><strong>Condition synchronization</strong>: empty/full 조건을 기다리는 문제</li>
+<li><strong>Mutual exclusion</strong>: buffer 자료구조를 안전하게 조작하는 문제</li>
+</ul>
+<p>이 둘을 정확히 분리하는 것이 이 노트의 핵심이다.</p>
+<hr/>
+<h3>6. Bounded Buffer 구조</h3>
+<p>bounded-buffer 코드는 circular buffer이다.</p>
+<pre><code>int buffer[MAX]; // bounded buffer
+int fill = 0;
+int use = 0;
+
+void put(int value) {
+    buffer[fill] = value;
+    fill = (fill + 1) % MAX;
+}
+
+int get() {
+    int tmp = buffer[use];
+    use = (use + 1) % MAX;
+    return tmp;
+}</code></pre>
+<h4><code>fill</code>과 <code>use</code></h4>
+<ul>
+<li><code>fill</code>: 다음 producer가 item을 넣을 index</li>
+<li><code>use</code>: 다음 consumer가 item을 꺼낼 index</li>
+</ul>
+<p><code>(index + 1) % MAX</code>를 사용하는 이유는 buffer를 원형 큐처럼 쓰기 위해서이다. 예를 들어 <code>MAX = 5</code>이면 index는 0, 1, 2, 3, 4 다음 다시 0으로 돌아간다.</p>
+<h4>왜 공유 상태인가?</h4>
+<p><code>buffer</code>, <code>fill</code>, <code>use</code>는 모든 producer와 consumer가 함께 접근한다. 따라서 두 producer가 동시에 <code>fill</code>을 읽거나, 두 consumer가 동시에 <code>use</code>를 읽으면 문제가 생길 수 있다.</p>
+<p>예를 들어 <code>fill = 2</code>일 때 producer P1과 P2가 동시에 <code>put()</code>에 들어가면 다음 일이 가능하다.</p>
+<ol>
+<li>P1이 <code>fill = 2</code>를 읽는다.</li>
+<li>P2도 <code>fill = 2</code>를 읽는다.</li>
+<li>P1이 <code>buffer[2]</code>에 값을 쓴다.</li>
+<li>P2가 <code>buffer[2]</code>에 다른 값을 덮어쓴다.</li>
+<li>둘 다 <code>fill = 3</code>으로 갱신한다.</li>
+</ol>
+<p>결과적으로 item 하나가 사라지고 buffer 상태가 꼬인다. 이것이 race condition이다.</p>
+<hr/>
+<h3>7. empty/full Semaphore의 의미</h3>
+<p>초기 producer/consumer 예제는 <code>empty</code>와 <code>full</code> semaphore를 도입한다.</p>
+<pre><code>sem_t empty, full;
+
+sem_init(&amp;empty, 0, MAX); // MAX are empty
+sem_init(&amp;full, 0, 0);    // 0 are full</code></pre>
+<h4><code>empty</code></h4>
+<p><code>empty</code>는 buffer 안의 빈 slot 수를 나타낸다. 처음에는 buffer가 완전히 비어 있으므로 빈 slot이 <code>MAX</code>개이다.</p>
+<p>Producer는 item을 넣기 전에 빈 slot 하나를 확보해야 한다.</p>
+<pre><code>sem_wait(&amp;empty);
+put(i);
+sem_post(&amp;full);</code></pre>
+<p><code>sem_wait(&amp;empty)</code>는 빈 slot 하나를 예약하는 의미이다. 만약 빈 slot이 없으면 producer는 기다린다.</p>
+<h4><code>full</code></h4>
+<p><code>full</code>은 buffer 안의 채워진 item 수를 나타낸다. 처음에는 item이 없으므로 0이다.</p>
+<p>Consumer는 item을 꺼내기 전에 채워진 slot 하나를 확보해야 한다.</p>
+<pre><code>sem_wait(&amp;full);
+tmp = get();
+sem_post(&amp;empty);</code></pre>
+<p><code>sem_wait(&amp;full)</code>은 꺼낼 item 하나를 예약하는 의미이다. 만약 item이 없으면 consumer는 기다린다.</p>
+<h4>중요한 불변식</h4>
+<p>정상적인 bounded buffer에서는 항상 <code>empty + full = MAX</code>라는 직관적 관계가 유지된다. producer가 item을 하나 넣으면 empty가 하나 줄고 full이 하나 늘어난다. consumer가 item을 하나 꺼내면 full이 하나 줄고 empty가 하나 늘어난다.</p>
+<div class="deep-callout"><p>시험에 좋은 표현</p><p><code>empty</code>와 <code>full</code>은 buffer의 물리적 접근을 보호하는 lock이 아니라, buffer의 상태 조건을 표현하는 counting semaphore이다.</p></div>
+<hr/>
+<h3>8. Single Producer/Consumer에서는 왜 우연히 동작하는가?</h3>
+<p>race-condition 부분은 single producer와 single consumer에서는 앞의 코드가 동작한다고 말한다. 이유는 <code>fill</code>은 producer만 바꾸고 <code>use</code>는 consumer만 바꾸기 때문이다.</p>
+<ul>
+<li>Producer 하나만 <code>fill</code>을 증가시킨다.</li>
+<li>Consumer 하나만 <code>use</code>를 증가시킨다.</li>
+</ul>
+<p>따라서 <code>fill</code>끼리의 경쟁, <code>use</code>끼리의 경쟁은 발생하지 않는다. 물론 buffer slot 자체에 대해서는 empty/full이 순서를 맞춰주므로 어느 정도 안전해진다.</p>
+<p>하지만 producer가 둘 이상이 되면 여러 producer가 <code>fill</code>을 동시에 조작한다. consumer가 둘 이상이면 여러 consumer가 <code>use</code>를 동시에 조작한다. 따라서 mutual exclusion이 필요해진다.</p>
+<hr/>
+<h3>9. 잘못된 Mutex 추가가 만드는 Deadlock</h3>
+<p>매우 중요한 함정이다. Race condition을 막기 위해 mutex를 추가해야 한다는 생각은 맞다. 하지만 위치가 잘못되면 deadlock이 생긴다.</p>
+<p>문제 있는 구조는 다음과 같다.</p>
+<pre><code>// producer
+sem_wait(&amp;mutex);
+sem_wait(&amp;empty);
+put(i);
+sem_post(&amp;full);
+sem_post(&amp;mutex);
+
+// consumer
+sem_wait(&amp;mutex);
+sem_wait(&amp;full);
+tmp = get();
+sem_post(&amp;empty);
+sem_post(&amp;mutex);</code></pre>
+<h4>왜 위험한가?</h4>
+<p><code>mutex</code>를 먼저 잡은 뒤 <code>empty</code> 또는 <code>full</code>을 기다린다. 그런데 <code>empty/full</code>의 값이 바뀌려면 반대쪽 thread가 buffer를 조작해야 하고, buffer를 조작하려면 그 thread도 <code>mutex</code>가 필요하다.</p>
+<h4>구체적 deadlock 시나리오</h4>
+<p>초기 buffer가 비어 있다고 하자. 즉 <code>full = 0</code>이다.</p>
+<ol>
+<li>Consumer C가 먼저 실행된다.</li>
+<li>C가 <code>sem_wait(&amp;mutex)</code>로 mutex를 잡는다.</li>
+<li>C가 <code>sem_wait(&amp;full)</code>을 호출한다.</li>
+<li><code>full = 0</code>이므로 C는 item이 생길 때까지 기다린다.</li>
+<li>그런데 C는 mutex를 잡은 채로 잠들어 있다.</li>
+<li>Producer P가 실행되어 item을 넣으려 한다.</li>
+<li>P는 먼저 <code>sem_wait(&amp;mutex)</code>를 해야 하는데, mutex는 C가 잡고 있다.</li>
+<li>P는 mutex를 기다린다.</li>
+<li>C는 P가 item을 넣고 <code>full</code>을 post하기를 기다린다.</li>
+<li>P는 C가 mutex를 놓기를 기다린다.</li>
+</ol>
+<p>이제 둘 다 서로를 기다리므로 deadlock이다.</p>
+<div class="deep-callout"><p>핵심 원인</p><p>조건을 만족시킬 수 있는 thread가 필요로 하는 mutex를, 조건을 기다리는 thread가 잡고 놓지 않는 구조가 문제이다.</p></div>
+<hr/>
+<h3>10. 올바른 Producer/Consumer 해법</h3>
+<p>올바른 해결책은 <code>empty/full</code> wait를 먼저 하고, 그 다음 mutex를 잡는 것이다.</p>
+<pre><code>void *producer(void *arg) {
+    int i;
+    for (i = 0; i &lt; loops; i++) {
+        sem_wait(&amp;empty);
+        sem_wait(&amp;mutex);
+        put(i);
+        sem_post(&amp;mutex);
+        sem_post(&amp;full);
+    }
+}
+
+void *consumer(void *arg) {
+    int i;
+    for (i = 0; i &lt; loops; i++) {
+        sem_wait(&amp;full);
+        sem_wait(&amp;mutex);
+        int tmp = get();
+        sem_post(&amp;mutex);
+        sem_post(&amp;empty);
+    }
+}</code></pre>
+<h4>Producer의 의미</h4>
+<ol>
+<li><code>sem_wait(&amp;empty)</code>: 빈 slot 하나를 예약한다. buffer가 가득 차 있으면 여기서 기다린다.</li>
+<li><code>sem_wait(&amp;mutex)</code>: buffer 자료구조를 조작하기 위해 lock을 잡는다.</li>
+<li><code>put(i)</code>: 예약한 빈 slot에 item을 넣는다.</li>
+<li><code>sem_post(&amp;mutex)</code>: buffer 조작이 끝났으므로 lock을 푼다.</li>
+<li><code>sem_post(&amp;full)</code>: 채워진 slot이 하나 늘었음을 알린다.</li>
+</ol>
+<h4>Consumer의 의미</h4>
+<ol>
+<li><code>sem_wait(&amp;full)</code>: 채워진 slot 하나를 예약한다. buffer가 비어 있으면 여기서 기다린다.</li>
+<li><code>sem_wait(&amp;mutex)</code>: buffer 자료구조를 조작하기 위해 lock을 잡는다.</li>
+<li><code>get()</code>: 예약한 item을 꺼낸다.</li>
+<li><code>sem_post(&amp;mutex)</code>: buffer 조작이 끝났으므로 lock을 푼다.</li>
+<li><code>sem_post(&amp;empty)</code>: 빈 slot이 하나 늘었음을 알린다.</li>
+</ol>
+<h4>왜 deadlock이 사라지는가?</h4>
+<p>이제 thread가 <code>empty</code>나 <code>full</code>에서 기다릴 때는 mutex를 잡고 있지 않다. 따라서 반대쪽 thread가 mutex를 얻어 buffer 상태를 바꾸고, 필요한 semaphore를 post할 수 있다.</p>
+<div class="deep-callout"><p>가장 중요한 한 줄</p><p>Producer/Consumer에서 <code>empty/full</code>은 조건 동기화이고, <code>mutex</code>는 buffer 조작 보호이다. 조건을 기다리는 동안 mutex를 잡고 있으면 안 된다.</p></div>
+<hr/>
+<h3 id="readerwriter">11. Reader-Writer Lock의 필요성</h3>
+<p>reader-writer lock의 핵심은 다음과 같다. 일반 mutex는 단순하다. 어떤 자료구조에 접근하려면 무조건 하나의 thread만 들어가게 한다. 하지만 읽기 작업이 많고 쓰기 작업이 적은 자료구조에서는 이것이 비효율적일 수 있다.</p>
+<p>예를 들어 linked list나 hash table에서 lookup은 자료구조를 읽기만 한다. 여러 thread가 동시에 lookup을 해도 자료구조가 변하지 않으므로 안전할 수 있다. 반면 insert나 delete는 자료구조를 바꾸므로 다른 접근과 동시에 실행되면 위험하다.</p>
+<p>Reader-writer lock은 다음 규칙을 제공한다.</p>
+<ul>
+<li>Reader끼리는 동시에 들어갈 수 있다.</li>
+<li>Writer는 혼자만 들어갈 수 있다.</li>
+<li>Writer가 들어가 있는 동안 reader는 들어갈 수 없다.</li>
+<li>Reader가 하나라도 들어가 있으면 writer는 들어갈 수 없다.</li>
+</ul>
+<p>즉 목표는 <strong>many readers or one writer</strong>이다.</p>
+<hr/>
+<h3>12. Reader-Writer Lock 자료구조</h3>
+<p>reader-writer lock 구조체는 다음과 같다.</p>
+<pre><code>typedef struct _rwlock_t {
+    sem_t lock;
+    sem_t writelock;
+    int readers;
+} rwlock_t;</code></pre>
+<p>각 필드의 역할은 매우 중요하다.</p>
+<h4><code>readers</code></h4>
+<p>현재 read critical section 안에 있는 reader 수이다. reader가 들어올 때 증가하고, 나갈 때 감소한다.</p>
+<h4><code>lock</code></h4>
+<p><code>readers</code> 변수 자체를 보호하는 binary semaphore이다. <code>readers++</code>와 <code>readers--</code>는 단순한 한 줄처럼 보이지만 실제로는 load, add, store로 이루어져 race condition이 생길 수 있다. 따라서 readers count를 바꿀 때는 <code>lock</code>이 필요하다.</p>
+<h4><code>writelock</code></h4>
+<p>writer와 reader group 사이의 큰 문이다.</p>
+<ul>
+<li>Writer는 이 <code>writelock</code>을 잡아야 들어간다.</li>
+<li>첫 번째 reader도 이 <code>writelock</code>을 잡아 writer를 막는다.</li>
+<li>마지막 reader가 나갈 때 <code>writelock</code>을 풀어 writer가 들어갈 수 있게 한다.</li>
+</ul>
+<p>초기화는 다음과 같다.</p>
+<pre><code>void rwlock_init(rwlock_t *rw) {
+    rw-&gt;readers = 0;
+    sem_init(&amp;rw-&gt;lock, 0, 1);
+    sem_init(&amp;rw-&gt;writelock, 0, 1);
+}</code></pre>
+<p>둘 다 초기값 1인 이유는 처음에는 readers count도 자유롭게 갱신할 수 있고, writer/reader group이 들어갈 수 있는 큰 문도 열려 있기 때문이다.</p>
+<hr/>
+<h3>13. Writer Lock의 동작</h3>
+<p>writer lock은 단순하다.</p>
+<pre><code>void rwlock_acquire_writelock(rwlock_t *rw) {
+    sem_wait(&amp;rw-&gt;writelock);
+}
+
+void rwlock_release_writelock(rwlock_t *rw) {
+    sem_post(&amp;rw-&gt;writelock);
+}</code></pre>
+<p>Writer는 자료구조를 변경하므로 단독 접근이 필요하다. 따라서 <code>writelock</code>만 얻으면 된다. 이때 reader group이 이미 들어가 있으면 첫 reader가 <code>writelock</code>을 잡고 있으므로 writer는 기다린다. 다른 writer가 이미 들어가 있어도 <code>writelock</code>이 잡혀 있으므로 기다린다.</p>
+<hr/>
+<h3>14. Reader Lock의 동작</h3>
+<p>reader lock은 핵심 로직이 들어 있다.</p>
+<pre><code>void rwlock_acquire_readlock(rwlock_t *rw) {
+    sem_wait(&amp;rw-&gt;lock);
+    rw-&gt;readers++;
+    if (rw-&gt;readers == 1)
+        sem_wait(&amp;rw-&gt;writelock);
+    sem_post(&amp;rw-&gt;lock);
+}</code></pre>
+<h4>첫 번째 reader</h4>
+<p>첫 번째 reader가 들어오면 <code>readers</code>가 0에서 1이 된다. 이 reader는 reader group을 대표해서 <code>writelock</code>을 잡는다. 이렇게 해야 writer가 동시에 들어오지 못한다.</p>
+<h4>두 번째 이후 reader</h4>
+<p>이미 첫 reader가 <code>writelock</code>을 잡고 있으므로, 두 번째 이후 reader는 <code>writelock</code>을 다시 잡을 필요가 없다. 그냥 <code>readers</code> count만 증가시키고 read critical section으로 들어간다. 이 때문에 여러 reader가 동시에 실행될 수 있다.</p>
+<p>Release는 다음과 같다.</p>
+<pre><code>void rwlock_release_readlock(rwlock_t *rw) {
+    sem_wait(&amp;rw-&gt;lock);
+    rw-&gt;readers--;
+    if (rw-&gt;readers == 0)
+        sem_post(&amp;rw-&gt;writelock);
+    sem_post(&amp;rw-&gt;lock);
+}</code></pre>
+<h4>마지막 reader</h4>
+<p>reader가 나갈 때 <code>readers</code>를 감소시킨다. 만약 감소 후 <code>readers == 0</code>이면 이 reader가 마지막 reader이다. 이제 reader group이 완전히 사라졌으므로 <code>writelock</code>을 풀어 writer가 들어갈 수 있게 한다.</p>
+<h4>Starvation 문제</h4>
+<p>이 구현은 reader에게 유리한 구조이다. writer가 기다리고 있어도 새로운 reader가 계속 들어오면 writer가 매우 오래 기다릴 수 있다. 이를 writer starvation이라고 한다.</p>
+<div class="deep-callout"><p>시험 포인트</p><p>Reader-writer lock은 병렬성을 높이지만 공정성 문제가 생길 수 있다. “reader가 많으면 성능이 좋아진다”에서 끝내지 말고, writer starvation trade-off까지 언급해야 좋은 답안이다.</p></div>
+<hr/>
+<h3>15. Semaphore를 Lock과 Condition Variable로 구현하기</h3>
+<p>semaphore 자체는 lock과 condition variable로 구현할 수 있다.</p>
+<pre><code>typedef struct __Sem_t {
+    int value;
+    pthread_cond_t cond;
+    pthread_mutex_t lock;
+} Sem_t;</code></pre>
+<p>여기서 <code>value</code>는 사용 가능한 token 수이고, <code>cond</code>는 token이 없을 때 기다리는 thread를 재우는 용도이며, <code>lock</code>은 <code>value</code>와 condition variable 조작을 보호한다.</p>
+<p>초기화는 다음과 같다.</p>
+<pre><code>void Sem_init(Sem_t *s, int value) {
+    s-&gt;value = value;
+    Cond_init(&amp;s-&gt;cond);
+    Mutex_init(&amp;s-&gt;lock);
+}</code></pre>
+<p>일부 설명에서는 “only one thread can call this”라고 되어 있다. 초기화 도중 여러 thread가 동시에 접근하면 아직 완성되지 않은 semaphore를 사용할 수 있기 때문이다.</p>
+<hr/>
+<h3>16. <code>Sem_wait()</code> 구현의 의미</h3>
+<pre><code>void Sem_wait(Sem_t *s) {
+    Mutex_lock(&amp;s-&gt;lock);
+    while (s-&gt;value &lt;= 0)
+        Cond_wait(&amp;s-&gt;cond, &amp;s-&gt;lock);
+    s-&gt;value--;
+    Mutex_unlock(&amp;s-&gt;lock);
+}</code></pre>
+<h4>단계별 의미</h4>
+<ol>
+<li><code>Mutex_lock(&amp;s-&gt;lock)</code>: value를 안전하게 확인하기 위해 lock을 잡는다.</li>
+<li><code>while (s-&gt;value &lt;= 0)</code>: 사용 가능한 token이 없으면 기다린다.</li>
+<li><code>Cond_wait(&amp;s-&gt;cond, &amp;s-&gt;lock)</code>: lock을 원자적으로 놓고 sleep한다. 깨어나면 lock을 다시 잡고 돌아온다.</li>
+<li>조건이 만족되면 <code>s-&gt;value--</code>로 token 하나를 사용한다.</li>
+<li>lock을 푼다.</li>
+</ol>
+<h4>왜 <code>while</code>인가?</h4>
+<p>condition variable과 마찬가지로 깨어났다고 해서 token이 반드시 있다고 보장할 수 없다. 여러 thread가 동시에 깨어났거나, signal 후 다른 thread가 먼저 token을 가져갈 수 있다. 따라서 <code>while</code>로 조건을 다시 확인해야 한다.</p>
+<hr/>
+<h3>17. <code>Sem_post()</code> 구현의 의미</h3>
+<pre><code>void Sem_post(Sem_t *s) {
+    Mutex_lock(&amp;s-&gt;lock);
+    s-&gt;value++;
+    Cond_signal(&amp;s-&gt;cond);
+    Mutex_unlock(&amp;s-&gt;lock);
+}</code></pre>
+<p><code>Sem_post()</code>는 token을 하나 추가하고 기다리는 thread 하나를 깨운다. 중요한 점은 <code>value++</code>와 <code>Cond_signal()</code>이 lock 안에서 이루어진다는 것이다. 그래야 기다리는 thread와 post하는 thread 사이의 race를 줄이고 상태 변화와 알림이 일관되게 유지된다.</p>
+<h4>원래 명세와 Linux 구현 차이</h4>
+<p>중요한 구현 차이는 다음과 같다.</p>
+<ul>
+<li>Original specification: value가 음수이면 그 값이 waiting thread 수를 반영할 수 있다.</li>
+<li>Linux implementation: value가 0보다 작아지지 않을 수 있다.</li>
+</ul>
+<p>이 차이는 구현 방식의 차이이지, 프로그래머가 기대하는 핵심 동작, 즉 token이 없으면 wait하고 post가 있으면 깨운다는 추상화는 동일하다.</p>
+<hr/>
+<h3>18. Dining Philosophers와 Deadlock 예고</h3>
+<p>Dining Philosophers 예고는 Dining Philosophers를 언급한다. 이 문제는 semaphore와 deadlock의 고전적인 예제이다.</p>
+<p>철학자들이 원형 테이블에 앉아 있고, 각 철학자는 양쪽 포크를 모두 가져야 식사할 수 있다고 하자. 모든 철학자가 동시에 왼쪽 포크를 잡고 오른쪽 포크를 기다리면 아무도 식사할 수 없다. 이것이 deadlock이다.</p>
+<p>이 예제는 다음 노트의 deadlock 네 조건과 연결된다.</p>
+<ul>
+<li>Mutual exclusion: 포크는 한 번에 한 철학자만 사용할 수 있다.</li>
+<li>Hold and wait: 철학자는 한 포크를 잡은 채 다른 포크를 기다린다.</li>
+<li>No preemption: 다른 철학자의 포크를 강제로 빼앗을 수 없다.</li>
+<li>Circular wait: 각 철학자가 옆 철학자가 가진 포크를 기다리는 원형 대기가 생긴다.</li>
+</ul>
+<hr/>
+<h3>19. 세 가지 Semaphore 사용 패턴 비교</h3>
+<h4>1) Lock 패턴</h4>
+<ul>
+<li>초기값: 1</li>
+<li>목적: critical section 보호</li>
+<li>예: <code>mutex</code>, binary semaphore</li>
+<li>코드 형태: <code>wait</code> → critical section → <code>post</code></li>
+</ul>
+<h4>2) Ordering 패턴</h4>
+<ul>
+<li>초기값: 0</li>
+<li>목적: 특정 event 이후에만 진행</li>
+<li>예: parent가 child 종료를 기다림</li>
+<li>코드 형태: waiter는 <code>wait</code>, event를 만든 thread는 <code>post</code></li>
+</ul>
+<h4>3) Counting Resource 패턴</h4>
+<ul>
+<li>초기값: resource 개수</li>
+<li>목적: 여러 개의 동일 자원 관리</li>
+<li>예: bounded buffer의 <code>empty = MAX</code>, <code>full = 0</code></li>
+<li>코드 형태: resource 사용 전 <code>wait</code>, 반환/생성 후 <code>post</code></li>
+</ul>
+<div class="deep-callout"><p>구분 기준</p><p>Semaphore를 볼 때는 이름보다 초기값과 wait/post 위치를 먼저 봐야 한다. 초기값 1이면 lock일 가능성이 크고, 0이면 ordering/event일 가능성이 크고, MAX 같은 값이면 counting resource일 가능성이 크다.</p></div>
+<hr/>
+<h3>20. 시험 대비 핵심 답안 프레임</h3>
+<h4>Q. Semaphore란 무엇인가?</h4>
+<p>Semaphore는 정수 value와 대기 큐를 이용하는 동기화 primitive이다. <code>sem_wait()</code>는 value를 감소시키며 value가 충분하지 않으면 thread를 block하고, <code>sem_post()</code>는 value를 증가시키며 기다리는 thread를 깨울 수 있다. 초기값과 사용 위치에 따라 lock, ordering, counting resource로 사용할 수 있다.</p>
+<h4>Q. Producer/Consumer에서 왜 <code>empty</code>, <code>full</code>, <code>mutex</code>가 모두 필요한가?</h4>
+<p><code>empty</code>는 빈 slot 수를 세어 producer가 buffer overflow를 일으키지 않게 하고, <code>full</code>은 채워진 item 수를 세어 consumer가 empty buffer에서 읽지 않게 한다. 그러나 이 둘은 <code>fill</code>, <code>use</code>, <code>buffer</code> 조작의 race condition을 막지 못하므로, 실제 <code>put/get</code> critical section은 <code>mutex</code>로 보호해야 한다.</p>
+<h4>Q. 왜 잘못된 Producer/Consumer 코드는 deadlock이 생기는가?</h4>
+<p><code>mutex</code>를 먼저 잡은 뒤 <code>full</code> 또는 <code>empty</code>를 기다리면, 조건을 만족시켜야 하는 반대쪽 thread가 buffer를 조작하기 위해 필요한 mutex를 얻지 못한다. 따라서 기다리는 thread는 조건 변화를 기다리고, 반대쪽 thread는 mutex를 기다리는 순환 대기가 생긴다.</p>
+<h4>Q. Reader-Writer Lock의 장점과 단점은?</h4>
+<p>읽기 작업이 많은 workload에서 여러 reader가 동시에 들어갈 수 있어 병렬성이 증가한다. 하지만 writer와 reader 사이의 공정성을 잘 설계하지 않으면 reader가 계속 들어오는 동안 writer가 오래 기다리는 starvation이 발생할 수 있다.</p>
+<hr/>
+<h3>21. 대표 예상문제</h3>
+<ol>
+<li>Semaphore가 lock과 condition variable 역할을 모두 수행할 수 있다는 말의 의미를 초기값 관점에서 설명하시오.</li>
+<li><code>sem_init(&amp;s, 0, 0)</code>과 <code>sem_init(&amp;s, 0, 1)</code>의 의미 차이를 parent/child ordering 예제로 설명하시오.</li>
+<li>Producer/Consumer 문제에서 <code>empty</code>, <code>full</code>, <code>mutex</code> 각각의 역할을 구분하여 설명하시오.</li>
+<li>Multiple producers 환경에서 <code>empty/full</code>만 사용하면 왜 race condition이 생기는지 <code>fill</code> 변수를 중심으로 설명하시오.</li>
+<li>Producer/Consumer 코드에서 <code>sem_wait(&amp;mutex)</code>를 <code>sem_wait(&amp;full)</code> 또는 <code>sem_wait(&amp;empty)</code>보다 먼저 호출하면 deadlock이 생길 수 있는 이유를 실행 순서로 설명하시오.</li>
+<li>Reader-Writer Lock에서 첫 reader와 마지막 reader가 특별한 이유를 설명하시오.</li>
+<li>Reader-preference reader-writer lock이 writer starvation을 만들 수 있는 이유를 설명하시오.</li>
+<li>Lock과 condition variable로 semaphore를 구현할 때 <code>while (s-&gt;value &lt;= 0)</code>를 사용하는 이유를 설명하시오.</li>
+<li>고전적 semaphore 명세의 negative value 설명과 Linux 구현의 value 처리 차이를 설명하시오.</li>
+<li>Dining Philosophers 문제가 deadlock의 네 조건과 어떻게 연결되는지 설명하시오.</li>
+</ol>
+<hr/>
+<h3>22. 최종 한 문장 요약</h3>
+<p>Semaphore는 정수 token과 wait/post 연산으로 mutual exclusion, event ordering, counting resource를 모두 표현할 수 있는 강력한 동기화 primitive이지만, Producer/Consumer와 Reader-Writer Lock 예제에서 보듯이 조건 동기화와 공유 자료구조 보호를 정확히 분리하지 않으면 race condition, deadlock, starvation이 발생한다.</p>
+<section id="quiz" class="mt-10 rounded-3xl border border-white/10 bg-white/[.04] p-6"><h3>Self-check Quiz</h3><div class="space-y-5 text-sm"><div><p class="font-bold">1. Parent가 child의 event를 기다리게 하는 ordering semaphore의 보통 초기값은?</p><label><input type="radio" name="q1" value="0"> 0</label><br><label><input type="radio" name="q1" value="1"> 1</label><div data-result="q1"></div></div><div><p class="font-bold">2. Producer/Consumer에서 deadlock을 피하는 핵심 순서는?</p><label><input type="radio" name="q2" value="mutex-first"> mutex를 먼저 잡고 조건을 기다린다</label><br><label><input type="radio" name="q2" value="condition-first"> empty/full을 먼저 기다리고, buffer update 동안만 mutex를 잡는다</label><div data-result="q2"></div></div><div><p class="font-bold">3. Reader-preference reader-writer lock의 대표 위험은?</p><label><input type="radio" name="q3" value="starvation"> writer starvation</label><br><label><input type="radio" name="q3" value="overflow"> integer overflow만</label><div data-result="q3"></div></div><button onclick="checkSemQuiz()" class="mt-3 rounded-full bg-violet-500 px-5 py-3 font-black text-white">Check answers</button><p id="quiz-score" class="font-black text-violet-300"></p></div></section></article></div>
+</main>
+<script>document.getElementById('theme-toggle').addEventListener('click',()=>{const d=document.documentElement;d.classList.toggle('dark');localStorage.setItem('study-notes-theme',d.classList.contains('dark')?'dark':'light');});</script>
+
+<script>
+function checkSemQuiz(){
+  const answers={q1:'0',q2:'condition-first',q3:'starvation'};
+  let score=0,total=3;
+  for(const [name,ans] of Object.entries(answers)){
+    const chosen=document.querySelector(`input[name="${name}"]:checked`);
+    const box=document.querySelector(`[data-result="${name}"]`);
+    if(!box) continue;
+    if(chosen && chosen.value===ans){score++; box.textContent='Correct'; box.className='mt-2 text-sm font-bold text-emerald-400';}
+    else {box.textContent='Review this point again.'; box.className='mt-2 text-sm font-bold text-rose-400';}
+  }
+  const out=document.getElementById('quiz-score');
+  out.textContent=`${score}/${total} correct — ${score===total?'semaphore roles are clear.':'focus on initial values and wait/post ordering.'}`;
+}
+</script>
+
+</body></html>
