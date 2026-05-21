@@ -94,60 +94,30 @@
 
   function initNotePage(){
     if (!isNote) return;
-    const headings = [...document.querySelectorAll('main h2[id], main h3[id], main section[id] h2, main section[id] h3')]
-      .map(h => {
-        const section = h.closest('section[id]');
-        const id = h.id || section?.id;
-        if (!id) return null;
-        return {id, text: h.textContent.trim().replace(/\s+/g,' ').slice(0,70)};
-      }).filter(Boolean);
-    const seen = new Set();
-    const unique = headings.filter(h => !seen.has(h.id) && seen.add(h.id)).slice(0,18);
-    if (unique.length && !document.querySelector('.sop-study-rail')) {
-      const rail = document.createElement('aside');
-      rail.className = 'sop-study-rail sop-glass';
-      rail.innerHTML = `<h2>Concept Map</h2>${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}`;
-      body.appendChild(rail);
-    }
-    if (!document.querySelector('.sop-cockpit')) {
-      const cockpit = document.createElement('aside');
-      cockpit.className = 'sop-cockpit sop-glass';
-      cockpit.innerHTML = `<h2>Study Cockpit</h2>
-        <div style="font-weight:900;font-size:20px;letter-spacing:-.04em">Soft Reading Mode</div>
-        <p style="color:var(--sop-muted);font-size:13px;line-height:1.55;margin:8px 0 0">본문 개념은 그대로 두고, 읽기 폭·진도·목차를 CNN 노트처럼 차분하게 정리했어.</p>
-        <div class="sop-progress-track"><div class="sop-progress-fill"></div></div>
-        <div style="display:flex;justify-content:space-between;color:var(--sop-faint);font:800 11px var(--sop-mono)"><span>PROGRESS</span><span data-sop-progress>0%</span></div>
-        <div class="sop-tools"><button data-sop-focus>Focus</button><button data-sop-wide>Wide</button><button data-sop-small>A−</button><button data-sop-large>A+</button></div>`;
-      body.appendChild(cockpit);
-    }
-    if (!document.querySelector('.sop-bottom-dock')) {
-      const dock = document.createElement('div');
-      dock.className = 'sop-bottom-dock sop-glass';
-      dock.innerHTML = `<a href="${prefix}" aria-label="Home">${icon('home')}</a><button type="button" data-sop-focus>${icon('focus')}</button><button type="button" data-sop-wide>${icon('wide')}</button><button type="button" data-sop-theme>${icon(root.classList.contains('dark')?'sun':'moon')}</button><button type="button" data-sop-top>${icon('top')}</button>`;
-      body.appendChild(dock);
-    }
-    const fill = document.querySelector('.sop-progress-fill');
-    const label = document.querySelector('[data-sop-progress]');
-    function onScroll(){
-      const max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-      const pct = Math.round((scrollY / max) * 100);
-      if (fill) fill.style.width = pct + '%';
-      if (label) label.textContent = pct + '%';
-    }
-    addEventListener('scroll', onScroll, {passive:true}); onScroll();
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-sop-top]')) scrollTo({top:0,behavior:'smooth'});
-      if (e.target.closest('[data-sop-focus]')) body.classList.toggle('sop-focus-mode');
-      if (e.target.closest('[data-sop-wide]')) body.classList.toggle('sop-wide-mode');
-      if (e.target.closest('[data-sop-small]')) document.querySelector('main')?.style.setProperty('font-size','0.94em');
-      if (e.target.closest('[data-sop-large]')) document.querySelector('main')?.style.setProperty('font-size','1.06em');
-    });
-    const links = [...document.querySelectorAll('.sop-study-rail a')];
-    if ('IntersectionObserver' in window && links.length) {
-      const obs = new IntersectionObserver(entries => {
-        entries.forEach(en => { if(en.isIntersecting){ links.forEach(a=>a.classList.toggle('active', a.getAttribute('href') === '#'+en.target.id)); } });
-      }, {rootMargin:'-25% 0px -65% 0px', threshold:0});
-      unique.forEach(h => { const el = document.getElementById(h.id); if(el) obs.observe(el); });
+    body.classList.add('sop-note-cnn-style');
+    const main = document.querySelector('main');
+    if (!main) return;
+    // CNN single-page note style: in-flow sticky TOC, no fixed side rails/cockpit.
+    document.querySelectorAll('.sop-study-rail,.sop-cockpit,.sop-bottom-dock').forEach(el => el.remove());
+    if (!document.querySelector('.sop-note-toc')) {
+      const headings = [...main.querySelectorAll('section[id] h2, section[id] h3, h2[id], h3[id]')]
+        .map(h => {
+          const section = h.closest('section[id]');
+          const id = h.id || section?.id;
+          if (!id) return null;
+          return { id, text: h.textContent.trim().replace(/\s+/g,' ').slice(0,64) };
+        }).filter(Boolean);
+      const seen = new Set();
+      const unique = headings.filter(h => !seen.has(h.id) && seen.add(h.id)).slice(0,14);
+      if (unique.length) {
+        const toc = document.createElement('nav');
+        toc.className = 'sop-note-toc';
+        toc.setAttribute('aria-label', 'Table of contents');
+        toc.innerHTML = `<strong>Table of Contents</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
+        const firstSection = main.querySelector(':scope > section');
+        if (firstSection && firstSection.nextSibling) main.insertBefore(toc, firstSection.nextSibling);
+        else main.prepend(toc);
+      }
     }
   }
   initSearch();
