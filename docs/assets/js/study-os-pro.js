@@ -18,8 +18,14 @@
 
   function getPrefix(){
     const parts = location.pathname.split('/').filter(Boolean);
+    const subjects = ['computer-architecture','operating-system','probability-and-statistics','machine-learning'];
     const idx = parts.indexOf('study-notes');
-    const depth = idx >= 0 ? parts.length - idx - 1 - (location.pathname.endsWith('/') ? 0 : 1) : 0;
+    const subjectIdx = parts.findIndex(part => subjects.includes(part));
+    const depth = idx >= 0
+      ? parts.length - idx - 1 - (location.pathname.endsWith('/') ? 0 : 1)
+      : subjectIdx >= 0
+        ? parts.length - subjectIdx - (location.pathname.endsWith('/') ? 0 : 1)
+        : 0;
     return depth <= 0 ? '' : '../'.repeat(depth);
   }
   const prefix = getPrefix();
@@ -76,17 +82,62 @@
     body.prepend(topbar);
   }
 
+  function markActiveNav(){
+    const normalize = (path) => {
+      let value = path.replace(/\/$/, '') || '/';
+      value = value.replace(/^\/study-notes(?=\/|$)/, '') || '/';
+      return value;
+    };
+    const here = normalize(location.pathname);
+    document.querySelectorAll('.sop-nav a').forEach(a => {
+      a.classList.remove('is-active');
+      a.removeAttribute('aria-current');
+      const url = new URL(a.getAttribute('href'), location.href);
+      const target = normalize(url.pathname);
+      const active = target !== '/' && (here === target || here.startsWith(target + '/'));
+      if (active) {
+        a.classList.add('is-active');
+        a.setAttribute('aria-current', 'page');
+      }
+    });
+  }
+
   function initSearch(){
     const input = document.querySelector('[data-sop-search]');
     if (!input) return;
     const cards = [...document.querySelectorAll('[data-sop-search-item]')];
-    input.addEventListener('input', () => {
+    let empty = document.querySelector('[data-sop-empty]');
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.className = 'sop-search-empty';
+      empty.dataset.sopEmpty = 'true';
+      empty.setAttribute('role', 'status');
+      empty.setAttribute('aria-live', 'polite');
+      empty.hidden = true;
+      const target = document.querySelector('.sop-note-list, .sop-subject-notes, .sop-grid') || input.closest('.sop-shell') || document.body;
+      target.insertAdjacentElement(target.matches('.sop-note-list, .sop-subject-notes, .sop-grid') ? 'afterend' : 'beforeend', empty);
+    }
+    if (!cards.length) {
+      input.disabled = true;
+      input.placeholder = '아직 검색할 노트가 없습니다';
+      input.closest('.sop-search')?.classList.add('is-disabled');
+      empty.textContent = '아직 검색할 노트가 없습니다. 새 노트가 추가되면 여기서 바로 검색할 수 있어요.';
+      empty.hidden = false;
+      return;
+    }
+    const update = () => {
       const q = input.value.trim().toLowerCase();
+      let visible = 0;
       cards.forEach(card => {
         const hay = (card.textContent || '').toLowerCase();
-        card.style.display = !q || hay.includes(q) ? '' : 'none';
+        const show = !q || hay.includes(q);
+        card.style.display = show ? '' : 'none';
+        if (show) visible += 1;
       });
-    });
+      empty.hidden = !q || visible > 0;
+      if (!empty.hidden) empty.textContent = `검색 결과가 없습니다: “${input.value.trim()}”. 다른 키워드로 다시 찾아보세요.`;
+    };
+    input.addEventListener('input', update);
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); input.focus(); }
     });
@@ -120,6 +171,7 @@
       }
     }
   }
+  markActiveNav();
   initSearch();
   initNotePage();
 })();

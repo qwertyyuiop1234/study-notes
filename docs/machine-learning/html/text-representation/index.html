@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Text Representation — 머신러닝 10주차</title>
+<title>Text Representation · Machine Learning</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = {
@@ -71,7 +71,7 @@
 <div class="bg-emerald-600 dark:bg-emerald-500 text-white p-2 rounded-lg font-black text-lg tracking-wider">ML</div>
 <div>
 <h1 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Text Representation</h1>
-<p class="text-xs text-slate-500 dark:text-slate-400">건국대 기계학습 10주차 — 김학수 교수</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Machine Learning · Text Representation</p>
 </div>
 </div>
 <div class="flex items-center gap-3">
@@ -104,9 +104,9 @@
 </div>
 <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
 <div class="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 text-xs text-slate-500 dark:text-slate-400 space-y-2">
-<p class="font-semibold text-slate-700 dark:text-slate-300">📌 강의 정보</p>
-<p>건국대학교 기계학습 10주차<br/>김학수 교수 · Text Representation</p>
-<p class="pt-1 text-emerald-600 dark:text-emerald-400">🎯 19 slides 완전 분석</p>
+<p class="font-semibold text-slate-700 dark:text-slate-300">📌 학습 정보</p>
+<p>Machine Learning · Text Representation</p>
+<p class="pt-1 text-emerald-600 dark:text-emerald-400">🎯 핵심 개념 완전 정리</p>
 </div>
 </div>
 </div>
@@ -173,9 +173,9 @@
 <div class="space-y-4">
 <h4 class="font-bold text-slate-800 dark:text-slate-200">📖 분포 가설 (Distributional Hypothesis)</h4>
 <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed"><strong>"비슷한 문맥에서 등장하는 단어는 비슷한 의미를 가질 것이다."</strong> 분산 표현은 이 가정에서 출발하여 밀집 벡터(dense vector)로 의미를 인코딩한다.</p>
-<!-- COVID vs MERS example from the lecture -->
+<!-- COVID vs MERS semantic-similarity example -->
 <div class="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-100 dark:border-amber-900/60 text-xs space-y-2">
-<p class="font-bold text-amber-800 dark:text-amber-300">🦠 강의 실제 예시 — 코로나 vs 메르스</p>
+<p class="font-bold text-amber-800 dark:text-amber-300">🦠 의미 유사성 예시 — 코로나 vs 메르스</p>
 <div class="space-y-1.5">
 <p class="text-slate-600 dark:text-slate-400">문장 A: <em>"신종 코로나 바이러스 집단 감염증이 일상생활을 통해 지속 확산되고 있다."</em></p>
 <p class="text-slate-600 dark:text-slate-400">→ 코로나 주변 문맥: {신종, 바이러스, 집단, 감염, 확산, 일상, 생활}</p>
@@ -245,9 +245,9 @@
 <p class="text-xs text-slate-500 mt-1">작은 노이즈 성분을 제거하고, 지배적인(dominant) 성분만 보존한다.</p>
 </div>
 </div>
-<!-- SVD Python example from lecture -->
+<!-- SVD Python example -->
 <div class="space-y-3">
-<h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">🐍 Python SVD 예제 (강의 Slide 9)</h4>
+<h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">🐍 Python SVD 예제</h4>
 <pre class="bg-slate-950 text-slate-300 rounded-xl p-5 text-xs overflow-x-auto"><code>import numpy as np
 
 # 예문: "I like deep learning. I like NLP. I enjoy flying."
@@ -433,7 +433,7 @@ print(word_embedding_2d)</code></pre>
 <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec7">
 <div class="border-b border-slate-100 dark:border-slate-800 pb-4">
 <h3 class="text-2xl font-bold text-slate-900 dark:text-white">7. FastText: 부분 단어 기반 확장</h3>
-<p class="text-xs text-slate-400 mt-1">by Facebook ← Word2Vec by Google (강의 Slide 18)</p>
+<p class="text-xs text-slate-400 mt-1">by Facebook ← Word2Vec by Google</p>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <div class="space-y-3">
@@ -464,7 +464,7 @@ print(word_embedding_2d)</code></pre>
 <!-- ===== COMPARISON TABLE ===== -->
 <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="compare">
 <h3 class="text-2xl font-bold text-slate-900 dark:text-white">📊 최종 비교: One-hot → Distributed Representation</h3>
-<p class="text-xs text-slate-400 mt-1">강의 Slide 18: From One-hot Rep. to Distributed Rep.</p>
+<p class="text-xs text-slate-400 mt-1">From One-hot Rep. to Distributed Rep.</p>
 <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
 <table class="w-full text-left text-xs text-slate-600 dark:text-slate-400">
 <thead class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-700 dark:text-slate-300">
@@ -607,7 +607,7 @@ print(word_embedding_2d)</code></pre>
 <div class="border-b border-slate-100 dark:border-slate-800 pb-4">
 <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">📝 Achievement Check</span>
 <h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1">셀프 체크 퀴즈</h3>
-<p class="text-xs text-slate-400 mt-1">강의 내용을 이해했는지 확인해보세요.</p>
+<p class="text-xs text-slate-400 mt-1">핵심 내용을 이해했는지 확인해보세요.</p>
 </div>
 <div class="space-y-6" id="quiz-container"></div>
 <div class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800 gap-4">
@@ -619,7 +619,7 @@ print(word_embedding_2d)</code></pre>
 </div>
 </div>
 <footer class="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 mt-16 text-center text-xs space-y-2">
-<p class="max-w-md mx-auto text-slate-500 px-4">건국대학교 기계학습 10주차 · Text Representation · 김학수 교수 · 19 slides 완전 분석</p>
+<p class="max-w-md mx-auto text-slate-500 px-4">Machine Learning · Text Representation · 핵심 개념 정리</p>
 <p class="text-slate-600">📚 Study companion by 가재 🦞</p>
 </footer>
 <script>

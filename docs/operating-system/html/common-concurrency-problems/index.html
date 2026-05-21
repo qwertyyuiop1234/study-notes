@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Common Concurrency Problems · Operating System</title>
-<meta content="Full public English study note on common concurrency problems: semaphores recap, atomicity violations, order violations, deadlock, prevention, avoidance, recovery, CAS, pitfalls, and exam questions." name="description"/>
+<meta content="Study note on common concurrency problems: semaphores recap, atomicity violations, order violations, deadlock, prevention, avoidance, recovery, CAS, pitfalls, and exam questions." name="description"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = {
@@ -110,7 +110,7 @@
           Common<br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 via-fuchsia-400 to-cyan-300">Concurrency</span><br/>Problems
         </h1>
 <p class="text-lg sm:text-xl text-slate-600 dark:text-white/55 max-w-2xl leading-relaxed font-light">
-          A full English public study note preserving the lecture concepts: semaphore recap, non-deadlock bugs, deadlock causes, the four conditions, prevention, avoidance, recovery, CAS, exam prompts, and pitfalls.
+          A study note on semaphore recap, non-deadlock bugs, deadlock causes, the four conditions, prevention, avoidance, recovery, CAS, exam prompts, and concurrency pitfalls.
         </p>
 <div class="flex flex-wrap gap-2 mt-6">
 <a class="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-white/[.05] border border-slate-200 dark:border-white/[.08] text-slate-600 dark:text-white/65 hover:text-violet-400" href="#semaphores">Semaphores</a>
@@ -330,7 +330,7 @@ if (pthread_mutex_trylock(L2) != 0) {
 </section>
 <section class="glass rounded-3xl p-6 sm:p-8 mb-10 prose-lite" id="cas">
 <h2>8. Lock-free approach and compare-and-swap</h2>
-<p>Lock-free techniques attempt to reduce dependence on mutual exclusion. The lecture’s central primitive is <strong>Compare-And-Swap (CAS)</strong>: update a memory location only if it still contains the value you expected.</p>
+<p>Lock-free techniques attempt to reduce dependence on mutual exclusion. The central primitive here is <strong>Compare-And-Swap (CAS)</strong>: update a memory location only if it still contains the value you expected.</p>
 <div class="code rounded-2xl p-4 text-sm font-mono overflow-x-auto not-prose"><pre><code>int CompareAndSwap(int *address, int expected, int new_value) {
     if (*address == expected) {
         *address = new_value;
@@ -448,12 +448,6 @@ if (pthread_mutex_trylock(L2) != 0) {
 <div class="glass-strong rounded-3xl p-6 sm:p-8 prose-lite">
 <h2>14. One-sentence summary</h2>
 <p>Common concurrency bugs can be organized as <strong>atomicity violations</strong>, <strong>order violations</strong>, and <strong>deadlocks</strong>; the corresponding fixes are to make the right region atomic, establish the necessary happens-before relation, or break at least one of the deadlock conditions.</p>
-<h3>Public-page sanitization</h3>
-<ul>
-<li>Removed all source-identifying administrative metadata.</li>
-<li>Preserved the full conceptual content from the lecture-derived study note.</li>
-<li>Rewrote the content in English as an explanatory study page rather than a slide dump.</li>
-</ul>
 </div>
 </section>
 </main>
