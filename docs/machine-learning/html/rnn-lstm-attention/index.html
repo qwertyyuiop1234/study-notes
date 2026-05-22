@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Recurrent Neural Networks, LSTM & Attention · Machine Learning</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {
+        fontFamily: { sans: ['Inter','Noto Sans KR','system-ui','sans-serif'], mono: ['JetBrains Mono','Consolas','monospace'] },
+        animation: { 'fade-in-up':'fadeInUp .55s ease-out forwards' },
+        keyframes: { fadeInUp: { '0%': {opacity:'0', transform:'translateY(18px)'}, '100%': {opacity:'1', transform:'translateY(0)'} } }
+      }}
+    };
+  </script>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=JetBrains+Mono:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet"/>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
+  <link href="../../../assets/css/study-os-pro.css" rel="stylesheet"/>
+  <script defer src="../../../assets/js/study-os-pro.js"></script>
+  <style>
+    body { font-family: Inter, 'Noto Sans KR', system-ui, sans-serif; }
+    .sidebar-active { border-left:4px solid #f43f5e; background:rgba(244,63,94,.09); color:#be123c; font-weight:800; }
+    .dark .sidebar-active { background:rgba(244,63,94,.18); color:#fb7185; border-left-color:#fb7185; }
+    .math-scroll { overflow-x:auto; overflow-y:hidden; }
+    .chip { display:inline-flex; align-items:center; border-radius:9999px; padding:.25rem .65rem; font-size:.75rem; font-weight:700; }
+    .node { border:1px solid rgba(148,163,184,.35); border-radius:1rem; padding:.85rem; background:rgba(255,255,255,.72); }
+    .dark .node { background:rgba(15,23,42,.72); border-color:rgba(71,85,105,.75); }
+    .flow-arrow::after { content:'→'; color:#94a3b8; font-weight:900; margin-left:.45rem; }
+    input[type=range] { width:100%; accent-color:#f43f5e; }
+    input[type=number] { width:5.2rem; border-radius:.7rem; border:1px solid rgba(148,163,184,.55); padding:.45rem .55rem; background:transparent; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+      <aside class="w-full lg:w-72 shrink-0">
+        <div class="sticky top-24 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 space-y-6">
+          <div>
+            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Contents</h3>
+            <nav class="space-y-1 text-sm text-slate-600 dark:text-slate-300" id="sidebar-nav">
+              <a class="block px-3 py-2 rounded-lg transition-colors sidebar-active hover:bg-slate-50 dark:hover:bg-slate-800" href="#intro">📖 개요</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec0">00. RNN 필요성</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec1">01. FNN vs RNN</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec2">02. Folding / Unfolding</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec3">03. Vanishing Gradient</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec4">04. LSTM Gates</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#lstm-lab">🧪 LSTM Lab</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec5">05. RNN 5 Structures</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#sec6">06. Seq2Seq & Attention</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800" href="#attention-lab">🧮 Attention Lab</a>
+              <a class="block px-3 py-2 rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold" href="#quiz-section">📝 Self Check</a>
+            </nav>
+          </div>
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 text-xs text-slate-500 dark:text-slate-400 space-y-2">
+              <p class="font-semibold text-slate-700 dark:text-slate-300">📌 학습 정보</p>
+              <p>Machine Learning · Sequential Models</p>
+              <p class="pt-1 text-rose-600 dark:text-rose-400">🎯 RNN → LSTM → Attention 흐름 정복</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="flex-1 space-y-12">
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 scroll-mt-24" id="intro">
+          <div class="max-w-4xl">
+            <div class="flex flex-wrap items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm mb-3"><span>🎬 Core Theory</span><span>•</span><span>Sequential Data</span><span>•</span><span>LSTM & Attention</span></div>
+            <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">순환 신경망(RNN), LSTM, Attention</h1>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-base md:text-lg">텍스트·음성·주가·센서처럼 <strong>순서가 의미를 만드는 데이터</strong>를 처리하기 위해, 모델이 이전 상태를 기억하고 다음 계산에 반영하는 방법을 정리한다. 이 노트의 흐름은 바닐라 RNN의 아이디어 → 장기 의존성 한계 → LSTM의 게이트 구조 → Seq2Seq 병목과 Attention으로 이어진다.</p>
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+              <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/60"><b>RNN</b><p class="text-xs mt-1 text-slate-600 dark:text-slate-400">이전 hidden state를 현재 입력과 함께 사용</p></div>
+              <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/60"><b>BPTT</b><p class="text-xs mt-1 text-slate-600 dark:text-slate-400">시간축으로 펼쳐 역전파</p></div>
+              <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/60"><b>LSTM</b><p class="text-xs mt-1 text-slate-600 dark:text-slate-400">cell state와 gates로 기억 제어</p></div>
+              <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60"><b>Attention</b><p class="text-xs mt-1 text-slate-600 dark:text-slate-400">필요한 encoder state를 다시 조회</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec0">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">0. 왜 RNN이 필요한가?</h2><p class="text-xs text-slate-400 mt-1">Sequential data needs memory</p></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              <p><strong>순환 신경망(Recurrent Neural Network, RNN)</strong>은 은닉 상태(hidden state)가 시간 방향으로 연결되어, 과거의 요약 정보를 현재 계산에 재사용하는 신경망이다.</p>
+              <p>자연어 문장, 음성 파형, 주가, 기후 데이터는 한 시점만 독립적으로 보면 정보가 부족하다. “문장을 읽는다”는 것은 현재 단어 $x_t$를 읽으면서 직전까지의 맥락 $h_{t-1}$을 함께 고려하는 과정이다.</p>
+              <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b class="text-slate-900 dark:text-white">핵심 장점</b><ul class="mt-2 space-y-2 list-disc pl-5"><li><strong>가변 길이 입력:</strong> 문장 길이가 달라도 동일한 파라미터를 반복 적용한다.</li><li><strong>다양한 입출력 구조:</strong> 분류, 생성, 번역, 시퀀스 라벨링 등으로 확장 가능하다.</li></ul></div>
+            </div>
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-rose-50 to-indigo-50 dark:from-rose-950/30 dark:to-indigo-950/30 border border-rose-100 dark:border-rose-900/50">
+              <h3 class="font-bold text-slate-900 dark:text-white mb-3">직관: 긴 글 읽기</h3>
+              <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">책의 320페이지를 이해하려면 319페이지까지 쌓인 사건과 인물 관계를 기억해야 한다. FNN은 매 페이지를 처음 보는 것처럼 처리하지만, RNN은 이전 페이지까지의 <strong>요약 메모</strong>를 들고 다음 문장을 읽는다.</p>
+              <div class="mt-4 text-xs rounded-xl bg-white/70 dark:bg-slate-900/70 p-3 border border-white/60 dark:border-slate-800">📌 <strong>TL;DR</strong> — RNN은 $x_t$만 보지 않고 $h_{t-1}$도 함께 보며, 순차 데이터의 맥락을 hidden state에 압축한다.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec1">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">1. Feed-forward NN vs Recurrent NN</h2><p class="text-xs text-slate-400 mt-1">The single extra term that changes everything</p></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 bg-slate-50 dark:bg-slate-950"><h3 class="font-bold mb-3">Feed-forward NN</h3><div class="math-scroll text-center text-sm">$$h = g(Vx+c)$$ $$\hat{y}=Wh+b$$</div><p class="text-sm text-slate-600 dark:text-slate-300 mt-3">시간 개념이 없고 현재 입력 $x$만으로 hidden vector $h$를 만든다.</p></div>
+            <div class="rounded-2xl border border-rose-200 dark:border-rose-900/70 p-5 bg-rose-50 dark:bg-rose-950/20"><h3 class="font-bold mb-3 text-rose-700 dark:text-rose-300">Recurrent NN</h3><div class="math-scroll text-center text-sm">$$h_t = g(Vx_t + Uh_{t-1}+c)$$ $$\hat{y}_t=Wh_t+b$$</div><p class="text-sm text-slate-600 dark:text-slate-300 mt-3">이전 상태 $h_{t-1}$가 전이 가중치 $U$를 거쳐 현재 계산에 들어온다.</p></div>
+          </div>
+          <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/60 text-sm text-slate-700 dark:text-slate-300"><b class="text-amber-800 dark:text-amber-300">가중치 공유(Weight Sharing):</b> $V, U, W$는 매 시간 새로 생기는 것이 아니다. 첫 단어와 100번째 단어 모두 같은 파라미터를 사용한다. 그래서 긴 시퀀스에도 같은 규칙을 반복 적용할 수 있고, 파라미터 수가 시간 길이에 비례해 폭증하지 않는다.</div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec2">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">2. Folding과 Unfolding</h2><p class="text-xs text-slate-400 mt-1">Compact recurrence vs time-expanded computation graph</p></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="node"><h3 class="font-bold mb-2">Folding: 접힌 구조</h3><p class="text-sm text-slate-600 dark:text-slate-300">하나의 recurrent cell이 자기 자신으로 돌아오는 loop를 가진 것처럼 표현한다. 구조를 압축적으로 볼 때 좋다.</p><div class="mt-4 flex items-center justify-center gap-3 text-sm"><span class="chip bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">$x_t$</span><span>→</span><span class="chip bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">RNN cell</span><span>↺</span></div></div>
+            <div class="node"><h3 class="font-bold mb-2">Unfolding: 펼친 구조</h3><p class="text-sm text-slate-600 dark:text-slate-300">시간 $t=1,2,\dots,n$에 따라 같은 cell을 복사한 것처럼 펼쳐 BPTT(Backpropagation Through Time)를 수행한다.</p><div class="mt-4 flex flex-wrap items-center gap-2 text-xs"><span class="chip bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flow-arrow">$h_1$</span><span class="chip bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flow-arrow">$h_2$</span><span class="chip bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flow-arrow">$h_3$</span><span class="chip bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">$h_n$</span></div></div>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"><table class="min-w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-950 text-slate-500"><tr><th class="text-left p-3">구분</th><th class="text-left p-3">Folding</th><th class="text-left p-3">Unfolding</th></tr></thead><tbody class="divide-y divide-slate-200 dark:divide-slate-800"><tr><td class="p-3 font-semibold">시각화</td><td class="p-3">작은 loop 구조</td><td class="p-3">시간축으로 펼친 timeline</td></tr><tr><td class="p-3 font-semibold">학습 관점</td><td class="p-3">추상적 구조 이해</td><td class="p-3">BPTT와 gradient 흐름 추적</td></tr><tr><td class="p-3 font-semibold">가중치</td><td class="p-3">하나의 recurrent rule</td><td class="p-3">모든 time step에서 공유</td></tr></tbody></table></div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec3">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">3. Vanishing / Exploding Gradient</h2><p class="text-xs text-slate-400 mt-1">Why vanilla RNN becomes short-term memory</p></div>
+          <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">바닐라 RNN은 시간축이 길어질수록 chain rule에서 같은 종류의 Jacobian이 반복적으로 곱해진다. 그래서 멀리 떨어진 과거 시점의 gradient가 현재까지 오기 전에 사라지거나 폭발할 수 있다.</p>
+          <div class="math-scroll rounded-xl bg-slate-950 text-slate-100 p-4 text-center text-sm">$$h_4 = \phi(W^T\phi(W^T\phi(W^T\phi(W^T h_0 + U^T x_1)+U^T x_2)+U^T x_3)+U^T x_4)$$</div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>Sigmoid</b><p class="mt-2 text-slate-600 dark:text-slate-300">도함수 최대가 $0.25$라서 반복 곱셈 시 gradient가 빠르게 작아진다.</p></div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>Tanh</b><p class="mt-2 text-slate-600 dark:text-slate-300">sigmoid보다 낫지만 도함수가 대부분 1보다 작아 장기 의존성에는 여전히 취약하다.</p></div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>ReLU</b><p class="mt-2 text-slate-600 dark:text-slate-300">양수 구간 도함수는 1이지만 전이 행렬 영향으로 값이 발산할 수 있다.</p></div>
+          </div>
+          <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/60 text-sm"><b class="text-rose-700 dark:text-rose-300">시험 포인트:</b> 활성화 함수를 바꾸는 것만으로는 RNN의 장기 기억 문제가 근본적으로 해결되지 않는다. 반복 곱셈 구조 자체를 완화하는 아키텍처가 필요하고, 그 대표가 LSTM이다.</div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec4">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">4. LSTM: 게이트와 Cell State</h2><p class="text-xs text-slate-400 mt-1">Long Short-Term Memory</p></div>
+          <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300"><strong>LSTM(Long Short-Term Memory)</strong>은 hidden state $h_t$와 별도로 <strong>cell state $c_t$</strong>라는 장기 메모리 통로를 둔다. Forget/Input/Output gate가 정보의 삭제·쓰기·노출을 조절한다.</p>
+          <div class="math-scroll rounded-xl bg-slate-50 dark:bg-slate-950 p-4 text-center border border-slate-200 dark:border-slate-800 text-sm">$$\begin{pmatrix} i \\ f \\ o \\ g \end{pmatrix}=\begin{pmatrix}\sigma \\ \sigma \\ \sigma \\ \tanh\end{pmatrix}W\begin{pmatrix}h_{t-1} \\ x_t\end{pmatrix}$$ $$c_t=f\odot c_{t-1}+i\odot g \qquad h_t=o\odot \tanh(c_t)$$</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b>Forget gate $f$</b><p class="mt-1 text-slate-600 dark:text-slate-300">과거 cell state를 얼마나 유지할지 결정한다. 0이면 삭제, 1이면 보존.</p></div>
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b>Input gate $i$ + candidate $g$</b><p class="mt-1 text-slate-600 dark:text-slate-300">새 정보 후보 $g$ 중 어느 성분을 cell state에 쓸지 정한다.</p></div>
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b>Output gate $o$</b><p class="mt-1 text-slate-600 dark:text-slate-300">cell에 저장된 내용을 hidden state로 얼마나 내보낼지 조절한다.</p></div>
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b>Trade-off</b><p class="mt-1 text-slate-600 dark:text-slate-300">바닐라 RNN보다 파라미터와 연산량이 커진다. 단순화 대안으로 GRU가 자주 언급된다.</p></div>
+          </div>
+          <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/60 text-sm"><b class="text-emerald-700 dark:text-emerald-300">왜 gradient가 더 잘 살아남나?</b> $c_t$의 업데이트는 $f\odot c_{t-1}$와 $i\odot g$의 덧셈 중심 구조를 사용한다. 바닐라 RNN처럼 동일한 전이 행렬이 계속 곱해지는 경로보다 장기 정보 전달에 유리하다.</div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="lstm-lab">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">Interactive LSTM Gate Simulator</h2><p class="text-xs text-slate-400 mt-1">Move the gates and watch $c_t$, $h_t$ update</p></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-5">
+              <label class="block text-sm font-bold">망각 게이트 $f_t$: <span id="forget-val" class="text-rose-600 dark:text-rose-400">0.50</span><input id="forget-slider" type="range" min="0" max="1" value="0.5" step="0.01" class="mt-2"></label>
+              <label class="block text-sm font-bold">입력 게이트 $i_t$: <span id="input-val" class="text-rose-600 dark:text-rose-400">0.50</span><input id="input-slider" type="range" min="0" max="1" value="0.5" step="0.01" class="mt-2"></label>
+              <label class="block text-sm font-bold">현재 후보 $g_t$: <span id="gate-val" class="text-rose-600 dark:text-rose-400">8.0</span><input id="gate-slider" type="range" min="-10" max="10" value="8" step="0.1" class="mt-2"></label>
+              <label class="block text-sm font-bold">출력 게이트 $o_t$: <span id="output-val" class="text-rose-600 dark:text-rose-400">0.70</span><input id="output-slider" type="range" min="0" max="1" value="0.7" step="0.01" class="mt-2"></label>
+            </div>
+            <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 space-y-3 text-sm">
+              <p>이전 기억 $c_{t-1}$: <b>10.00</b></p>
+              <p>1. 망각 처리 $f_t \times c_{t-1}$: <b id="forget-part">5.00</b></p>
+              <p>2. 신규 주입 $i_t \times g_t$: <b id="input-part">4.00</b></p>
+              <p>3. 최종 cell $c_t$: <b id="cell-val" class="text-emerald-600 dark:text-emerald-400">9.00</b></p>
+              <p>4. $\tanh(c_t)$: <b id="tanh-val">1.00</b></p>
+              <p>5. hidden output $h_t$: <b id="hidden-val" class="text-indigo-600 dark:text-indigo-400">0.70</b></p>
+              <p id="lstm-feedback" class="mt-4 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">균형 상태: 과거 기억과 새 입력이 함께 반영됩니다.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec5">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">5. RNN의 5가지 입출력 구조</h2><p class="text-xs text-slate-400 mt-1">Choose the architecture by task shape</p></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 text-sm">
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>One-to-One</b><p class="text-xs text-slate-500 mt-1">일반 FNN 형태</p><p class="mt-3 text-slate-600 dark:text-slate-300">입력 1개 → 출력 1개</p></div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>One-to-Many</b><p class="text-xs text-slate-500 mt-1">Image captioning</p><p class="mt-3 text-slate-600 dark:text-slate-300">단일 이미지 → 단어 시퀀스 생성</p></div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>Many-to-One</b><p class="text-xs text-slate-500 mt-1">Sentiment / forecasting</p><p class="mt-3 text-slate-600 dark:text-slate-300">시퀀스 전체 → 하나의 분류·예측값</p></div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>Many-to-Many A</b><p class="text-xs text-slate-500 mt-1">Translation</p><p class="mt-3 text-slate-600 dark:text-slate-300">입력을 모두 읽고 요약한 뒤 출력 생성</p></div>
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>Many-to-Many B</b><p class="text-xs text-slate-500 mt-1">NER / tagging</p><p class="mt-3 text-slate-600 dark:text-slate-300">각 입력 시점마다 즉시 label 출력</p></div>
+          </div>
+          <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 text-sm"><b class="text-indigo-700 dark:text-indigo-300">BIO notation:</b> sequence labeling에서는 B(Begin), I(Inside), O(Outside) 태그로 개체명의 시작·내부·외부를 표시한다. 예: “New York”에서 New=B-LOC, York=I-LOC.</div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="sec6">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">6. Seq2Seq의 병목과 Attention</h2><p class="text-xs text-slate-400 mt-1">From one context vector to selective memory lookup</p></div>
+          <div class="space-y-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            <p><strong>Seq2Seq</strong>는 encoder가 입력 문장을 읽고 하나의 context vector $e$로 압축한 뒤, decoder가 그 벡터를 바탕으로 출력 시퀀스를 생성하는 구조다.</p>
+            <p>문장이 길어질수록 모든 정보를 단 하나의 벡터에 넣어야 하므로 <strong>information bottleneck</strong>이 발생한다. Attention은 decoder의 각 출력 시점마다 encoder의 모든 hidden state $h_i$를 다시 조회하고, 현재 decoder state $s_t$와 관련성이 큰 부분에 높은 가중치를 준다.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b>1. Score</b><div class="math-scroll mt-2">$$score(s_t,h_i)=s_t^T h_i$$</div><p class="text-slate-600 dark:text-slate-300">현재 decoder state와 encoder state의 dot product.</p></div>
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b>2. Softmax</b><div class="math-scroll mt-2">$$\alpha_{t,i}=\frac{e^{score(s_t,h_i)}}{\sum_j e^{score(s_t,h_j)}}$$</div><p class="text-slate-600 dark:text-slate-300">점수를 합이 1인 확률 분포로 변환.</p></div>
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"><b>3. Context</b><div class="math-scroll mt-2">$$a_t=\sum_i \alpha_{t,i}h_i$$</div><p class="text-slate-600 dark:text-slate-300">가중합으로 필요한 정보를 모은다.</p></div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="attention-lab">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">Luong Attention Vector Calculator</h2><p class="text-xs text-slate-400 mt-1">Edit vectors and recompute dot-product attention</p></div>
+          <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 text-sm">기본 문제: $s_t=[1,1]$, $h_1=[2,1]$, $h_2=[0,1]$, $h_3=[1,0]$, $h_4=[0.5,0.5]$일 때 score, softmax 분포, context vector를 계산한다.</div>
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div class="space-y-4 text-sm">
+              <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800"><b>Decoder state $s_t=[x,y]$</b><div class="mt-3 flex gap-3 items-center">X <input id="dec-x" type="number" step="0.1" value="1.0"> Y <input id="dec-y" type="number" step="0.1" value="1.0"></div></div>
+              <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3"><b>Encoder hidden vectors</b>
+                <div>$h_1$: <input id="h1-x" type="number" step="0.1" value="2.0"> <input id="h1-y" type="number" step="0.1" value="1.0"></div>
+                <div>$h_2$: <input id="h2-x" type="number" step="0.1" value="0.0"> <input id="h2-y" type="number" step="0.1" value="1.0"></div>
+                <div>$h_3$: <input id="h3-x" type="number" step="0.1" value="1.0"> <input id="h3-y" type="number" step="0.1" value="0.0"></div>
+                <div>$h_4$: <input id="h4-x" type="number" step="0.1" value="0.5"> <input id="h4-y" type="number" step="0.1" value="0.5"></div>
+              </div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 space-y-4 text-sm">
+              <div><b>Step 1: dot-product scores</b><div id="score-list" class="mt-2 grid grid-cols-2 gap-2"></div></div>
+              <div><b>Step 2: softmax weights</b><div id="alpha-list" class="mt-2 grid grid-cols-2 gap-2"></div></div>
+              <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><b>Context vector $a_t$</b><p id="context-vector" class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2">[1.57, 0.86]</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6 scroll-mt-24" id="quiz-section">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-4"><h2 class="text-2xl font-bold text-slate-900 dark:text-white">Self Check</h2><p class="text-xs text-slate-400 mt-1">시험 답안으로 압축하기</p></div>
+          <div class="space-y-3" id="quiz-list">
+            <button data-answer="FNN은 시간 독립적으로 현재 입력만 처리하고, RNN은 이전 hidden state h_{t-1}를 현재 입력과 함께 사용한다." class="quiz-btn w-full text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-700">Q1. FNN과 RNN 수식의 결정적 차이는?</button>
+            <button data-answer="시간축으로 펼친 계산 그래프에서 역전파를 수행해야 각 시점의 shared weights에 대한 gradient를 누적할 수 있기 때문이다." class="quiz-btn w-full text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-700">Q2. RNN을 학습할 때 unfolding이 중요한 이유는?</button>
+            <button data-answer="LSTM은 cell state c_t라는 별도 통로와 forget/input/output gate를 사용하여 정보를 삭제·쓰기·노출하고, 덧셈 중심 경로로 장기 의존성 전달을 돕는다." class="quiz-btn w-full text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-700">Q3. LSTM이 vanilla RNN보다 장기 기억에 강한 구조적 이유는?</button>
+            <button data-answer="Attention은 decoder의 각 출력 시점마다 encoder hidden states와의 유사도를 계산하고 softmax 가중합을 만들어, 단일 context vector 병목을 완화한다." class="quiz-btn w-full text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-700">Q4. Seq2Seq에서 Attention이 해결하는 병목은?</button>
+          </div>
+          <div id="quiz-answer" class="hidden p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/60 text-sm text-slate-700 dark:text-slate-300"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function fmt(n){ return Number(n).toFixed(2); }
+    function updateLstm(){
+      const f=+document.getElementById('forget-slider').value;
+      const i=+document.getElementById('input-slider').value;
+      const g=+document.getElementById('gate-slider').value;
+      const o=+document.getElementById('output-slider').value;
+      const prev=10;
+      const forget=f*prev, input=i*g, cell=forget+input, tanh=Math.tanh(cell), hidden=o*tanh;
+      document.getElementById('forget-val').textContent=fmt(f); document.getElementById('input-val').textContent=fmt(i);
+      document.getElementById('gate-val').textContent=g.toFixed(1); document.getElementById('output-val').textContent=fmt(o);
+      document.getElementById('forget-part').textContent=fmt(forget); document.getElementById('input-part').textContent=fmt(input);
+      document.getElementById('cell-val').textContent=fmt(cell); document.getElementById('tanh-val').textContent=fmt(tanh); document.getElementById('hidden-val').textContent=fmt(hidden);
+      const fb=document.getElementById('lstm-feedback');
+      fb.textContent = f < .2 ? '망각 게이트가 낮아서 과거 기억이 거의 삭제됩니다.' : i < .2 ? '입력 게이트가 낮아서 새 정보가 거의 들어오지 않습니다.' : Math.abs(cell) > 8 ? 'cell state가 포화되어 tanh 출력이 ±1에 가까워집니다.' : '균형 상태: 과거 기억과 새 입력이 함께 반영됩니다.';
+    }
+    function updateAttention(){
+      const sx=+document.getElementById('dec-x').value, sy=+document.getElementById('dec-y').value;
+      const hs=[1,2,3,4].map(k=>[+document.getElementById('h'+k+'-x').value,+document.getElementById('h'+k+'-y').value]);
+      const scores=hs.map(h=>sx*h[0]+sy*h[1]);
+      const max=Math.max(...scores); const exps=scores.map(s=>Math.exp(s-max)); const sum=exps.reduce((a,b)=>a+b,0); const alphas=exps.map(e=>e/sum);
+      const cx=hs.reduce((acc,h,idx)=>acc+alphas[idx]*h[0],0), cy=hs.reduce((acc,h,idx)=>acc+alphas[idx]*h[1],0);
+      document.getElementById('score-list').innerHTML=scores.map((s,i)=>`<div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">score_${i+1}: <b>${fmt(s)}</b></div>`).join('');
+      document.getElementById('alpha-list').innerHTML=alphas.map((a,i)=>`<div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">α_${i+1}: <b>${fmt(a)}</b></div>`).join('');
+      document.getElementById('context-vector').textContent=`[${fmt(cx)}, ${fmt(cy)}]`;
+    }
+    document.querySelectorAll('#lstm-lab input').forEach(el=>el.addEventListener('input', updateLstm));
+    document.querySelectorAll('#attention-lab input').forEach(el=>el.addEventListener('input', updateAttention));
+    document.querySelectorAll('.quiz-btn').forEach(btn=>btn.addEventListener('click',()=>{const box=document.getElementById('quiz-answer'); box.classList.remove('hidden'); box.innerHTML='<b>Answer:</b> '+btn.dataset.answer;}));
+    updateLstm(); updateAttention();
+    const links=[...document.querySelectorAll('#sidebar-nav a')]; const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.remove('sidebar-active')); const l=links.find(a=>a.getAttribute('href')==='#'+e.target.id); if(l)l.classList.add('sidebar-active');}})}, {rootMargin:'-25% 0px -65% 0px'});
+    secs.forEach(s=>obs.observe(s));
+  </script>
+</body>
+</html>
