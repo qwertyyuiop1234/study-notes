@@ -102,12 +102,16 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
 /* Premium Slim Widescreen Left Sidebar Navigation */
 @media (min-width: 1051px) {
   body {
-    padding-left: max(152px, calc(50vw - 528px)) !important; /* Perfect widescreen grid sync */
+    padding-left: 152px !important; /* Clean baseline spacer for Home and Subject pages */
+  }
+  
+  body.sop-note-page {
+    padding-left: 0 !important; /* Managed completely by main's padding for precise widescreen grid centering */
   }
   
   .sop-topbar {
     position: fixed !important;
-    left: max(12px, calc(50vw - 668px)) !important; /* Lock seamlessly to left margin of 1360px grid */
+    left: 12px !important; /* Clean floating alignment for Home and Subject pages */
     top: 16px !important;
     bottom: 16px !important;
     width: 140px !important;
@@ -124,6 +128,10 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
     align-items: stretch !important;
     z-index: 1000 !important;
     box-shadow: var(--sop-shadow-soft) !important;
+  }
+
+  body.sop-note-page .sop-topbar {
+    left: max(12px, calc(50vw - 668px)) !important; /* Center-lock sidebar on note pages dynamically alongside centered grid */
   }
 
   .sop-topbar-inner {
