@@ -378,3 +378,403 @@ html, body {
   font-weight: 800 !important;
 }
 
+/* ==========================================================================
+   Spaced Repetition Review System (Ebbinghaus Scheduler)
+   ========================================================================== */
+
+/* 1. Review Badges on Note Cards */
+.sop-review-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font: 850 10.5px/1 var(--sop-mono) !important;
+  letter-spacing: .02em;
+  border: 1px solid transparent;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* Badge States */
+.sop-badge-not-started {
+  background: var(--sop-soft) !important;
+  border-color: var(--sop-line) !important;
+  color: var(--sop-faint) !important;
+}
+.sop-badge-scheduled {
+  background: color-mix(in srgb, var(--accent, var(--sop-primary)) 8%, var(--sop-paper)) !important;
+  border-color: color-mix(in srgb, var(--accent, var(--sop-primary)) 22%, var(--sop-line)) !important;
+  color: var(--accent, var(--sop-primary)) !important;
+}
+.sop-badge-due {
+  background: color-mix(in srgb, var(--sop-amber) 10%, var(--sop-paper)) !important;
+  border-color: color-mix(in srgb, var(--sop-amber) 30%, transparent) !important;
+  color: var(--sop-amber) !important;
+  animation: sop-badge-pulse 2s infinite ease-in-out;
+}
+.sop-badge-overdue {
+  background: color-mix(in srgb, var(--sop-rose) 10%, var(--sop-paper)) !important;
+  border-color: color-mix(in srgb, var(--sop-rose) 30%, transparent) !important;
+  color: var(--sop-rose) !important;
+  animation: sop-badge-pulse 1.5s infinite ease-in-out;
+}
+.sop-badge-mastered {
+  background: color-mix(in srgb, var(--sop-violet) 8%, var(--sop-paper)) !important;
+  border-color: color-mix(in srgb, var(--sop-violet) 22%, var(--sop-line)) !important;
+  color: var(--sop-violet) !important;
+}
+
+@keyframes sop-badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px color-mix(in srgb, currentColor 15%, transparent);
+  }
+}
+
+/* 2. Homepage Review Dashboard Widget */
+.sop-review-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  border-radius: var(--sop-radius-xl);
+  margin-top: 14px;
+}
+.sop-review-dashboard h2 {
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -.03em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sop-review-dashboard-count {
+  font-size: 11px;
+  font-family: var(--sop-mono);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--sop-soft);
+  color: var(--sop-muted);
+}
+.sop-review-dashboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.sop-review-dashboard-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--sop-paper);
+  border: 1px solid var(--sop-line);
+  font-size: 13px;
+  transition: all 0.18s ease;
+  gap: 10px;
+}
+.sop-review-dashboard-item:hover {
+  transform: translateX(4px);
+  border-color: var(--accent, var(--sop-primary));
+}
+.sop-review-dashboard-item span.title {
+  font-weight: 750;
+  color: var(--sop-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 170px;
+  flex-grow: 1;
+}
+.sop-review-dashboard-item a.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--sop-soft);
+  color: var(--sop-muted);
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.sop-review-dashboard-item:hover a.action-btn {
+  background: var(--accent, var(--sop-primary));
+  color: #fff;
+}
+.sop-review-dashboard-empty {
+  text-align: center;
+  padding: 24px 16px;
+  border: 1px dashed var(--sop-line);
+  border-radius: 16px;
+  background: var(--sop-soft);
+  color: var(--sop-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 3. Floating Review Control Widget (Note Page) */
+.sop-review-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--sop-font);
+}
+
+.sop-review-widget-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sop-surface) 90%, transparent);
+  border: 1px solid var(--sop-line);
+  box-shadow: var(--sop-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: pointer;
+  transform: translateY(0);
+}
+.sop-review-widget-collapsed:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent, var(--sop-primary));
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--accent, var(--sop-primary)) 16%, transparent);
+}
+.sop-review-widget-collapsed-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent, var(--sop-primary));
+}
+.sop-review-widget-collapsed-text {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--sop-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Expanded Card Drawer */
+.sop-review-widget-expanded {
+  width: 320px;
+  padding: 22px;
+  border-radius: var(--sop-radius-xl);
+  background: var(--sop-surface);
+  border: 1px solid var(--sop-line);
+  box-shadow: var(--sop-shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transform: scale(0.9) translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+.sop-review-widget.is-open .sop-review-widget-expanded {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.sop-review-widget.is-open .sop-review-widget-collapsed {
+  transform: scale(0.8) translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Expanded Internal Structure */
+.sop-review-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--sop-line);
+  padding-bottom: 12px;
+}
+.sop-review-widget-header h3 {
+  font-size: 15px;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -.02em;
+  color: var(--sop-text);
+}
+.sop-review-widget-close {
+  background: transparent;
+  border: 0;
+  padding: 4px;
+  color: var(--sop-faint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  transition: background 0.18s ease;
+}
+.sop-review-widget-close:hover {
+  background: var(--sop-soft);
+  color: var(--sop-text);
+}
+.sop-review-widget-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Stage Visual Grid Tracker */
+.sop-review-stages {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  padding: 8px 4px;
+  margin: 8px 0;
+}
+.sop-review-stages-line {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  background: var(--sop-soft);
+  z-index: 1;
+  transform: translateY(-50%);
+}
+.sop-review-stages-line-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent, var(--sop-primary)), var(--sop-rose));
+  transition: width 0.4s ease;
+}
+.sop-review-stage-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--sop-paper);
+  border: 2px solid var(--sop-line);
+  display: grid;
+  place-items: center;
+  font: 800 9px var(--sop-mono);
+  color: var(--sop-faint);
+  z-index: 2;
+  position: relative;
+  transition: all 0.3s ease;
+}
+.sop-review-stage-dot.is-completed {
+  background: var(--accent, var(--sop-primary));
+  border-color: var(--accent, var(--sop-primary));
+  color: #fff;
+}
+.sop-review-stage-dot.is-active {
+  background: var(--sop-paper);
+  border-color: var(--accent, var(--sop-primary));
+  color: var(--accent, var(--sop-primary));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, var(--sop-primary)) 18%, transparent);
+}
+
+.sop-review-widget-info {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--sop-muted);
+}
+.sop-review-widget-info b {
+  color: var(--sop-text);
+}
+
+.sop-review-widget-action {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--accent, var(--sop-primary));
+  color: #fff;
+  font-weight: 850;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent, var(--sop-primary)) 24%, transparent);
+  transition: all 0.22s ease;
+}
+.sop-review-widget-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--accent, var(--sop-primary)) 32%, transparent);
+}
+.sop-review-widget-action:active {
+  transform: translateY(0);
+}
+
+.sop-review-widget-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--sop-faint);
+  border-top: 1px dashed var(--sop-line);
+  padding-top: 12px;
+}
+.sop-review-widget-reset-btn {
+  background: transparent;
+  border: 0;
+  color: var(--sop-faint);
+  cursor: pointer;
+  font-weight: 750;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+}
+.sop-review-widget-reset-btn:hover {
+  background: color-mix(in srgb, var(--sop-rose) 8%, var(--sop-paper));
+  color: var(--sop-rose);
+}
+
+/* Level Up Confetti Overlay Effect */
+.sop-level-up-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--sop-radius-xl);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent, var(--sop-primary)) 16%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity 0.5s ease;
+}
+.sop-level-up-flash.animate {
+  animation: sop-flash-animation 0.8s ease-out;
+}
+@keyframes sop-flash-animation {
+  0% { opacity: 0; transform: scale(0.9); }
+  30% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
+@media (max-width: 640px) {
+  .sop-review-widget {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+  .sop-review-widget-expanded {
+    width: auto;
+    left: 0;
+    right: 0;
+  }
+}
+
