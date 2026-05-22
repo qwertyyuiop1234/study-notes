@@ -7,10 +7,10 @@
   const isHome = /\/study-notes\/?$/.test(location.pathname) || /\/docs\/?$/.test(location.pathname) || path.endsWith('/study-notes') || path === '';
   const isSubject = !isNote && !isHome;
   const accentMap = [
-    ['computer-architecture', '#3b82f6'],
-    ['operating-system', '#8b5cf6'],
-    ['probability-and-statistics', '#10b981'],
-    ['machine-learning', '#f43f5e']
+    ['computer-architecture', '#5c7b93'],
+    ['operating-system', '#7c6b8c'],
+    ['probability-and-statistics', '#6f8f72'],
+    ['machine-learning', '#b5735f']
   ];
   const accent = (accentMap.find(([key]) => location.pathname.includes(key)) || [null, '#2563eb'])[1];
   body.style.setProperty('--accent', accent);

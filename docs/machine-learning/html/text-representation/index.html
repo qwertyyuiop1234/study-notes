@@ -101,9 +101,9 @@
 <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm mb-2"><span>🎬 Core Theory</span><span>•</span><span>Foundations of NLP</span></div>
 <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">텍스트 표현 (Text Representation)이란?</h2>
 <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-base">기계학습 알고리즘은 수치 행렬만 처리할 수 있다. 따라서 인간의 언어를 반드시 수치 객체(numerical objects), 보통은 <strong>벡터(vector)</strong>로 변환해야 한다. 이 과정을 <strong>텍스트 표현(text representation)</strong>이라고 하며, 단어 수준의 표현을 <strong>워드 임베딩(word embedding)</strong>이라 부른다.</p>
-<div class="mt-6 p-4 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/60 text-sm">
-<span class="font-bold text-emerald-800 dark:text-emerald-300">📈 발전 흐름:</span>
-<span class="text-slate-700 dark:text-slate-300"> 이산(discrete) 원-핫 차원 → 통계적 분산 표현 + SVD → 예측 기반 Word2Vec → 전역 통계 GloVe → 부분 단어 기반 FastText</span>
+<div class="sop-tip-box mt-6">
+<span class="title">📈 발전 흐름:</span>
+ 이산(discrete) 원-핫 차원 → 통계적 분산 표현 + SVD → 예측 기반 Word2Vec → 전역 통계 GloVe → 부분 단어 기반 FastText
 </div>
 </div>
 </section>
@@ -157,14 +157,14 @@
 <h4 class="font-bold text-slate-800 dark:text-slate-200">📖 분포 가설 (Distributional Hypothesis)</h4>
 <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed"><strong>"비슷한 문맥에서 등장하는 단어는 비슷한 의미를 가질 것이다."</strong> 분산 표현은 이 가정에서 출발하여 밀집 벡터(dense vector)로 의미를 인코딩한다.</p>
 <!-- COVID vs MERS semantic-similarity example -->
-<div class="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-100 dark:border-amber-900/60 text-xs space-y-2">
-<p class="font-bold text-amber-800 dark:text-amber-300">🦠 의미 유사성 예시 — 코로나 vs 메르스</p>
+<div class="sop-info-box space-y-2 text-xs">
+<p class="title">🦠 의미 유사성 예시 — 코로나 vs 메르스</p>
 <div class="space-y-1.5">
 <p class="text-slate-600 dark:text-slate-400">문장 A: <em>"신종 코로나 바이러스 집단 감염증이 일상생활을 통해 지속 확산되고 있다."</em></p>
 <p class="text-slate-600 dark:text-slate-400">→ 코로나 주변 문맥: {신종, 바이러스, 집단, 감염, 확산, 일상, 생활}</p>
 <p class="text-slate-600 dark:text-slate-400">문장 B: <em>"프랑스는 북부도시 릴에서 2명의 메르스 바이러스 감염환자가 발생했다."</em></p>
 <p class="text-slate-600 dark:text-slate-400">→ 메르스 주변 문맥: {바이러스, 감염, 프랑스, 환자, 발생}</p>
-<p class="pt-2 border-t border-amber-200/60 dark:border-amber-800 font-bold text-amber-700 dark:text-amber-400">
+<p class="pt-2 border-t border-slate-100 dark:border-slate-800">
                     ✅ Sim(코로나, 메르스) ≠ 0 — 공유 문맥 단어(바이러스, 감염) 덕분에 유사도가 0이 아님!
                   </p>
 </div>
@@ -206,9 +206,9 @@
 <p class="text-xs text-slate-400 mt-1">Singular Value Decomposition — 차원의 저주 해결</p>
 </div>
 <!-- Curse of Dimensionality -->
-<div class="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900/60 text-sm space-y-2">
-<h4 class="font-bold text-rose-800 dark:text-rose-300">⚠️ 공기 벡터의 문제점 — 차원의 저주</h4>
-<p class="text-slate-600 dark:text-slate-300 text-xs">차원이 증가하면서 학습데이터의 수가 차원의 수보다 적어져 성능이 저하되는 현상. 즉 <strong>희소 데이터 문제(sparse data problem)</strong>를 야기한다. 공기 행렬은 단어 수만큼의 차원을 가지므로 매우 고차원 &amp; 희소하다.</p>
+<div class="sop-warn-box space-y-2">
+<h4 class="title">⚠️ 공기 벡터의 문제점 — 차원의 저주</h4>
+<p class="text-xs">차원이 증가하면서 학습데이터의 수가 차원의 수보다 적어져 성능이 저하되는 현상. 즉 <strong>희소 데이터 문제(sparse data problem)</strong>를 야기한다. 공기 행렬은 단어 수만큼의 차원을 가지므로 매우 고차원 &amp; 희소하다.</p>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
@@ -260,8 +260,8 @@ print(word_embedding_2d)</code></pre>
 <p class="text-xs text-slate-400 mt-1">From SVD To Word2Vec — Prediction-Based Neural Embeddings</p>
 </div>
 <!-- Problems with SVD -->
-<div class="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-xl border border-rose-100 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-300 space-y-2">
-<p class="font-bold">❌ SVD（카운트 기반 방법)의 문제점</p>
+<div class="sop-warn-box space-y-2 text-xs">
+<p class="title">❌ SVD（카운트 기반 방법)의 문제점</p>
 <ul class="list-disc list-inside space-y-1">
 <li><strong>높은 계산 비용:</strong> $n \times m$ 행렬 계산 → $O(mn^2)$ — 말뭉치가 커지면 사실상 불가능</li>
 <li><strong>유연성 부족:</strong> 새로운 단어나 문서가 추가될 경우 SVD를 처음부터 다시 수행해야 함</li>
@@ -421,9 +421,9 @@ print(word_embedding_2d)</code></pre>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <div class="space-y-3">
 <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">Word2Vec과 GloVe는 각 단어를 독립적인 단위로 취급하므로, <strong>오탈자(misspelling)</strong>나 <strong>미등록 단어(OOV; Out-of-Vocabulary)</strong>에 취약하다. FastText는 문자 수준의 <strong>부분 단어 n-gram(subword n-gram)</strong>으로 단어를 분해하여 학습한다.</p>
-<div class="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/60 text-xs">
-<p class="font-bold text-indigo-700 dark:text-indigo-300">🔑 노이즈에 강한 이유</p>
-<p class="text-slate-500 mt-1">부분 단어로 학습하므로, 완전히 새로운 단어나 약간 변형된 단어도 공유된 문자 n-gram을 통해 표현할 수 있다. 즉 <strong>OOV 문제에 강건(robust)</strong>하다.</p>
+<div class="sop-tip-box text-xs">
+<p class="title">🔑 노이즈에 강한 이유</p>
+<p class="mt-1">부분 단어로 학습하므로, 완전히 새로운 단어나 약간 변형된 단어도 공유된 문자 n-gram을 통해 표현할 수 있다. 즉 <strong>OOV 문제에 강건(robust)</strong>하다.</p>
 </div>
 </div>
 <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
