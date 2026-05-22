@@ -102,20 +102,20 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
 /* Premium Slim Widescreen Left Sidebar Navigation */
 @media (min-width: 1051px) {
   body {
-    padding-left: 140px !important;
+    padding-left: max(152px, calc(50vw - 568px)) !important; /* Dynamically shift content grid to match center alignment */
   }
   
   .sop-topbar {
     position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
+    left: max(12px, calc(50vw - 708px)) !important; /* Mathematically center sidebar relative to body grid */
+    top: 16px !important;
+    bottom: 16px !important;
     width: 140px !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
+    height: calc(100vh - 32px) !important;
+    min-height: calc(100vh - 32px) !important;
     padding: 24px 14px !important;
-    border-right: 1px solid var(--sop-line) !important;
-    border-bottom: none !important;
+    border: 1px solid var(--sop-line) !important;
+    border-radius: 20px !important;
     background: color-mix(in srgb, var(--sop-bg) 92%, transparent) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
@@ -123,6 +123,7 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
     justify-content: flex-start !important;
     align-items: stretch !important;
     z-index: 1000 !important;
+    box-shadow: var(--sop-shadow-soft) !important;
   }
 
   .sop-topbar-inner {
@@ -238,19 +239,19 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
 /* Secondary Slim Widescreen Sidebar: Sticky Note Table of Contents (TOC) */
 @media (min-width: 1280px) {
   body.sop-note-page main {
-    padding-left: 174px !important;
-    padding-right: 24px !important;
-    max-width: 1280px !important;
+    padding-left: 330px !important; /* Elegant 30px gap: 140px (Sidebar) + 150px (TOC) + 40px margin spacing */
+    padding-right: 30px !important;
+    max-width: 1360px !important; /* Perfect desktop content containment */
     width: 100% !important;
-    margin: 0 auto 0 0 !important; /* Left-aligned to keep tight visual proximity with sidebars */
+    margin: 0 auto !important; /* Seamlessly center the entire note view layout */
   }
 
   body.sop-note-page .sop-note-toc {
     position: fixed !important;
-    left: 152px !important;
-    top: 24px !important;
+    left: max(164px, calc(50vw - 556px)) !important; /* Lock vertical alignment to match global floating sidebar */
+    top: 16px !important;
     width: 150px !important;
-    max-height: calc(100vh - 48px) !important;
+    max-height: calc(100vh - 32px) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important; /* Lock horizontal scrolling */
     margin: 0 !important;
