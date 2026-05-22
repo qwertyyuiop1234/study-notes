@@ -130,10 +130,6 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
     box-shadow: var(--sop-shadow-soft) !important;
   }
 
-  body.sop-note-page .sop-topbar {
-    left: max(12px, calc(50vw - 668px)) !important; /* Center-lock sidebar on note pages dynamically alongside centered grid */
-  }
-
   .sop-topbar-inner {
     width: 100% !important;
     height: 100% !important;
@@ -256,7 +252,7 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
 
   body.sop-note-page .sop-note-toc {
     position: fixed !important;
-    left: max(164px, calc(50vw - 516px)) !important; /* Lock vertical alignment precisely alongside the global sidebar inside the 1360px content padding */
+    left: 164px !important; /* Fixed adjacent to the global sidebar (12px + 140px + 12px margin = 164px) */
     top: 16px !important;
     width: 150px !important;
     max-height: calc(100vh - 32px) !important;
