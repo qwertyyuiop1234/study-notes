@@ -102,12 +102,12 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
 /* Premium Slim Widescreen Left Sidebar Navigation */
 @media (min-width: 1051px) {
   body {
-    padding-left: max(152px, calc(50vw - 568px)) !important; /* Dynamically shift content grid to match center alignment */
+    padding-left: max(152px, calc(50vw - 528px)) !important; /* Perfect widescreen grid sync */
   }
   
   .sop-topbar {
     position: fixed !important;
-    left: max(12px, calc(50vw - 708px)) !important; /* Mathematically center sidebar relative to body grid */
+    left: max(12px, calc(50vw - 668px)) !important; /* Lock seamlessly to left margin of 1360px grid */
     top: 16px !important;
     bottom: 16px !important;
     width: 140px !important;
@@ -248,7 +248,7 @@ body.sop-note-page table{width:100%;border-collapse:separate!important;border-sp
 
   body.sop-note-page .sop-note-toc {
     position: fixed !important;
-    left: max(164px, calc(50vw - 556px)) !important; /* Lock vertical alignment to match global floating sidebar */
+    left: max(164px, calc(50vw - 516px)) !important; /* Lock vertical alignment precisely alongside the global sidebar inside the 1360px content padding */
     top: 16px !important;
     width: 150px !important;
     max-height: calc(100vh - 32px) !important;
