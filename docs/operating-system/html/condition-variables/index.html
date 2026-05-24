@@ -13,25 +13,41 @@
 <link href="../../../assets/css/study-os-pro.css" rel="stylesheet"/>
 <script defer src="../../../assets/js/study-os-pro.js"></script>
 <style>
-body{font-family:Inter,'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
-.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.orb{position:absolute;border-radius:9999px;filter:blur(110px);opacity:.34}.orb-1{width:620px;height:620px;background:radial-gradient(circle,rgba(139,92,246,.42),transparent 68%);top:-220px;left:-140px}.orb-2{width:520px;height:520px;background:radial-gradient(circle,rgba(34,211,238,.22),transparent 68%);right:-170px;bottom:-170px}.dot-grid{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 80% 62% at 50% 32%,black 25%,transparent 72%)}
-.study-top{position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,.10);background:rgba(2,6,23,.72);backdrop-filter:blur(18px)}html:not(.dark) .study-top{background:rgba(255,255,255,.82);border-color:rgba(15,23,42,.10)}
-.study-shell{position:relative;z-index:1} .study-shell .bg-white{background:rgba(255,255,255,.86)!important} .dark .study-shell .dark\:bg-slate-800{background:rgba(15,23,42,.72)!important} .dark .study-shell .dark\:bg-slate-900{background:#020617!important}
-.study-shell section>div, .study-shell .rounded-2xl{backdrop-filter:blur(18px)}
-.study-shell code{font-family:'JetBrains Mono',ui-monospace,monospace} .study-shell pre{white-space:pre-wrap}
-#simCanvas{min-height:360px} .site-chip{border:1px solid rgba(167,139,250,.28);background:rgba(139,92,246,.13);color:#c4b5fd;border-radius:999px;padding:.45rem .75rem;font-weight:800;font-size:.78rem}html:not(.dark) .site-chip{color:#6d28d9;background:rgba(139,92,246,.10)}
+body{font-family:var(--sop-font, Inter,'Noto Sans KR',system-ui,sans-serif);-webkit-font-smoothing:antialiased;}
+.bg-mesh,.dot-grid{display:none!important}.orb{display:none!important}
+.study-top{display:none!important}
+.study-shell code{font-family:var(--sop-mono,'JetBrains Mono',ui-monospace,monospace)}
+.study-shell pre{white-space:pre;overflow-x:auto;border-radius:16px!important;background:#202018!important;color:#f5f3ec!important;border:1px solid var(--sop-line)!important}
+#simCanvas{min-height:360px;width:100%;border-radius:18px;background:var(--sop-paper)!important;border:1px solid var(--sop-line)!important}.dark #simCanvas{background:#202018!important}
+.site-chip{border:1px solid var(--sop-line);background:var(--sop-soft);color:var(--sop-muted);border-radius:999px;padding:.45rem .75rem;font-weight:800;font-size:.78rem}
 
-/* Condition Variables page repair: keep the shared left navigation from covering content. */
-@media (min-width:1051px){
-  body.sop-note-page{padding-left:152px!important;}
-  body.sop-note-page main.study-shell{width:min(1120px, calc(100vw - 204px))!important;max-width:1120px!important;margin-left:auto!important;margin-right:auto!important;padding-inline:20px!important;}
-  body.sop-note-page .sop-topbar{left:12px!important;}
-}
-body.sop-note-page header.study-top{display:none!important;}
-body.sop-note-page .sop-note-toc{display:none!important;}
-body.sop-note-page .study-shell{overflow:visible!important;}
-body.sop-note-page .study-shell>div:first-child{display:grid!important;grid-template-columns:minmax(0,3fr) minmax(220px,1fr)!important;gap:24px!important;}
-@media (max-width:1050px){body.sop-note-page .study-shell>div:first-child{grid-template-columns:1fr!important;}}
+/* Condition Variables — align uploaded note with existing Study Notes soft-minimal reader UI. */
+body.sop-note-page{padding-left:0!important;background:linear-gradient(180deg,var(--sop-bg),var(--sop-bg-2))!important;color:var(--sop-text)!important}
+body.sop-note-page main.study-shell{width:min(1180px,100% - 40px)!important;max-width:1180px!important;margin:0 auto!important;padding:34px 0 84px!important;overflow:visible!important}
+body.sop-note-page main.study-shell>.cv-hero{display:block!important;width:min(880px,100%)!important;margin:0 auto 24px!important}
+body.sop-note-page main.study-shell>.cv-hero>.lg\:col-span-3{width:100%!important}
+body.sop-note-page main.study-shell>.cv-hero>.lg\:col-span-1{display:none!important}
+body.sop-note-page main.study-shell>.cv-hero .rounded-2xl{border-radius:var(--sop-radius-xl)!important;background:rgba(255,255,255,.88)!important;border:1px solid var(--sop-line)!important;box-shadow:var(--sop-shadow)!important;padding:clamp(28px,4vw,42px)!important;backdrop-filter:none!important}
+.dark body.sop-note-page main.study-shell>.cv-hero .rounded-2xl{background:var(--sop-surface)!important}
+body.sop-note-page main.study-shell>.cv-hero h1{font-size:clamp(34px,5vw,58px)!important;line-height:1.08!important;letter-spacing:-.055em!important;color:var(--sop-text)!important;margin-bottom:18px!important}
+body.sop-note-page main.study-shell>.cv-hero p{color:var(--sop-muted)!important;font-size:17px!important;line-height:1.85!important}
+body.sop-note-page .sop-note-toc{display:block!important}
+body.sop-note-page main.study-shell>section{width:min(880px,100%)!important;max-width:880px!important;margin:28px auto!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+body.sop-note-page main.study-shell>section>div:first-child{border-radius:var(--sop-radius-xl)!important;background:rgba(255,255,255,.88)!important;border:1px solid var(--sop-line)!important;box-shadow:var(--sop-shadow)!important;padding:clamp(24px,3vw,34px)!important;backdrop-filter:none!important}
+.dark body.sop-note-page main.study-shell>section>div:first-child{background:var(--sop-surface)!important}
+body.sop-note-page main.study-shell h2{color:var(--sop-text)!important;letter-spacing:-.035em!important}
+body.sop-note-page main.study-shell h3,body.sop-note-page main.study-shell h4{color:var(--sop-text)!important}
+body.sop-note-page main.study-shell p,body.sop-note-page main.study-shell li{color:var(--sop-muted)!important;line-height:1.82!important}
+body.sop-note-page main.study-shell strong{color:var(--sop-text)!important}
+body.sop-note-page main.study-shell code{background:var(--sop-soft)!important;border:1px solid var(--sop-line)!important;border-radius:8px!important;padding:.12rem .38rem!important;color:var(--sop-rose)!important}
+body.sop-note-page main.study-shell .rounded-xl,body.sop-note-page main.study-shell .rounded-lg{border-color:var(--sop-line)!important;box-shadow:0 8px 22px rgba(44,44,44,.045)!important}
+body.sop-note-page main.study-shell [class*='bg-indigo'],body.sop-note-page main.study-shell [class*='bg-blue'],body.sop-note-page main.study-shell [class*='bg-emerald'],body.sop-note-page main.study-shell [class*='bg-amber'],body.sop-note-page main.study-shell [class*='bg-rose'],body.sop-note-page main.study-shell [class*='bg-slate']{background:var(--sop-soft)!important}
+body.sop-note-page main.study-shell [class*='text-indigo'],body.sop-note-page main.study-shell [class*='text-blue'],body.sop-note-page main.study-shell [class*='text-emerald'],body.sop-note-page main.study-shell [class*='text-amber'],body.sop-note-page main.study-shell [class*='text-rose']{color:var(--accent,var(--sop-primary))!important}
+body.sop-note-page main.study-shell button,body.sop-note-page main.study-shell select{min-height:44px;border-radius:14px!important;border:1px solid var(--sop-line)!important;background:var(--sop-paper)!important;color:var(--sop-text)!important;box-shadow:0 8px 20px rgba(44,44,44,.045)!important}
+body.sop-note-page main.study-shell button:hover{background:var(--accent,var(--sop-primary))!important;border-color:var(--accent,var(--sop-primary))!important;color:white!important}
+body.sop-note-page #quiz-options label,body.sop-note-page [id^='card_q_']{background:var(--sop-paper)!important;border-color:var(--sop-line)!important;color:var(--sop-text)!important}
+@media (min-width:1280px){body.sop-note-page main.study-shell{width:100%!important;max-width:1360px!important;padding:34px 30px 84px 330px!important;margin:0 auto!important}}
+@media (max-width:640px){body.sop-note-page main.study-shell{width:min(100% - 24px,1180px)!important;padding-top:22px!important}body.sop-note-page main.study-shell>.cv-hero .rounded-2xl,body.sop-note-page main.study-shell>section>div:first-child{padding:22px!important}}
 </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
@@ -40,7 +56,7 @@ body.sop-note-page .study-shell>div:first-child{display:grid!important;grid-temp
 <main class="study-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
 
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
+<section class="cv-hero grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
 <div class="lg:col-span-3">
 <div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
 <h1 class="text-3xl font-black text-slate-900 dark:text-white mb-4">
@@ -72,7 +88,7 @@ body.sop-note-page .study-shell>div:first-child{display:grid!important;grid-temp
 </nav>
 </div>
 </div>
-</div>
+</section>
 
 <section class="mb-12 scroll-mt-20" id="ch1">
 <div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -1195,10 +1211,9 @@ int get() {
             // 퀴즈 빌드
             buildQuiz();
 
-            // 유저 환경 정보 기반 테마 자동 로드
-            const savedTheme = localStorage.getItem('theme');
-            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setTheme(savedTheme === 'dark' || (!savedTheme && systemPrefersDark));
+            // Study Notes 공통 테마와 동기화: 기본값은 기존 노트처럼 light
+            const savedTheme = localStorage.getItem('study-notes-theme') || 'light';
+            setTheme(savedTheme === 'dark');
 
             // 시뮬레이터 구동 및 드로잉
             initSimulator();
