@@ -75,8 +75,8 @@
     const topbar = document.createElement('nav');
     topbar.className = 'sop-topbar';
     topbar.innerHTML = `<div class="sop-topbar-inner">
-      <a class="sop-brand" href="${prefix}">
-        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">Masterclass Notes</span><span class="sop-brand-kicker">Study Notes</span></span>
+      <a class="sop-brand" href="${prefix}" aria-label="가재 Study Notes 홈으로 이동">
+        <span class="sop-logo" aria-hidden="true">🦞</span><span class="sop-brand-text"><span class="sop-brand-title">가재 Masterclass Notes</span><span class="sop-brand-kicker">Study Notes</span></span>
       </a>
       <div class="sop-nav" aria-label="Main navigation">
         <a href="${prefix}computer-architecture/">Architecture</a>
