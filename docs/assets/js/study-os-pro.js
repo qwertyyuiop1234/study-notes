@@ -69,7 +69,7 @@
     topbar.className = 'sop-topbar';
     topbar.innerHTML = `<div class="sop-topbar-inner">
       <a class="sop-brand" href="${prefix}">
-        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">Study Notes</span><span class="sop-brand-kicker">Masterclass</span></span>
+        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">기계학습 마스터 클래스</span><span class="sop-brand-kicker">Study Notes</span></span>
       </a>
       <div class="sop-nav" aria-label="Main navigation">
         <a href="${prefix}computer-architecture/">Architecture</a>
