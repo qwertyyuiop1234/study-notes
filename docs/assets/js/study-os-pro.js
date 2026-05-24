@@ -164,7 +164,7 @@
         const toc = document.createElement('nav');
         toc.className = 'sop-note-toc';
         toc.setAttribute('aria-label', 'Table of contents');
-        toc.innerHTML = `<strong>Masterclass Map</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
+        toc.innerHTML = `<strong>학습 목차 목록</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
         const firstSection = main.querySelector(':scope > section');
         if (firstSection && firstSection.nextSibling) main.insertBefore(toc, firstSection.nextSibling);
         else main.prepend(toc);
