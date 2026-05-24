@@ -69,7 +69,7 @@
     topbar.className = 'sop-topbar';
     topbar.innerHTML = `<div class="sop-topbar-inner">
       <a class="sop-brand" href="${prefix}">
-        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">Study Notes</span><span class="sop-brand-kicker">Soft Study</span></span>
+        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">Study Notes</span><span class="sop-brand-kicker">Masterclass</span></span>
       </a>
       <div class="sop-nav" aria-label="Main navigation">
         <a href="${prefix}computer-architecture/">Architecture</a>
@@ -164,7 +164,7 @@
         const toc = document.createElement('nav');
         toc.className = 'sop-note-toc';
         toc.setAttribute('aria-label', 'Table of contents');
-        toc.innerHTML = `<strong>Table of Contents</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
+        toc.innerHTML = `<strong>Masterclass Map</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
         const firstSection = main.querySelector(':scope > section');
         if (firstSection && firstSection.nextSibling) main.insertBefore(toc, firstSection.nextSibling);
         else main.prepend(toc);
