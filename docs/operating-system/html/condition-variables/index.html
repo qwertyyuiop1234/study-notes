@@ -12,10 +12,6 @@
 <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : true);})();</script>
 <link href="../../../assets/css/study-os-pro.css" rel="stylesheet"/>
 <script defer src="../../../assets/js/study-os-pro.js"></script>
-<script>
-window.MathJax={tex:{inlineMath:[['',''],['\(','\)']],displayMath:[['',''],['\[','\]']],processEscapes:true},svg:{fontCache:'global'}};
-</script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <style>
 body{font-family:Inter,'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
 .bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.orb{position:absolute;border-radius:9999px;filter:blur(110px);opacity:.34}.orb-1{width:620px;height:620px;background:radial-gradient(circle,rgba(139,92,246,.42),transparent 68%);top:-220px;left:-140px}.orb-2{width:520px;height:520px;background:radial-gradient(circle,rgba(34,211,238,.22),transparent 68%);right:-170px;bottom:-170px}.dot-grid{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 80% 62% at 50% 32%,black 25%,transparent 72%)}
@@ -24,6 +20,18 @@ body{font-family:Inter,'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothin
 .study-shell section>div, .study-shell .rounded-2xl{backdrop-filter:blur(18px)}
 .study-shell code{font-family:'JetBrains Mono',ui-monospace,monospace} .study-shell pre{white-space:pre-wrap}
 #simCanvas{min-height:360px} .site-chip{border:1px solid rgba(167,139,250,.28);background:rgba(139,92,246,.13);color:#c4b5fd;border-radius:999px;padding:.45rem .75rem;font-weight:800;font-size:.78rem}html:not(.dark) .site-chip{color:#6d28d9;background:rgba(139,92,246,.10)}
+
+/* Condition Variables page repair: keep the shared left navigation from covering content. */
+@media (min-width:1051px){
+  body.sop-note-page{padding-left:152px!important;}
+  body.sop-note-page main.study-shell{width:min(1120px, calc(100vw - 204px))!important;max-width:1120px!important;margin-left:auto!important;margin-right:auto!important;padding-inline:20px!important;}
+  body.sop-note-page .sop-topbar{left:12px!important;}
+}
+body.sop-note-page header.study-top{display:none!important;}
+body.sop-note-page .sop-note-toc{display:none!important;}
+body.sop-note-page .study-shell{overflow:visible!important;}
+body.sop-note-page .study-shell>div:first-child{display:grid!important;grid-template-columns:minmax(0,3fr) minmax(220px,1fr)!important;gap:24px!important;}
+@media (max-width:1050px){body.sop-note-page .study-shell>div:first-child{grid-template-columns:1fr!important;}}
 </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
