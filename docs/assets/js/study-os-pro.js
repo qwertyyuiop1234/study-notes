@@ -58,6 +58,13 @@
   applyTheme(saved || (root.classList.contains('dark') ? 'dark' : 'light'));
   if (!saved) applyTheme('light');
   document.addEventListener('click', (e) => {
+    const printBtn = e.target.closest('[data-sop-print]');
+    if (!printBtn) return;
+    e.preventDefault();
+    window.print();
+  });
+
+  document.addEventListener('click', (e) => {
     const btn = e.target.closest('#theme-toggle, [data-sop-theme], .los-theme-toggle, [data-los-theme-toggle]');
     if (!btn) return;
     e.preventDefault(); e.stopPropagation();
@@ -69,7 +76,7 @@
     topbar.className = 'sop-topbar';
     topbar.innerHTML = `<div class="sop-topbar-inner">
       <a class="sop-brand" href="${prefix}">
-        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">기계학습 마스터 클래스</span><span class="sop-brand-kicker">Study Notes</span></span>
+        <span class="sop-logo">SN</span><span class="sop-brand-text"><span class="sop-brand-title">Masterclass Notes</span><span class="sop-brand-kicker">Study Notes</span></span>
       </a>
       <div class="sop-nav" aria-label="Main navigation">
         <a href="${prefix}computer-architecture/">Architecture</a>
@@ -164,7 +171,7 @@
         const toc = document.createElement('nav');
         toc.className = 'sop-note-toc';
         toc.setAttribute('aria-label', 'Table of contents');
-        toc.innerHTML = `<strong>학습 목차 목록</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
+        toc.innerHTML = `<div class="sop-note-brand">🦞 ${document.title.split('·')[0].trim() || 'Masterclass Note'}</div><div class="sop-note-actions"><button class="btn" type="button" data-sop-theme>테마 전환</button><button class="btn" type="button" data-sop-print>PDF 저장</button></div><div class="sop-note-sourcebox">개념 → 수식 → 직관 → 예제 → 시험 함정 순서로 읽어라. 암기보다 “왜 이 정의가 필요한가”를 먼저 잡는 것이 목표다.</div><strong>학습 목차 목록</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
         const firstSection = main.querySelector(':scope > section');
         if (firstSection && firstSection.nextSibling) main.insertBefore(toc, firstSection.nextSibling);
         else main.prepend(toc);
