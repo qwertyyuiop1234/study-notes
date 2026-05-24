@@ -912,3 +912,132 @@ body.sop-note-page :is(.bg-white,.dark\:bg-slate-950,.bg-slate-50){background:va
 @media(max-width:900px){.sop-topbar{width:calc(100% - 28px)!important;margin-top:14px!important}.sop-topbar-inner{border-radius:18px!important;padding:12px!important;flex-wrap:wrap!important}.sop-nav{overflow-x:auto!important;flex-wrap:nowrap!important;max-width:100%!important;scrollbar-width:none!important}.sop-nav::-webkit-scrollbar{display:none!important}.sop-hero,.sop-section,.sop-subject-layout{padding:14px!important}.sop-hero-grid,.sop-subject-layout{display:block!important}.sop-grid,.sop-metric-grid,.sop-bento{grid-template-columns:1fr!important}body.sop-note-page>div.max-w-7xl,body.sop-note-page>div[class*="max-w-7xl"]{padding:14px!important}body.sop-note-page>main,body.sop-note-page main{display:block!important;width:100%!important}.sop-note-toc{position:relative!important;top:auto!important;height:auto!important;max-height:none!important;width:100%!important;margin-bottom:18px!important}.sop-note-toc-links{display:block!important}body.sop-note-page main>section:first-of-type,body.sop-note-page main>section.cv-hero,body.sop-note-page main>div:first-child,body.sop-note-page main article>section,body.sop-note-page main .prose-lite>section,body.sop-note-page main .prose-study>section,body.sop-note-page main>section:not(:first-of-type):not(.sop-note-toc):not(.cv-hero){padding:24px!important;border-radius:24px!important}.grid,.grid3{grid-template-columns:1fr!important}.simrow{grid-template-columns:1fr!important}}
 @media print{.sop-topbar,.sop-note-toc,.sticky-actions,.sop-review-widget{display:none!important}body.sop-note-page>main,body.sop-note-page main,.wrap{display:block!important;max-width:none!important}.card,.hero,.sop-card,.sop-panel,body.sop-note-page main article>section{box-shadow:none!important;break-inside:avoid!important}body{background:white!important}}
 
+/* Masterclass theme polish: remove leftover dark-first islands and normalize light/dark surfaces. */
+body.sop-note-page main>section.grid,
+body.sop-note-page main>section[class*="grid"]{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  overflow:visible!important;
+}
+body.sop-note-page main>section.grid>*,
+body.sop-note-page main>section[class*="grid"]>*{
+  min-width:0!important;
+}
+body.sop-note-page main>section.grid .glass,
+body.sop-note-page main>section[class*="grid"] .glass,
+body.sop-note-page main>section.grid .glass-strong,
+body.sop-note-page main>section[class*="grid"] .glass-strong{
+  background:var(--sop-paper)!important;
+  border:1px solid var(--sop-line)!important;
+  color:var(--sop-text)!important;
+  box-shadow:var(--sop-shadow)!important;
+}
+body.sop-note-page :is([class*="bg-slate-950"],[class*="bg-slate-900"],[class*="bg-black"],[class*="bg-slate-800"]):not(.code):not(pre):not(code){
+  background:var(--sop-soft)!important;
+  border-color:var(--sop-line)!important;
+  color:var(--sop-text)!important;
+}
+html.dark body.sop-note-page :is([class*="bg-slate-950"],[class*="bg-slate-900"],[class*="bg-black"],[class*="bg-slate-800"]):not(.code):not(pre):not(code){
+  background:var(--sop-surface-2)!important;
+  border-color:var(--sop-line)!important;
+  color:var(--sop-text)!important;
+}
+body.sop-note-page :is(.code, pre, pre[class], div[class*="code"], .not-prose pre){
+  background:#f6efe6!important;
+  color:#312820!important;
+  border:1px solid #d9c9b8!important;
+  border-radius:18px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55)!important;
+}
+body.sop-note-page :is(.code, pre, pre[class], div[class*="code"], .not-prose pre) :is(code,span,em,strong,i,b){
+  background:transparent!important;
+  color:inherit!important;
+  border:0!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+body.sop-note-page :not(pre)>code{
+  background:color-mix(in srgb,var(--sop-primary) 10%,var(--sop-soft))!important;
+  color:var(--sop-primary)!important;
+  border:1px solid color-mix(in srgb,var(--sop-primary) 18%,var(--sop-line))!important;
+  border-radius:7px!important;
+  padding:.08em .32em!important;
+  font-weight:750!important;
+}
+html.dark body.sop-note-page :is(.code, pre, pre[class], div[class*="code"], .not-prose pre){
+  background:#181512!important;
+  color:#f4eadf!important;
+  border-color:#4a3f35!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+html.dark body.sop-note-page :not(pre)>code{
+  background:rgba(225,154,115,.14)!important;
+  color:#f1b18e!important;
+  border-color:rgba(225,154,115,.28)!important;
+}
+body.sop-note-page :is(.bg-gradient-to-r,.text-transparent.bg-clip-text){
+  background:none!important;
+  -webkit-background-clip:initial!important;
+  background-clip:initial!important;
+  color:var(--sop-primary)!important;
+}
+body.sop-note-page ::selection{background:rgba(154,79,50,.18)!important;color:var(--sop-heading)!important}
+html.dark body.sop-note-page ::selection{background:rgba(225,154,115,.28)!important;color:var(--sop-heading)!important}
+html.dark .sop-topbar-inner,html.dark body.sop-note-page .sop-note-toc{background:rgba(33,31,29,.78)!important}
+html:not(.dark) body.sop-note-page .sop-note-toc{background:rgba(255,253,250,.72)!important}
+
+/* Masterclass layout polish: top-level legacy grid sections should not become empty wrapper cards. */
+body.sop-note-page main > section.grid,
+body.sop-note-page main > section[class~="grid"],
+body.sop-note-page main > section[class*="grid-cols"]{
+  grid-column:2!important;
+  width:100%!important;
+  max-width:none!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  border-radius:0!important;
+  margin:20px 0!important;
+  overflow:visible!important;
+}
+body.sop-note-page main > section.grid > *,
+body.sop-note-page main > section[class~="grid"] > *,
+body.sop-note-page main > section[class*="grid-cols"] > *,
+body.sop-note-page main > section.grid .prose-lite,
+body.sop-note-page main > section[class~="grid"] .prose-lite,
+body.sop-note-page main > section[class*="grid-cols"] .prose-lite{
+  grid-column:auto!important;
+}
+body.sop-note-page main > section.grid > .glass,
+body.sop-note-page main > section[class~="grid"] > .glass,
+body.sop-note-page main > section[class*="grid-cols"] > .glass,
+body.sop-note-page main > section.grid > .glass-strong,
+body.sop-note-page main > section[class~="grid"] > .glass-strong,
+body.sop-note-page main > section[class*="grid-cols"] > .glass-strong{
+  background:var(--sop-paper)!important;
+  border:1px solid var(--sop-line)!important;
+  border-radius:28px!important;
+  box-shadow:var(--sop-shadow)!important;
+  padding:34px!important;
+  color:var(--sop-text)!important;
+}
+body.sop-note-page main > section.prose-lite:not(.grid):not([class*="grid-cols"]),
+body.sop-note-page main > section.glass:not(.grid):not([class*="grid-cols"]){
+  background:var(--sop-paper)!important;
+  border:1px solid var(--sop-line)!important;
+  box-shadow:var(--sop-shadow)!important;
+}
+/* High-specificity fix against the base deep-note card rule. */
+body.sop-note-page main > section.grid:not(:first-of-type):not(.sop-note-toc):not(.cv-hero),
+body.sop-note-page main > section[class~="grid"]:not(:first-of-type):not(.sop-note-toc):not(.cv-hero),
+body.sop-note-page main > section[class*="grid-cols"]:not(:first-of-type):not(.sop-note-toc):not(.cv-hero){
+  background:transparent!important;
+  border-color:transparent!important;
+  border-width:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  border-radius:0!important;
+}
