@@ -182,10 +182,40 @@
         else main.prepend(toc);
       }
     }
-    const finalToc = document.querySelector('.sop-note-toc');
+    const finalToc = document.querySelector('.sop-note-toc, aside.sop-note-toc, aside');
     if (finalToc) {
       const rowCount = main.children.length;
       finalToc.style.setProperty('grid-row', `1 / span ${rowCount + 1}`, 'important');
+
+      // Centralized active scroll highlighting for static/dynamic TOC links
+      const links = [...finalToc.querySelectorAll('.sop-note-toc-links a, nav.toc a, nav.toc-links a, .toc a')];
+      if (links.length) {
+        const targets = links.map(a => {
+          const hash = a.getAttribute('href');
+          if (hash && hash.startsWith('#')) {
+            return document.querySelector(hash);
+          }
+          return null;
+        }).filter(Boolean);
+
+        if (targets.length && 'IntersectionObserver' in window) {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                links.forEach(a => a.classList.remove('active', 'is-active', 'sidebar-active'));
+                const activeLink = links.find(a => a.getAttribute('href') === '#' + entry.target.id);
+                if (activeLink) {
+                  activeLink.classList.add('active', 'is-active');
+                }
+              }
+            });
+          }, {
+            rootMargin: '-20% 0px -60% 0px',
+            threshold: 0
+          });
+          targets.forEach(target => observer.observe(target));
+        }
+      }
     }
   }
   

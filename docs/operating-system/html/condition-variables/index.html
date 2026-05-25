@@ -1,218 +1,192 @@
 <!DOCTYPE html>
-<html lang="ko" class="dark scroll-smooth">
+<html class="scroll-smooth" lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Condition Variables · Operating System</title>
-<meta name="description" content="Study note on condition variables: wait/signal, state predicate, mutex, Mesa semantics, producer-consumer pitfalls, covering conditions, simulator, and quiz." />
-<script src="https://cdn.tailwindcss.com"></script>
-<script>window.tailwind=window.tailwind||{};tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','Noto Sans KR','system-ui','sans-serif'],mono:['JetBrains Mono','ui-monospace','monospace']}}}};</script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-<script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-<link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
-<script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-<style>
-body{font-family:var(--sop-font, Inter,'Noto Sans KR',system-ui,sans-serif);-webkit-font-smoothing:antialiased;}
-.bg-mesh,.dot-grid{display:none!important}.orb{display:none!important}
-.study-top{display:none!important}
-.study-shell code{font-family:var(--sop-mono,'JetBrains Mono',ui-monospace,monospace)}
-.study-shell pre{white-space:pre;overflow-x:auto;border-radius:16px!important;background:#202018!important;color:#f5f3ec!important;border:1px solid var(--sop-line)!important}
-#simCanvas{min-height:360px;width:100%;border-radius:18px;background:var(--sop-paper)!important;border:1px solid var(--sop-line)!important}.dark #simCanvas{background:#202018!important}
-.site-chip{border:1px solid var(--sop-line);background:var(--sop-soft);color:var(--sop-muted);border-radius:999px;padding:.45rem .75rem;font-weight:800;font-size:.78rem}
-
-/* Condition Variables — align uploaded note with existing Study Notes soft-minimal reader UI. */
-body.sop-note-page{padding-left:0!important;background:linear-gradient(180deg,var(--sop-bg),var(--sop-bg-2))!important;color:var(--sop-text)!important}
-body.sop-note-page main.study-shell{width:min(1180px,100% - 40px)!important;max-width:1180px!important;margin:0 auto!important;padding:34px 0 84px!important;overflow:visible!important}
-body.sop-note-page main.study-shell>.cv-hero{display:block!important;width:min(880px,100%)!important;margin:0 auto 24px!important}
-body.sop-note-page main.study-shell>.cv-hero>.lg\:col-span-3{width:100%!important}
-body.sop-note-page main.study-shell>.cv-hero>.lg\:col-span-1{display:none!important}
-body.sop-note-page main.study-shell>.cv-hero .rounded-2xl{border-radius:var(--sop-radius-xl)!important;background:rgba(255,255,255,.88)!important;border:1px solid var(--sop-line)!important;box-shadow:var(--sop-shadow)!important;padding:clamp(28px,4vw,42px)!important;backdrop-filter:none!important}
-.dark body.sop-note-page main.study-shell>.cv-hero .rounded-2xl{background:var(--sop-surface)!important}
-body.sop-note-page main.study-shell>.cv-hero h1{font-size:clamp(34px,5vw,58px)!important;line-height:1.08!important;letter-spacing:-.055em!important;color:var(--sop-text)!important;margin-bottom:18px!important}
-body.sop-note-page main.study-shell>.cv-hero p{color:var(--sop-muted)!important;font-size:17px!important;line-height:1.85!important}
-body.sop-note-page .sop-note-toc{display:block!important}
-body.sop-note-page main.study-shell>section{width:min(880px,100%)!important;max-width:880px!important;margin:28px auto!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
-body.sop-note-page main.study-shell>section>div:first-child{border-radius:var(--sop-radius-xl)!important;background:rgba(255,255,255,.88)!important;border:1px solid var(--sop-line)!important;box-shadow:var(--sop-shadow)!important;padding:clamp(24px,3vw,34px)!important;backdrop-filter:none!important}
-.dark body.sop-note-page main.study-shell>section>div:first-child{background:var(--sop-surface)!important}
-body.sop-note-page main.study-shell h2{color:var(--sop-text)!important;letter-spacing:-.035em!important}
-body.sop-note-page main.study-shell h3,body.sop-note-page main.study-shell h4{color:var(--sop-text)!important}
-body.sop-note-page main.study-shell p,body.sop-note-page main.study-shell li{color:var(--sop-muted)!important;line-height:1.82!important}
-body.sop-note-page main.study-shell strong{color:var(--sop-text)!important}
-body.sop-note-page main.study-shell code{background:var(--sop-soft)!important;border:1px solid var(--sop-line)!important;border-radius:8px!important;padding:.12rem .38rem!important;color:var(--sop-rose)!important}
-body.sop-note-page main.study-shell .rounded-xl,body.sop-note-page main.study-shell .rounded-lg{border-color:var(--sop-line)!important;box-shadow:0 8px 22px rgba(44,44,44,.045)!important}
-body.sop-note-page main.study-shell [class*='bg-indigo'],body.sop-note-page main.study-shell [class*='bg-blue'],body.sop-note-page main.study-shell [class*='bg-emerald'],body.sop-note-page main.study-shell [class*='bg-amber'],body.sop-note-page main.study-shell [class*='bg-rose'],body.sop-note-page main.study-shell [class*='bg-slate']{background:var(--sop-soft)!important}
-body.sop-note-page main.study-shell [class*='text-indigo'],body.sop-note-page main.study-shell [class*='text-blue'],body.sop-note-page main.study-shell [class*='text-emerald'],body.sop-note-page main.study-shell [class*='text-amber'],body.sop-note-page main.study-shell [class*='text-rose']{color:var(--accent,var(--sop-primary))!important}
-body.sop-note-page main.study-shell button,body.sop-note-page main.study-shell select{min-height:44px;border-radius:14px!important;border:1px solid var(--sop-line)!important;background:var(--sop-paper)!important;color:var(--sop-text)!important;box-shadow:0 8px 20px rgba(44,44,44,.045)!important}
-body.sop-note-page main.study-shell button:hover{background:var(--accent,var(--sop-primary))!important;border-color:var(--accent,var(--sop-primary))!important;color:white!important}
-body.sop-note-page #quiz-options label,body.sop-note-page [id^='card_q_']{background:var(--sop-paper)!important;border-color:var(--sop-line)!important;color:var(--sop-text)!important}
-@media (min-width:1280px){body.sop-note-page main.study-shell{width:100%!important;max-width:1360px!important;padding:34px 30px 84px 330px!important;margin:0 auto!important}}
-@media (max-width:640px){body.sop-note-page main.study-shell{width:min(100% - 24px,1180px)!important;padding-top:22px!important}body.sop-note-page main.study-shell>.cv-hero .rounded-2xl,body.sop-note-page main.study-shell>section>div:first-child{padding:22px!important}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Condition Variables · Operating System</title>
+  <meta name="description" content="Study note on condition variables: wait/signal, state predicate, mutex, Mesa semantics, producer-consumer pitfalls, covering conditions, simulator, and quiz." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    window.tailwind=window.tailwind||{};
+    tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Geist','Inter','Noto Sans KR','system-ui','sans-serif'],mono:['Geist Mono','JetBrains Mono','ui-monospace','monospace']}}}};
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
+  <style>
+    :root{color-scheme:dark}html:not(.dark){color-scheme:light}body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    .code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
+    .step.active{border-color:rgba(139,92,246,.7);background:rgba(139,92,246,.14)}
+    .step.complete{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.09)}
+    .quiz-option.correct{border-color:rgba(16,185,129,.75);background:rgba(16,185,129,.14)}
+    .quiz-option.wrong{border-color:rgba(248,113,113,.75);background:rgba(248,113,113,.13)}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
+    #simCanvas{min-height:360px;width:100%;border-radius:18px;background:var(--sop-paper)!important;border:1px solid var(--sop-line)!important}
+  </style>
+  <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
+  <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-<div class="bg-mesh"><div class="orb orb-1"></div><div class="orb orb-2"></div></div><div class="dot-grid"></div>
-<header class="study-top"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"><a href="../../" class="font-black tracking-tight text-slate-800 dark:text-white">← Operating System</a><div class="flex items-center gap-3"><span class="site-chip">Condition Variables</span><button id="themeToggle" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700" aria-label="화면 테마 전환"><svg id="sunIcon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14.25 12a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg><svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg></button></div></div></header>
-<main class="study-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
+  <div class="wrap">
+    <aside class="sop-note-toc">
+      <div class="brand">🦞 OS Concurrency</div>
+      <div class="sticky-actions">
+        <button class="btn" type="button" data-sop-theme>테마 전환</button>
+        <button class="btn" type="button" data-sop-print>PDF 저장</button>
+      </div>
+      <div class="sourcebox">스레드 모델에서 상호배제를 넘어 조건 만족 대기를 지원하는 조건 변수(Condition Variable)와 생산자-소비자 버그 패턴을 완전 정복합니다.</div>
+      <nav class="toc">
+        <a href="#ch1">1. 스핀 대기의 한계</a>
+        <a href="#ch2">2. 조건 변수와 API</a>
+        <a href="#ch3">3. 올바른 구현의 3요소</a>
+        <a href="#ch4">4. Mesa Semantics와 if 버그</a>
+        <a href="#ch5">5. While 조건 & 2개 CV 기법</a>
+        <a href="#ch6">6. Bounded Buffer & Covering</a>
+        <a href="#simulator">Interactive Lab</a>
+        <a href="#quiz">Self-check Quiz</a>
+      </nav>
+    </aside>
 
+    <main class="prose-lite">
+      <section class="hero" id="top">
+        <span class="eyebrow">Operating System · Concurrency · Concept Note</span>
+        <h1>동시성 제어의 정점: 조건 변수(Condition Variables)</h1>
+        <p style="font-size:20px;color:var(--muted);max-width:950px">이 학습 대시보드는 멀티스레드 프로그래밍 환경에서 특정 조건의 만족 여부에 따라 스레드를 효율적으로 관리하는 조건 변수(Condition Variable)의 기초 이론부터, 실제 현업에서 맞닥뜨리는 치명적인 버그 패턴 및 이를 보완하는 완벽한 동기화 기법까지 체계적으로 정리합니다.</p>
+        <div>
+          <span class="pill">Condition Variables</span>
+          <span class="pill">Mesa Semantics</span>
+          <span class="pill">Producer/Consumer</span>
+          <span class="pill">Covering Conditions</span>
+        </div>
+      </section>
 
-<section class="cv-hero grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
-<div class="lg:col-span-3">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<h1 class="text-3xl font-black text-slate-900 dark:text-white mb-4">
-                        동시성 제어의 정점: 조건 변수(Condition Variables)
-                    </h1>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
-                        이 학습 대시보드는 멀티스레드 프로그래밍 환경에서 특정 조건의 만족 여부에 따라 스레드를 효율적으로 관리하는 <strong>조건 변수(Condition Variable)</strong>의 기초 이론부터, 실제 현업에서 맞닥뜨리는 치명적인 버그 패턴 및 이를 보완하는 완벽한 동기화 기법까지 체계적으로 정리합니다. 시각 시뮬레이터와 자가진단 퀴즈로 핵심 동작을 직접 확인해 보세요.
-                    </p>
-<div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-sm flex items-start space-x-3">
-<span class="text-xl">💡</span>
-<div class="text-indigo-800 dark:text-indigo-300">
-<strong>지난 시간 복습:</strong> 카운터, 연결 리스트, 큐, 해시 테이블 등에 적용한 <strong>락 기반 동시성 자료구조(Lock-based concurrent data structures)</strong>를 통해 상호 배제를 달성했습니다. 하지만 '단순 독점'을 넘어 <strong>"스레드가 조건이 참이 될 때까지 대기해야 하는 상황"</strong>을 어떻게 효율적으로 다룰 수 있을까요?
-                        </div>
-</div>
-</div>
-</div>
-<div class="lg:col-span-1">
-<div class="p-6 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sticky top-20">
-<h2 class="text-sm font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 mb-4">Concept Map</h2>
-<nav class="space-y-2 text-sm">
-<a class="block py-1.5 px-3 rounded hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition font-medium" href="#ch1">1. 조건 대기와 스핀 대기의 한계</a>
-<a class="block py-1.5 px-3 rounded hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition font-medium" href="#ch2">2. 조건 변수(CV) 개요 및 API</a>
-<a class="block py-1.5 px-3 rounded hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition font-medium" href="#ch3">3. 올바른 구현의 3요소</a>
-<a class="block py-1.5 px-3 rounded hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition font-medium" href="#ch4">4. 생산자-소비자 및 if의 함정</a>
-<a class="block py-1.5 px-3 rounded hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition font-medium" href="#ch5">5. while과 2개 조건 변수의 진화</a>
-<a class="block py-1.5 px-3 rounded hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition font-medium" href="#ch6">6. 다중 슬롯 및 커버링 조건</a>
-<a class="block py-1.5 px-3 rounded bg-indigo-500 text-white font-bold text-center mt-4 shadow-lg shadow-indigo-500/20" href="#simulator">🎨 실시간 동시성 시뮬레이터</a>
-<a class="block py-1.5 px-3 rounded bg-emerald-500 text-white font-bold text-center mt-2 shadow-lg shadow-emerald-500/20" href="#quiz">📝 자가 진단 피드백 퀴즈</a>
-</nav>
-</div>
-</div>
-</section>
+      <section class="card">
+        <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-sm flex items-start space-x-3 not-prose">
+          <span class="text-xl">💡</span>
+          <div class="text-indigo-800 dark:text-indigo-300">
+            <strong>지난 시간 복습:</strong> 카운터, 연결 리스트, 큐, 해시 테이블 등에 적용한 <strong>락 기반 동시성 자료구조(Lock-based concurrent data structures)</strong>를 통해 상호 배제를 달성했습니다. 하지만 '단순 독점'을 넘어 <strong>"스레드가 조건이 참이 될 때까지 대기해야 하는 상황"</strong>을 어떻게 효율적으로 다룰 수 있을까요?
+          </div>
+        </div>
+      </section>
 
-<section class="mb-12 scroll-mt-20" id="ch1">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<div class="flex items-center space-x-3 mb-6">
-<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 1</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white">특정 조건 대기: 무식한 스핀 대기(Spin-waiting)의 한계</h2>
-</div>
-<p class="text-slate-600 dark:text-slate-300 mb-6">
-                    동시성 세계에서는 스레드가 다음 단계로 가기 전, 특정 상태가 무조건 '참'이 되기를 대기해야 하는 비즈니스 논리가 수없이 많습니다. 예컨대 자식 스레드가 수행을 마쳤는지 확인하고 진행하려는 부모 스레드의 경우가 그렇습니다.
+      <section class="card" id="ch1">
+        <div class="flex items-center space-x-3 mb-6">
+          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 1</span>
+          <h2 style="border:none;padding:0;margin:0">특정 조건 대기: 무식한 스핀 대기(Spin-waiting)의 한계</h2>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-6">
+          동시성 세계에서는 스레드가 다음 단계로 가기 전, 특정 상태가 무조건 '참'이 되기를 대기해야 하는 비즈니스 논리가 수없이 많습니다. 예컨대 자식 스레드가 수행을 마쳤는지 확인하고 진행하려는 부모 스레드의 경우가 그렇습니다.
+        </p>
+
+        <div class="space-y-4">
+          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
+            <p class="text-slate-800 dark:text-slate-200 font-medium">
+              <strong>스핀 대기(Spin-waiting):</strong> 조건이 만족될 때까지 공유 변수를 무한히 루프 돌며 검사하며 대기하는 방식.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mb-3">
+              스레드는 <code>volatile int done = 0;</code> 과 같은 플래그 변수를 공유하며, 대기하고자 하는 측(부모)은 <code>while (done == 0);</code> 과 같이 세미콜론 하나로 구성된 무한 루프에서 머무릅니다. 자식 스레드가 동작을 마친 뒤 <code>done = 1;</code>로 바꿔주면 루프를 탈출하게 됩니다.
+            </p>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+              이 방식은 컴파일러 최적화 방지(volatile) 등으로 겨우 동작은 할 수 있지만, CPU 스케줄러 상에서 자신에게 할당된 모든 시간 할당량(Time Slice)을 <strong>아무 일도 하지 않는 빈 조건 체크 루프</strong>를 도는 데 허비하여 CPU 이용률을 100%로 치솟게 만들어 심각한 연산 자원 낭비를 유발합니다.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 rounded mb-2">🏃 직관적 비유 &amp; 예시</span>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+              택배가 오늘 밤에 오기로 되어 있는 상황에서, 다른 일을 전혀 하지 않은 채 <strong>현관문 앞에서 1초에 한 번씩 문고리를 돌려보며 밖을 쳐다보는 행동</strong>과 같습니다. 잠을 자거나 독서를 하면서 편하게 있을 수 있는데도 말이죠!
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
+            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
+              단순 루프로 대기하는 것(Spinning)은 CPU 사이클을 가차 없이 버리고 전력을 낭비하며, 스케줄링 시나리오에 따라 오동작을 일으킬 수 있는 동시성 프로그래밍 최대의 악습입니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 p-5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
+          <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center">
+            <span class="text-rose-500 mr-2">❓</span> 왜 무한 루프 대기가 논리적으로 틀릴 수도 있나요?
+          </h4>
+          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            만약 단일 코어 시스템에서 대기하는 부모 스레드가 우선순위가 높다면, 스케줄러가 부모에게 계속 CPU를 배정할 수 있습니다. 부모는 자식이 <code>done = 1</code>을 해주길 기다리며 스핀하지만, 자식은 CPU를 배정받지 못해 <code>done = 1</code>을 영원히 쓰지 못하는 기아 현상(Starvation) 또는 우선순위 역전 문제가 발생해 시스템이 그대로 정지해 버릴 수 있습니다.
+          </p>
+        </div>
+      </section>
+
+      <section class="card" id="ch2">
+        <div class="flex items-center space-x-3 mb-6">
+          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 2</span>
+          <h2 style="border:none;padding:0;margin:0">구원의 열쇠: 조건 변수(Condition Variable)와 핵심 API</h2>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-6">
+          무의미하게 바쁜 대기(Busy waiting)를 극복하기 위해 등장한 시스템 수준의 추상화 도구가 바로 <strong>조건 변수(Condition Variable)</strong>입니다.
+        </p>
+
+        <div class="space-y-4">
+          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
+            <p class="text-slate-800 dark:text-slate-200 font-medium">
+              <strong>조건 변수(Condition Variable):</strong> 스레드가 원하는 상태(Condition)가 아닐 때 스스로를 휴면 상태로 집어넣을 수 있는 <strong>명시적 스레드 대기 큐(Explicit Queue)</strong>입니다.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mb-3">
+              조건 변수는 POSIX 표준에서 <code>pthread_cond_t</code>형태로 구현되며 아래 두 가지 핵심 동작을 수행합니다.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm not-prose">
+              <div class="p-4 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <code class="text-indigo-600 dark:text-indigo-400 font-bold" style="background:transparent; border:none; padding:0">pthread_cond_wait(&amp;c, &amp;m);</code>
+                <p class="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed text-xs">
+                  스레드가 잠들고자 할 때 호출합니다. 이 함수는 <strong>인자로 넘어온 락(Mutex)을 원자적으로(Atomically) 완전히 해제하면서 해당 대기 큐에 잠이 듭니다.</strong> 이후 나중에 시그널을 받아 잠에서 깨어날 때는 <strong>함수에서 탈출하기 전 무조건 락을 다시 획득(Re-acquire)</strong>하도록 설계되어 있습니다.
                 </p>
-
-<div class="space-y-4">
-<div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-<p class="text-slate-800 dark:text-slate-200 font-medium">
-<strong>스핀 대기(Spin-waiting):</strong> 조건이 만족될 때까지 공유 변수를 무한히 루프 돌며 검사하며 대기하는 방식.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mb-3">
-                            스레드는 <code>volatile int done = 0;</code> 과 같은 플래그 변수를 공유하며, 대기하고자 하는 측(부모)은 <code>while (done == 0);</code> 과 같이 세미콜론 하나로 구성된 무한 루프에서 머무릅니다. 자식 스레드가 동작을 마친 뒤 <code>done = 1;</code>로 바꿔주면 루프를 탈출하게 됩니다.
-                        </p>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                            이 방식은 컴파일러 최적화 방지(volatile) 등으로 겨우 동작은 할 수 있지만, CPU 스케줄러 상에서 자신에게 할당된 모든 시간 할당량(Time Slice)을 <strong>아무 일도 하지 않는 빈 조건 체크 루프</strong>를 도는 데 허비하여 CPU 이용률을 100%로 치솟게 만들어 심각한 연산 자원 낭비를 유발합니다.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 rounded mb-2">🏃 직관적 비유 &amp; 예시</span>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                            택배가 오늘 밤에 오기로 되어 있는 상황에서, 다른 일을 전혀 하지 않은 채 <strong>현관문 앞에서 1초에 한 번씩 문고리를 돌려보며 밖을 쳐다보는 행동</strong>과 같습니다. 잠을 자거나 독서를 하면서 편하게 있을 수 있는데도 말이죠!
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-<p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                            단순 루프로 대기하는 것(Spinning)은 CPU 사이클을 가차 없이 버리고 전력을 낭비하며, 스케줄링 시나리오에 따라 오동작을 일으킬 수 있는 동시성 프로그래밍 최대의 악습입니다.
-                        </p>
-</div>
-</div>
-
-<div class="mt-6 p-5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
-<h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center">
-<span class="text-rose-500 mr-2">❓</span> 왜 무한 루프 대기가 논리적으로 틀릴 수도 있나요?
-                    </h4>
-<p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        만약 단일 코어 시스템에서 대기하는 부모 스레드가 우선순위가 높다면, 스케줄러가 부모에게 계속 CPU를 배정할 수 있습니다. 부모는 자식이 <code>done = 1</code>을 해주길 기다리며 스핀하지만, 자식은 CPU를 배정받지 못해 <code>done = 1</code>을 영원히 쓰지 못하는 기아 현상(Starvation) 또는 우선순위 역전 문제가 발생해 시스템이 그대로 정지해 버릴 수 있습니다.
-                    </p>
-</div>
-</div>
-</section>
-
-<section class="mb-12 scroll-mt-20" id="ch2">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<div class="flex items-center space-x-3 mb-6">
-<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 2</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white">구원의 열쇠: 조건 변수(Condition Variable)와 핵심 API</h2>
-</div>
-<p class="text-slate-600 dark:text-slate-300 mb-6">
-                    무의미하게 바쁜 대기(Busy waiting)를 극복하기 위해 등장한 시스템 수준의 추상화 도구가 바로 <strong>조건 변수(Condition Variable)</strong>입니다.
+              </div>
+              <div class="p-4 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <code class="text-indigo-600 dark:text-indigo-400 font-bold" style="background:transparent; border:none; padding:0">pthread_cond_signal(&amp;c);</code>
+                <p class="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed text-xs">
+                  조건 변수 큐 <code>c</code>에서 잠자고 있는 대기 스레드 중 <strong>정확히 단 하나(One Thread)</strong>를 깨워 실행 준비 상태(Ready)로 전환합니다. 만약 큐에 대기 중인 스레드가 없다면 아무 동작도 하지 않고 넘어갑니다.
                 </p>
+              </div>
+            </div>
+          </div>
+          <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 rounded mb-2">🏃 직관적 비유 &amp; 예시</span>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+              은행 대기표 기계와 같습니다. 번호표를 뽑고 대기석에 편안하게 앉아서 졸거나 스마트폰을 하다가(Sleep), 은행원 창구에서 번호를 호출해 띵동 소리를 울리면(Signal) 비로소 일어나 일을 보러 가는 것입니다.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
+            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
+              조건 변수는 자원을 소모하지 않고 안전하게 스레드를 재우는 <code>wait()</code>와, 외부에서 대상을 정확히 찍어 기상시키는 <code>signal()</code>을 매핑하여 바쁜 대기 문제를 완벽히 소거합니다.
+            </p>
+          </div>
+        </div>
+      </section>
 
-<div class="space-y-4">
-<div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-<p class="text-slate-800 dark:text-slate-200 font-medium">
-<strong>조건 변수(Condition Variable):</strong> 스레드가 원하는 상태(Condition)가 아닐 때 스스로를 휴면 상태로 집어넣을 수 있는 <strong>명시적 스레드 대기 큐(Explicit Queue)</strong>입니다.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mb-3">
-                            조건 변수는 POSIX 표준에서 <code>pthread_cond_t</code>형태로 구현되며 아래 두 가지 핵심 동작을 수행합니다.
-                        </p>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm">
-<div class="p-4 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-<code class="text-indigo-600 dark:text-indigo-400 font-bold">pthread_cond_wait(&amp;c, &amp;m);</code>
-<p class="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed text-xs">
-                                    스레드가 잠들고자 할 때 호출합니다. 이 함수는 <strong>인자로 넘어온 락(Mutex)을 원자적으로(Atomically) 완전히 해제하면서 해당 대기 큐에 잠이 듭니다.</strong> 이후 나중에 시그널을 받아 잠에서 깨어날 때는 <strong>함수에서 탈출하기 전 무조건 락을 다시 획득(Re-acquire)</strong>하도록 설계되어 있습니다.
-                                </p>
-</div>
-<div class="p-4 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-<code class="text-indigo-600 dark:text-indigo-400 font-bold">pthread_cond_signal(&amp;c);</code>
-<p class="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed text-xs">
-                                    조건 변수 큐 <code>c</code>에서 잠자고 있는 대기 스레드 중 <strong>정확히 단 하나(One Thread)</strong>를 깨워 실행 준비 상태(Ready)로 전환합니다. 만약 큐에 대기 중인 스레드가 없다면 아무 동작도 하지 않고 넘어갑니다.
-                                </p>
-</div>
-</div>
-</div>
-<div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 rounded mb-2">🏃 직관적 비유 &amp; 예시</span>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                            은행 대기표 기계와 같습니다. 번호표를 뽑고 대기석에 편안하게 앉아서 졸거나 스마트폰을 하다가(Sleep), 은행원 창구에서 번호를 호출해 띵동 소리를 울리면(Signal) 비로소 일어나 일을 보러 가는 것입니다.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-<p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                            조건 변수는 자원을 소모하지 않고 안전하게 스레드를 재우는 <code>wait()</code>와, 외부에서 대상을 정확히 찍어 기상시키는 <code>signal()</code>을 매핑하여 바쁜 대기 문제를 완벽히 소거합니다.
-                        </p>
-</div>
-</div>
-</div>
-</section>
-
-<section class="mb-12 scroll-mt-20" id="ch3">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<div class="flex items-center space-x-3 mb-6">
-<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 3</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white">올바른 구현의 삼위일체: 왜 상태 변수(State Var)와 뮤텍스 락(Lock)이 함께 있어야 하는가?</h2>
-</div>
-<p class="text-slate-600 dark:text-slate-300 mb-6">
-                    스레드 락과 상태 변수, 그리고 조건 변수 중 단 하나라도 누락되면 즉시 <strong>데드락</strong>이나 <strong>영원한 실종 잠장(Lost Wake-up)</strong>의 늪에 빠지게 됩니다.
-                </p>
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-
-<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-<h3 class="text-lg font-bold text-red-500 mb-2 flex items-center">
-                            💥 상태 변수(done)가 없는 경우의 파국
-                        </h3>
-<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                            스레드의 완료 플래그(done) 체크 없이 순수하게 <code>wait()</code>와 <code>signal()</code>만 호출하도록 짠다면:
-                        </p>
-<pre class="text-xs bg-slate-950 text-slate-200 p-4 rounded-lg overflow-x-auto"><code>// [부모 스레드]
+      <section class="card" id="ch3">
+        <div class="flex items-center space-x-3 mb-6">
+          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 3</span>
+          <h2 style="border:none;padding:0;margin:0">올바른 구현의 삼위일체: 왜 상태 변수(State Var)와 뮤텍스 락(Lock)이 함께 있어야 하는가?</h2>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-6">
+          스레드 락과 상태 변수, 그리고 조건 변수 중 단 하나라도 누락되면 즉시 <strong>데드락</strong>이나 <strong>영원한 실종 잠장(Lost Wake-up)</strong>의 늪에 빠지게 됩니다.
+        </p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+            <h3 class="text-lg font-bold text-red-500 mb-2 flex items-center" style="margin-top:0">
+              💥 상태 변수(done)가 없는 경우의 파국
+            </h3>
+            <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+              스레드의 완료 플래그(done) 체크 없이 순수하게 <code>wait()</code>와 <code>signal()</code>만 호출하도록 짠다면:
+            </p>
+            <pre><code>// [부모 스레드]
 pthread_mutex_lock(&amp;m);
 pthread_cond_wait(&amp;c, &amp;m); // 대기
 pthread_mutex_unlock(&amp;m);
@@ -221,19 +195,19 @@ pthread_mutex_unlock(&amp;m);
 pthread_mutex_lock(&amp;m);
 pthread_cond_signal(&amp;c);   // 기상 시그널
 pthread_mutex_unlock(&amp;m);</code></pre>
-<div class="mt-4 p-3 rounded bg-red-100/50 dark:bg-red-950/20 text-xs text-red-800 dark:text-red-300">
-<strong>레이스 컨디션 시나리오:</strong> 자식이 부모가 대기 큐에 도달하기도 전에 먼저 실행되어 <code>signal()</code>을 쏘아보내 버리면, 시그널은 공중분해됩니다. 이후 부모가 뒤늦게 <code>wait()</code>에 진입하면 자기는 깨워줄 사람이 없으므로 <strong>영원히 동결(Hang)</strong> 상태에 봉착합니다.
-                        </div>
-</div>
+            <div class="mt-4 p-3 rounded bg-red-100/50 dark:bg-red-950/20 text-xs text-red-800 dark:text-red-300">
+              <strong>레이스 컨디션 시나리오:</strong> 자식이 부모가 대기 큐에 도달하기도 전에 먼저 실행되어 <code>signal()</code>을 쏘아보내 버리면, 시그널은 공중분해됩니다. 이후 부모가 뒤늦게 <code>wait()</code>에 진입하면 자기는 깨워줄 사람이 없으므로 <strong>영원히 동결(Hang)</strong> 상태에 봉착합니다.
+            </div>
+          </div>
 
-<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-<h3 class="text-lg font-bold text-red-500 mb-2 flex items-center">
-                            💥 뮤텍스 락(Mutex Lock)이 없는 경우의 파국
-                        </h3>
-<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                            동시성에 락이 배제되어 상태 변수를 안전하게 보존하지 못한 채 접근한다면:
-                        </p>
-<pre class="text-xs bg-slate-950 text-slate-200 p-4 rounded-lg overflow-x-auto"><code>// [부모 스레드]
+          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+            <h3 class="text-lg font-bold text-red-500 mb-2 flex items-center" style="margin-top:0">
+              💥 뮤텍스 락(Mutex Lock)이 없는 경우의 파국
+            </h3>
+            <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+              동시성에 락이 배제되어 상태 변수를 안전하게 보존하지 못한 채 접근한다면:
+            </p>
+            <pre><code>// [부모 스레드]
 if (done == 0) {
     // &lt;-- 이 찰나에 스케줄러가 자식을 끼워넣는다면?
     pthread_cond_wait(&amp;c);
@@ -242,47 +216,45 @@ if (done == 0) {
 // [자식 스레드]
 done = 1;
 pthread_cond_signal(&amp;c);</code></pre>
-<div class="mt-4 p-3 rounded bg-red-100/50 dark:bg-red-950/20 text-xs text-red-800 dark:text-red-300">
-<strong>레이스 컨디션 시나리오:</strong> 부모가 <code>done == 0</code>인 것을 확인하고 잠에 빠지기 바로 직전, 자식이 치고 나가 <code>done = 1; signal();</code>을 쏘고 종료됩니다. 직후 부모 스레드는 <code>wait()</code>에 빠지며 자식 스레드 종료 이후에 잠들어 버렸으므로 <strong>평생 잠에서 깨어나지 못하는 무덤</strong>에 묻힙니다.
-                        </div>
-</div>
-</div>
+            <div class="mt-4 p-3 rounded bg-red-100/50 dark:bg-red-950/20 text-xs text-red-800 dark:text-red-300">
+              <strong>레이스 컨디션 시나리오:</strong> 부모가 <code>done == 0</code>인 것을 확인하고 잠에 빠기 바로 직전, 자식이 치고 나가 <code>done = 1; signal();</code>을 쏘고 종료됩니다. 직후 부모 스레드는 <code>wait()</code>에 빠지며 자식 스레드 종료 이후에 잠들어 버렸으므로 <strong>평생 잠에서 깨어나지 못하는 무덤</strong>에 묻힙니다.
+            </div>
+          </div>
+        </div>
 
-<div class="space-y-4">
-<div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-<p class="text-slate-800 dark:text-slate-200 font-medium">
-<strong>조건 동기화의 3요소:</strong> 상호배제를 지키는 <strong>뮤텍스(Mutex)</strong>, 프로그램의 구체적 상태를 나타내는 <strong>상태 변수(done)</strong>, 신호를 관리하는 <strong>조건 변수(c)</strong>가 반드시 연동되어 동작하는 법칙.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                            스레드가 대기하기 전 락을 쥔 상태에서 반드시 <strong>상태 변수가 대기 조건에 맞는지 확인</strong>하는 구조(<code>while(done == 0) wait(&amp;c, &amp;m);</code>)가 필수적입니다. 이로써 자식이 이미 일을 다 처리했는지(done == 1)를 선제 확인하고, 아직 처리를 하지 않은 상황에서만 안전하게 락을 넘기며 큐로 들어가 대기하게 됩니다.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-<p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                            조건 변수는 독자적인 상태 저장을 하지 못하는 비상태(Stateless) 도구이므로, 락으로 래핑된 실제 코드 변수값 상태를 함께 비교하는 장치가 있어야만 잠들고 깨어나는 시그널 소실(Lost Wake-up)을 완벽 차단할 수 있습니다.
-                        </p>
-</div>
-</div>
-</div>
-</section>
+        <div class="space-y-4">
+          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
+            <p class="text-slate-800 dark:text-slate-200 font-medium">
+              <strong>조건 동기화의 3요소:</strong> 상호배제를 지키는 <strong>뮤텍스(Mutex)</strong>, 프로그램의 구체적 상태를 나타내는 <strong>상태 변수(done)</strong>, 신호를 관리하는 <strong>조건 변수(c)</strong>가 반드시 연동되어 동작하는 법칙.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+              스레드가 대기하기 전 락을 쥔 상태에서 반드시 <strong>상태 변수가 대기 조건에 맞는지 확인</strong>하는 구조(<code>while(done == 0) wait(&amp;c, &amp;m);</code>)가 필수적입니다. 이로써 자식이 이미 일을 다 처리했는지(done == 1)를 선제 확인하고, 아직 처리를 하지 않은 상황에서만 안전하게 락을 넘기며 큐로 들어가 대기하게 됩니다.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
+            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
+              조건 변수는 독자적인 상태 저장을 하지 못하는 비상태(Stateless) 도구이므로, 락으로 래핑된 실제 코드 변수값 상태를 함께 비교하는 장치가 있어야만 잠들고 깨어나는 시그널 소실(Lost Wake-up)을 완벽 차단할 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </section>
 
-<section class="mb-12 scroll-mt-20" id="ch4">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<div class="flex items-center space-x-3 mb-6">
-<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 4</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white">생산자-소비자 문제(Bounded Buffer)와 IF 문의 참사</h2>
-</div>
-<p class="text-slate-600 dark:text-slate-300 mb-6">
-                    실무의 가장 정통적인 패턴인 <strong>유한 버퍼 생산자-소비자(Producer/Consumer)</strong>의 1차 버전을 살펴봅시다. 데이터를 밀어넣는 생산자(grep, 웹 수신기)와 데이터를 빼가서 일하는 소비자(wc, 워커 스레드)가 제한된 크기의 버퍼(Buffer)를 두고 공유하는 상황입니다.
-                </p>
-<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">버퍼와 if문을 쓴 미완성 코드</h3>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-<pre class="text-xs bg-slate-950 text-slate-200 p-4 rounded-lg overflow-x-auto"><code>// [생산자 - IF 방식의 취약 코드]
+      <section class="card" id="ch4">
+        <div class="flex items-center space-x-3 mb-6">
+          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 4</span>
+          <h2 style="border:none;padding:0;margin:0">생산자-소비자 문제(Bounded Buffer)와 IF 문의 참사</h2>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-6">
+          실무의 가장 정통적인 패턴인 <strong>유한 버퍼 생산자-소비자(Producer/Consumer)</strong>의 1차 버전을 살펴봅시다. 데이터를 밀어넣는 생산자(grep, 웹 수신기)와 데이터를 빼가서 일하는 소비자(wc, 워커 스레드)가 제한된 크기의 버퍼(Buffer)를 두고 공유하는 상황입니다.
+        </p>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">버퍼와 if문을 쓴 미완성 코드</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <pre><code>// [생산자 - IF 방식의 취약 코드]
 void *producer(void *arg) {
     for (int i = 0; i &lt; loops; i++) {
         pthread_mutex_lock(&amp;mutex);
@@ -294,7 +266,7 @@ void *producer(void *arg) {
         pthread_mutex_unlock(&amp;mutex);
     }
 }</code></pre>
-<pre class="text-xs bg-slate-950 text-slate-200 p-4 rounded-lg overflow-x-auto"><code>// [소비자 - IF 방식의 취약 코드]
+          <pre><code>// [소비자 - IF 방식의 취약 코드]
 void *consumer(void *arg) {
     for (int i = 0; i &lt; loops; i++) {
         pthread_mutex_lock(&amp;mutex);
@@ -306,157 +278,152 @@ void *consumer(void *arg) {
         pthread_mutex_unlock(&amp;mutex);
     }
 }</code></pre>
-</div>
-<div class="p-5 rounded-xl border border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/10 mb-6">
-<h4 class="font-extrabold text-red-700 dark:text-red-400 text-base mb-2">왜 이 코드가 2명의 소비자 환경에서 무조건 터질까요? (Mesa Semantics)</h4>
-<p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-                        스레드가 깨어났을 때, 내가 대기하던 조건이 '지금 이 순간에도 만족하고 있는지'는 보장되지 않습니다. 깨어난 순간과 락을 다시 확보하고 실행되는 순간 사이에 시간 차이가 발생하기 때문입니다.
-                    </p>
+        </div>
+        <div class="p-5 rounded-xl border border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/10 mb-6">
+          <h4 class="font-extrabold text-red-700 dark:text-red-400 text-base mb-2">왜 이 코드가 2명의 소비자 환경에서 무조건 터질까요? (Mesa Semantics)</h4>
+          <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+            스레드가 깨어났을 때, 내가 대기하던 조건이 '지금 이 순간에도 만족하고 있는지'는 보장되지 않습니다. 깨어난 순간과 락을 다시 확보하고 실행되는 순간 사이에 시간 차이가 발생하기 때문입니다.
+          </p>
 
-<div class="overflow-x-auto">
-<table class="min-w-full text-xs text-slate-600 dark:text-slate-300">
-<thead>
-<tr class="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200">
-<th class="p-2 border">단계</th>
-<th class="p-2 border">스레드 Tc1 (소비자)</th>
-<th class="p-2 border">스레드 Tc2 (소비자)</th>
-<th class="p-2 border">스레드 Tp (생산자)</th>
-<th class="p-2 border">버퍼 상태 (count)</th>
-<th class="p-2 border">추적 상세 내역 (Mesa Semantics Bug)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="p-2 border font-bold">1</td>
-<td class="p-2 border bg-blue-100/30 dark:bg-blue-950/30">Running -&gt; wait() 수면</td>
-<td class="p-2 border">Ready</td>
-<td class="p-2 border">Ready</td>
-<td class="p-2 border font-bold">0</td>
-<td class="p-2 border">버퍼가 비어있으므로 소비자 Tc1이 락을 놓고 깊은 잠에 빠집니다.</td>
-</tr>
-<tr>
-<td class="p-2 border font-bold">2</td>
-<td class="p-2 border">Sleep</td>
-<td class="p-2 border">Ready</td>
-<td class="p-2 border bg-emerald-100/30 dark:bg-emerald-950/30">Running (put &amp; signal)</td>
-<td class="p-2 border font-bold">1</td>
-<td class="p-2 border">생산자 Tp가 버퍼를 1로 만들고 시그널을 발송해 Tc1이 깨어납니다(Ready).</td>
-</tr>
-<tr>
-<td class="p-2 border font-bold">3</td>
-<td class="p-2 border bg-amber-100/30 dark:bg-amber-950/30">Ready</td>
-<td class="p-2 border bg-emerald-100/30 dark:bg-emerald-950/30">Running (get)</td>
-<td class="p-2 border">Sleep / Ready</td>
-<td class="p-2 border font-bold">0</td>
-<td class="p-2 border"><strong>[새치기]</strong> 깨어난 Tc1이 락을 잡기 전, 스케줄러가 Tc2를 골라 Tc2가 버퍼의 값을 채갑니다.</td>
-</tr>
-<tr>
-<td class="p-2 border font-bold">4</td>
-<td class="p-2 border bg-red-100/30 dark:bg-red-950/30">Running (get)</td>
-<td class="p-2 border">Ready</td>
-<td class="p-2 border">Ready</td>
-<td class="p-2 border font-bold">0</td>
-<td class="p-2 border text-red-600 dark:text-red-400 font-bold">Tc1이 깨어나 if 대기에서 빠져나와 get()을 강행하지만 버퍼는 이미 0입니다. Assertion Fail 발생!</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-xs text-slate-600 dark:text-slate-300">
+              <thead>
+                <tr class="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+                  <th class="p-2 border">단계</th>
+                  <th class="p-2 border">스레드 Tc1 (소비자)</th>
+                  <th class="p-2 border">스레드 Tc2 (소비자)</th>
+                  <th class="p-2 border">스레드 Tp (생산자)</th>
+                  <th class="p-2 border">버퍼 상태 (count)</th>
+                  <th class="p-2 border">추적 상세 내역 (Mesa Semantics Bug)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="p-2 border font-bold">1</td>
+                  <td class="p-2 border bg-blue-100/30 dark:bg-blue-950/30">Running -&gt; wait() 수면</td>
+                  <td class="p-2 border">Ready</td>
+                  <td class="p-2 border">Ready</td>
+                  <td class="p-2 border font-bold">0</td>
+                  <td class="p-2 border">버퍼가 비어있으므로 소비자 Tc1이 락을 놓고 깊은 잠에 빠집니다.</td>
+                </tr>
+                <tr>
+                  <td class="p-2 border font-bold">2</td>
+                  <td class="p-2 border">Sleep</td>
+                  <td class="p-2 border">Ready</td>
+                  <td class="p-2 border bg-emerald-100/30 dark:bg-emerald-950/30">Running (put &amp; signal)</td>
+                  <td class="p-2 border font-bold">1</td>
+                  <td class="p-2 border">생산자 Tp가 버퍼를 1로 만들고 시그널을 발송해 Tc1이 깨어납니다(Ready).</td>
+                </tr>
+                <tr>
+                  <td class="p-2 border font-bold">3</td>
+                  <td class="p-2 border bg-amber-100/30 dark:bg-amber-950/30">Ready</td>
+                  <td class="p-2 border bg-emerald-100/30 dark:bg-emerald-950/30">Running (get)</td>
+                  <td class="p-2 border">Sleep / Ready</td>
+                  <td class="p-2 border font-bold">0</td>
+                  <td class="p-2 border"><strong>[새치기]</strong> 깨어난 Tc1이 락을 잡기 전, 스케줄러가 Tc2를 골라 Tc2가 버퍼의 값을 채갑니다.</td>
+                </tr>
+                <tr>
+                  <td class="p-2 border font-bold">4</td>
+                  <td class="p-2 border bg-red-100/30 dark:bg-red-950/30">Running (get)</td>
+                  <td class="p-2 border">Ready</td>
+                  <td class="p-2 border">Ready</td>
+                  <td class="p-2 border font-bold">0</td>
+                  <td class="p-2 border text-red-600 dark:text-red-400 font-bold">Tc1이 깨어나 if 대기에서 빠져나와 get()을 강행하지만 버퍼는 이미 0입니다. Assertion Fail 발생!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-<div class="space-y-4">
-<div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-<p class="text-slate-800 dark:text-slate-200 font-medium">
-<strong>메사 시맨틱(Mesa Semantics):</strong> 조건 변수에서 깨어난 스레드가 즉시 실행 상태로 가 자원을 선점하는 것이 아니라 단순히 '준비(Ready)' 상태로만 가기 때문에, 실제 실행될 땐 다른 스레드에 의해 조건이 깨졌을 수 있다는 성질.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                            이에 대비되는 <strong>호어 시맨틱(Hoare Semantics)</strong>은 깨어난 스레드가 락을 절대적으로 이어받아 강제 실행하도록 보장하지만, 현대 OS 대다수(pthreads 포함)는 효율성을 위해 메사 설계를 차용합니다. 따라서 <code>if</code> 조건 대기는 절대 신뢰할 수 없습니다.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-<p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                            메사 시맨틱 상에서는 깨어났을 때 누군가 이미 자원을 선점했을 가능성(State 변경)이 다분하므로, 조건 판단 구문은 절대로 <code>if</code>가 아닌 <strong><code>while</code></strong>로 설계하여 반복 재검증해야 합니다.
-                        </p>
-</div>
-</div>
-</div>
-</section>
+        <div class="space-y-4">
+          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
+            <p class="text-slate-800 dark:text-slate-200 font-medium">
+              <strong>메사 시맨틱(Mesa Semantics):</strong> 조건 변수에서 깨어난 스레드가 즉시 실행 상태로 가 자원을 선점하는 것이 아니라 단순히 '준비(Ready)' 상태로만 가기 때문에, 실제 실행될 땐 다른 스레드에 의해 조건이 깨졌을 수 있다는 성질.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+              이에 대비되는 <strong>호어 시맨틱(Hoare Semantics)</strong>은 깨어난 스레드가 락을 절대적으로 이어받아 강제 실행하도록 보장하지만, 현대 OS 대다수(pthreads 포함)는 효율성을 위해 메사 설계를 차용합니다. 따라서 <code>if</code> 조건 대기는 절대 신뢰할 수 없습니다.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
+            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
+              메사 시맨틱 상에서는 깨어났을 때 누군가 이미 자원을 선점했을 가능성(State 변경)이 다분하므로, 조건 판단 구문은 절대로 <code>if</code>가 아닌 <strong><code>while</code></strong>로 설계하여 반복 재검증해야 합니다.
+            </p>
+          </div>
+        </div>
+      </section>
 
-<section class="mb-12 scroll-mt-20" id="ch5">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<div class="flex items-center space-x-3 mb-6">
-<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 5</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white">진화하는 동기화: While 도입과 '단일 조건 변수'의 한계로 인한 Total Sleep 데드락</h2>
-</div>
-<p class="text-slate-600 dark:text-slate-300 mb-6">
-                    Mesa 문제를 회피하기 위해 모든 조건을 <code>while</code>로 바꿨다고 안도하기엔 일찍입니다. 스레드가 3개 이상일 때 <strong>단일 조건 변수</strong>만 쓰면 또 다른 괴물인 <strong>전체 휴면 상태(Total Sleep Deadlock)</strong>를 유발하게 됩니다.
-                </p>
+      <section class="card" id="ch5">
+        <div class="flex items-center space-x-3 mb-6">
+          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 5</span>
+          <h2 style="border:none;padding:0;margin:0">진화하는 동기화: While 도입과 '단일 조건 변수'의 한계로 인한 Total Sleep 데드락</h2>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-6">
+          Mesa 문제를 회피하기 위해 모든 조건을 <code>while</code>로 바꿨다고 안도하기엔 일찍입니다. 스레드가 3개 이상일 때 <strong>단일 조건 변수</strong>만 쓰면 또 다른 괴물인 <strong>전체 휴면 상태(Total Sleep Deadlock)</strong>를 유발하게 됩니다.
+        </p>
 
-<div class="space-y-4 mb-6">
-<div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-<p class="text-slate-800 dark:text-slate-200 font-medium">
-<strong>전체 휴면(Total Sleep) 데드락:</strong> 하나의 조건 변수만 쓰면서 스레드가 다른 성격의 주체를 깨워야 하는데 같은 주체를 깨워, 결국 모든 러너가 서로 자기를 깨워주기만을 기다리며 잠들게 되는 치명적 교착 상태.
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                            소비자 T_{c1}, T_{c2}가 대기 중에 생산자 T_p가 버퍼를 채우고 시그널을 발송해 T_{c1}이 일어납니다. T_{c1}이 데이터를 다 소비하고 낸 <code>signal()</code>은 <strong>생산자(T_p)를 깨워 다시 채우라고 보내는 의도의 시그널</strong>이어야 합니다. 하지만 단일 변수를 쓰다 보니 대기 큐 안의 <strong>또 다른 소비자(T_{c2})</strong>가 신호를 오해해 깨어나 버립니다.
-                        </p>
-<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mt-2">
-                            깨어난 T_{c2}는 버퍼를 보니 이미 T_{c1}이 다 먹어치워 비어있으므로 도로 잠들고, 원래 신호를 받아야 했던 생산자 T_p도 잠자고 있어 누구도 동작하지 않는 <strong>"전원 Sleep 상태"</strong>가 벌어집니다(Slide 17).
-                        </p>
-</div>
-<div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-<span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 구원의 마스터코드: 두 개의 조건 변수 (empty, fill)</span>
-<p class="text-slate-800 dark:text-slate-200 font-semibold text-sm mb-3">
-                            생산자가 기다릴 큐 <code>empty</code>와 소비자가 기다릴 큐 <code>fill</code>을 명시적으로 분리하여 시그널을 각자 정확하게 겨냥해 쏩니다.
-                        </p>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-<div class="p-4 rounded-lg bg-slate-950 text-slate-200">
-<span class="text-emerald-400 font-bold">// 생산자 - 대기 큐 분리</span><br/>
-                                while (count == 1)<br/>
-                                    pthread_cond_wait(<strong>&amp;empty</strong>, &amp;mutex);<br/>
-                                put(i);<br/>
-                                pthread_cond_signal(<strong>&amp;fill</strong>); <span class="text-blue-400">// 소비자만 겨냥</span>
-</div>
-<div class="p-4 rounded-lg bg-slate-950 text-slate-200">
-<span class="text-emerald-400 font-bold">// 소비자 - 대기 큐 분리</span><br/>
-                                while (count == 0)<br/>
-                                    pthread_cond_wait(<strong>&amp;fill</strong>, &amp;mutex);<br/>
-                                int tmp = get();<br/>
-                                pthread_cond_signal(<strong>&amp;empty</strong>); <span class="text-blue-400">// 생산자만 겨냥</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
+        <div class="space-y-4 mb-6">
+          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
+            <p class="text-slate-800 dark:text-slate-200 font-medium">
+              <strong>전체 휴면(Total Sleep) 데드락:</strong> 하나의 조건 변수만 쓰면서 스레드가 다른 성격의 주체를 깨워야 하는데 같은 주체를 깨워, 결국 모든 러너가 서로 자기를 깨워주기만을 기다리며 잠들게 되는 치명적 교착 상태.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+              소비자 T_{c1}, T_{c2}가 대기 중에 생산자 T_p가 버퍼를 채우고 시그널을 발송해 T_{c1}이 일어납니다. T_{c1}이 데이터를 다 소비하고 낸 <code>signal()</code>은 <strong>생산자(T_p)를 깨워 다시 채우라고 보내는 의도의 시그널</strong>이어야 합니다. 하지만 단일 변수를 쓰다 보니 대기 큐 안의 <strong>또 다른 소비자(T_{c2})</strong>가 신호를 오해해 깨어나 버립니다.
+            </p>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mt-2">
+              깨어난 T_{c2}는 버퍼를 보니 이미 T_{c1}이 다 먹어치워 비어있으므로 도로 잠들고, 원래 신호를 받아야 했던 생산자 T_p도 잠자고 있어 누구도 동작하지 않는 <strong>"전원 Sleep 상태"</strong>가 벌어집니다.
+            </p>
+          </div>
+          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
+            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 구원의 마스터코드: 두 개의 조건 변수 (empty, fill)</span>
+            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm mb-3">
+              생산자가 기다릴 큐 <code>empty</code>와 소비자가 기다릴 큐 <code>fill</code>을 명시적으로 분리하여 시그널을 각자 정확하게 겨냥해 쏩니다.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono not-prose">
+              <div class="p-4 rounded-lg bg-slate-950 text-slate-200">
+                <span class="text-emerald-400 font-bold">// 생산자 - 대기 큐 분리</span><br/>
+                while (count == 1)<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;pthread_cond_wait(<strong>&amp;empty</strong>, &amp;mutex);<br/>
+                put(i);<br/>
+                pthread_cond_signal(<strong>&amp;fill</strong>); <span class="text-blue-400">// 소비자만 겨냥</span>
+              </div>
+              <div class="p-4 rounded-lg bg-slate-950 text-slate-200">
+                <span class="text-emerald-400 font-bold">// 소비자 - 대기 큐 분리</span><br/>
+                while (count == 0)<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;pthread_cond_wait(<strong>&amp;fill</strong>, &amp;mutex);<br/>
+                int tmp = get();<br/>
+                pthread_cond_signal(<strong>&amp;empty</strong>); <span class="text-blue-400">// 생산자만 겨냥</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-<section class="mb-12 scroll-mt-20" id="ch6">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<div class="flex items-center space-x-3 mb-6">
-<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 6</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white">다중 슬롯 원형 버퍼 확장 &amp; 커버링 조건(Covering Conditions)</h2>
-</div>
-<p class="text-slate-600 dark:text-slate-300 mb-6">
-                    단일 슬롯을 넘어 다중 슬롯 원형 버퍼(Circular Buffer)로 전환하여 효율성과 병렬 연산 처리량을 대폭 늘릴 수 있습니다. 또한 어떤 스레드가 조건을 만족해 깨어나야 할지 명확하지 않은 가변 연산 환경의 최종 대안인 <strong>커버링 조건(Covering Condition)</strong>을 정리합니다.
-                </p>
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 text-sm">
-
-<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                            🔄 다중 슬롯 원형 버퍼 (MAX 사이즈 확장)
-                        </h3>
-<p class="text-slate-500 dark:text-slate-400 mb-4">
-                            나머지 연산자(%)를 활용해 버퍼 포인터를 도는 구조입니다. 꽉 차는 임계점 조건이 <code>count == MAX</code>로, 비는 조건이 <code>count == 0</code>으로 정립됩니다.
-                        </p>
-<pre class="text-xs bg-slate-950 text-slate-200 p-4 rounded-lg overflow-x-auto"><code>void put(int value) {
+      <section class="card" id="ch6">
+        <div class="flex items-center space-x-3 mb-6">
+          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 6</span>
+          <h2 style="border:none;padding:0;margin:0">다중 슬롯 원형 버퍼 확장 &amp; 커버링 조건(Covering Conditions)</h2>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-6">
+          단일 슬롯을 넘어 다중 슬롯 원형 버퍼(Circular Buffer)로 전환하여 효율성과 병렬 연산 처리량을 대폭 늘릴 수 있습니다. 또한 어떤 스레드가 조건을 만족해 깨어나야 할지 명확하지 않은 가변 연산 환경의 최종 대안인 <strong>커버링 조건(Covering Condition)</strong>을 정리합니다.
+        </p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 text-sm">
+          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2" style="margin-top:0">
+              🔄 다중 슬롯 원형 버퍼 (MAX 사이즈 확장)
+            </h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-4">
+              나머지 연산자(%)를 활용해 버퍼 포인터를 도는 구조입니다. 꽉 차는 임계점 조건이 <code>count == MAX</code>로, 비는 조건이 <code>count == 0</code>으로 정립됩니다.
+            </p>
+            <pre><code>void put(int value) {
     buffer[fill_ptr] = value;
     fill_ptr = (fill_ptr + 1) % MAX;
     count++;
@@ -467,112 +434,114 @@ int get() {
     count--;
     return tmp;
 }</code></pre>
-</div>
+          </div>
 
-<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                            📢 커버링 조건(Covering)과 Broadcast
-                        </h3>
-<p class="text-slate-500 dark:text-slate-400 mb-2">
-                            스레드들 마다 요구하는 메모리 할당 크기가 각기 다른 시나리오(allocate 100바이트 vs allocate 10바이트)가 대표적입니다.
-                        </p>
-<p class="text-slate-600 dark:text-slate-300 mb-4">
-                            메모리가 50바이트 반환되었을 때, <code>signal()</code>만 쏘아보내면 마침 100바이트를 고집하는 대형 스레드 A가 일어나 자기가 처리할 수 없음을 보고 다시 잠듭니다. 하지만 실제로 10바이트만 있으면 잘 달릴 수 있는 소형 스레드 B는 시그널을 받지 못해 계속 깨어나지 못하게 되는 불상사가 일어납니다.
-                        </p>
-<div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded border border-indigo-200 dark:border-indigo-900">
-<strong>해결 메커니즘 (pthread_cond_broadcast):</strong> 락을 풀며 잠자고 있던 모든 스레드를 일괄 깨워(Broadcast) 자원량 조건들을 다시 맞춤 비교 평가하게 합니다. 자원 낭비는 좀 생길 수 있어도 완벽한 비즈니스 정확성을 보증하는 가장 보수적이고 안전한 "커버링 조건" 기법입니다.
-                        </div>
-</div>
-</div>
-</div>
-</section>
+          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2" style="margin-top:0">
+              📢 커버링 조건(Covering)과 Broadcast
+            </h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-2">
+              스레드들 마다 요구하는 메모리 할당 크기가 각각 상이할 때(allocate 100바이트 vs allocate 10바이트) 유용합니다.
+            </p>
+            <p class="text-slate-600 dark:text-slate-300 mb-4">
+              메모리가 50바이트 반환되었을 때, <code>signal()</code>만 쏘아보내면 마침 100바이트를 고집하는 대형 스레드 A가 일어나 자기가 처리할 수 없음을 보고 다시 잠듭니다. 하지만 실제로 10바이트만 있으면 잘 달릴 수 있는 소형 스레드 B는 시그널을 받지 못해 계속 깨어나지 못하게 되는 불상사가 일어납니다.
+            </p>
+            <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded border border-indigo-200 dark:border-indigo-900 text-xs text-indigo-800 dark:text-indigo-300">
+              <strong>해결 메커니즘 (pthread_cond_broadcast):</strong> 락을 풀며 잠자고 있던 모든 스레드를 일괄 깨워(Broadcast) 자원량 조건들을 다시 맞춤 비교 평가하게 합니다. 자원 낭비는 좀 생길 수 있어도 완벽한 비즈니스 정확성을 보증하는 가장 보수적이고 안전한 "커버링 조건" 기법입니다.
+            </div>
+          </div>
+        </div>
+      </section>
 
-<section class="mb-12 scroll-mt-20" id="simulator">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border-2 border-indigo-500 dark:border-indigo-400 shadow-xl">
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-<div>
-<span class="py-1 px-3 bg-indigo-500 text-white text-xs font-bold rounded-full uppercase">Simulator</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white mt-2">동시성 오동작 &amp; 제어 시각화 시뮬레이터</h2>
-<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">상황별 시나리오를 선택한 뒤 "단계별 스케줄(Step)"을 클릭해 스레드가 어떻게 비정상적으로 잠들거나 깨지는지 흐름을 눈으로 파악해 보세요.</p>
-</div>
-<div class="mt-4 md:mt-0">
-<select class="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" id="scenarioSelect">
-<option value="scenario_if">시나리오 A: Buggy 'if' (Mesa Bug)</option>
-<option value="scenario_single_cv">시나리오 B: Buggy 'while + 1 CV' (Total Sleep)</option>
-<option value="scenario_perfect">시나리오 C: Perfect 'while + 2 CVs' (정상 작동)</option>
-</select>
-</div>
-</div>
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <section class="card" id="simulator">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div>
+            <span class="py-1 px-3 bg-indigo-500 text-white text-xs font-bold rounded-full uppercase">Simulator</span>
+            <h2 class="text-2xl font-black text-slate-900 dark:text-white mt-2" style="border:none;padding:0">동시성 오동작 &amp; 제어 시각화 시뮬레이터</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">상황별 시나리오를 선택한 뒤 "단계별 스케줄(Step)"을 클릭해 스레드가 어떻게 비정상적으로 잠들거나 깨지는지 흐름을 눈으로 파악해 보세요.</p>
+          </div>
+          <div class="mt-4 md:mt-0">
+            <select class="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" id="scenarioSelect">
+              <option value="scenario_if">시나리오 A: Buggy 'if' (Mesa Bug)</option>
+              <option value="scenario_single_cv">시나리오 B: Buggy 'while + 1 CV' (Total Sleep)</option>
+              <option value="scenario_perfect">시나리오 C: Perfect 'while + 2 CVs' (정상 작동)</option>
+            </select>
+          </div>
+        </div>
 
-<div class="lg:col-span-1 flex flex-col justify-between space-y-4">
-<div class="space-y-2">
-<button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition transform hover:-translate-y-0.5 active:translate-y-0 text-sm" id="simStepBtn">
-                                ⚡ 단계별 실행 (Next Step)
-                            </button>
-<button class="w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold py-2 px-4 rounded-xl text-xs transition" id="simResetBtn">
-                                🔄 시뮬레이션 초기화
-                            </button>
-</div>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 not-prose">
+          <div class="lg:col-span-1 flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition transform hover:-translate-y-0.5 active:translate-y-0 text-sm" id="simStepBtn">
+                ⚡ 단계별 실행 (Next Step)
+              </button>
+              <button class="w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold py-2 px-4 rounded-xl text-xs transition" id="simResetBtn">
+                🔄 시뮬레이션 초기화
+              </button>
+            </div>
+            
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">실시간 상태 수동 주입</span>
+              <div class="grid grid-cols-2 gap-2">
+                <button class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold py-1.5 px-3 rounded text-xs transition disabled:opacity-30" disabled="" id="manualProduceBtn">Produce</button>
+                <button class="bg-blue-500/20 hover:bg-blue-500/30 text-blue-700 dark:text-blue-400 font-bold py-1.5 px-3 rounded text-xs transition disabled:opacity-30" disabled="" id="manualConsumeBtn">Consume</button>
+              </div>
+              <span class="text-[10px] text-slate-400 block mt-2">* 시나리오 C(정상 작동) 모드에서만 수동 테스트가 활성화됩니다.</span>
+            </div>
 
-<div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
-<span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">실시간 상태 수동 주입</span>
-<div class="grid grid-cols-2 gap-2">
-<button class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold py-1.5 px-3 rounded text-xs transition disabled:opacity-30" disabled="" id="manualProduceBtn">Produce</button>
-<button class="bg-blue-500/20 hover:bg-blue-500/30 text-blue-700 dark:text-blue-400 font-bold py-1.5 px-3 rounded text-xs transition disabled:opacity-30" disabled="" id="manualConsumeBtn">Consume</button>
-</div>
-<span class="text-[10px] text-slate-400 block mt-2">* 시나리오 C(정상 작동) 모드에서만 수동 테스트가 활성화됩니다.</span>
-</div>
-<div class="p-4 rounded-xl bg-slate-950 text-slate-200 font-mono text-xs h-48 flex flex-col">
-<span class="text-indigo-400 font-bold border-b border-indigo-950 pb-1 mb-2 block">📋 실행 트레이스 정보</span>
-<div class="flex-1 overflow-y-auto space-y-1.5 pr-1 leading-normal text-slate-300" id="simConsole">
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex justify-between items-center text-xs">
+              <span>현재 실행 단계</span>
+              <b class="px-2 py-1 bg-slate-800 text-indigo-400 rounded" id="simStepIndicator">Step: 0</b>
+            </div>
+          </div>
 
-</div>
-</div>
-</div>
+          <div class="lg:col-span-3 flex flex-col space-y-4">
+            <canvas id="simCanvas" width="760" height="360"></canvas>
+            <div class="p-4 rounded-xl bg-slate-950 text-slate-200 border border-slate-900 h-32 overflow-y-auto font-mono text-xs" id="simConsole">
+              <!-- Trace log output -->
+            </div>
+          </div>
+        </div>
+      </section>
 
-<div class="lg:col-span-3 bg-slate-950 rounded-2xl p-4 flex flex-col justify-center border border-slate-800">
-<div class="flex items-center justify-between mb-2 px-2 text-xs text-slate-400 font-mono">
-<div class="flex items-center space-x-2">
-<span class="w-3.5 h-3.5 rounded bg-amber-500 inline-block"></span><span>Running 스레드</span>
-<span class="w-3.5 h-3.5 rounded bg-blue-500 inline-block ml-2"></span><span>Ready</span>
-<span class="w-3.5 h-3.5 rounded bg-slate-600 inline-block ml-2"></span><span>Sleeping (CV 큐)</span>
-</div>
-<div class="font-extrabold text-indigo-400" id="simStepIndicator">Step: 0</div>
-</div>
-<canvas class="w-full border border-slate-800 rounded-xl bg-slate-900" id="simCanvas"></canvas>
-</div>
-</div>
-</div>
-</section>
+      <section class="card" id="quiz">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-3">
+            <span class="py-1 px-3 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full">Quiz Time</span>
+            <h2 style="border:none;padding:0;margin:0">학습 완성 자가진단 퀴즈</h2>
+          </div>
+          <span class="font-black text-emerald-500 text-lg" id="quizScore">0 / 5</span>
+        </div>
 
-<section class="mb-12 scroll-mt-20" id="quiz">
-<div class="p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-<div class="flex items-center justify-between mb-6">
-<div class="flex items-center space-x-3">
-<span class="py-1 px-3 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full">Quiz Time</span>
-<h2 class="text-2xl font-black text-slate-900 dark:text-white">학습 완성 자가진단 퀴즈</h2>
-</div>
-<span class="font-black text-emerald-500 text-lg" id="quizScore">0 / 5</span>
-</div>
+        <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden mb-8">
+          <div class="bg-emerald-500 h-2 w-0 transition-all duration-500" id="quizProgressBar"></div>
+        </div>
+        <div class="space-y-8 not-prose" id="quizContainer">
+          <!-- Radio questions loaded dynamically -->
+        </div>
+        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end not-prose">
+          <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/20 transition transform hover:-translate-y-0.5 active:translate-y-0 text-sm" id="quizSubmitBtn">
+            정답 및 상세 해설 검증하기
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
 
-<div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden mb-8">
-<div class="bg-emerald-500 h-2 w-0 transition-all duration-500" id="quizProgressBar"></div>
-</div>
-<div class="space-y-8" id="quizContainer">
+  <!-- Hidden placeholders for legacy script theme synchronization -->
+  <div style="display:none" id="themeToggle">
+    <div id="sunIcon"></div>
+    <div id="moonIcon"></div>
+  </div>
 
-</div>
-<div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end">
-<button class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/20 transition transform hover:-translate-y-0.5 active:translate-y-0 text-sm" id="quizSubmitBtn">
-                        정답 및 상세 해설 검증하기
-                    </button>
-</div>
-</div>
-</section>
+  <footer class="relative z-10 border-t border-slate-200 dark:border-white/[.05] py-8 mt-10">
+    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-xs text-slate-500 dark:text-white/35">Study Notes · Operating System · Condition Variables</p>
+      <a class="text-xs font-mono text-violet-600 dark:text-violet-300 hover:underline" href="../../">Back to OS notes</a>
+    </div>
+  </footer>
 
-</main>
-<script>
-
+  <script>
         // --- 1. 전역 DOM 객체 및 상태 정의 (GLOBAL DOM ELEMENTS & STATE) ---
         
         // MathJax 동적 렌더러 헬퍼
@@ -630,13 +599,13 @@ int get() {
         function setTheme(isDark) {
             if (isDark) {
                 document.documentElement.classList.add('dark');
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
+                if (sunIcon) sunIcon.classList.remove('hidden');
+                if (moonIcon) moonIcon.classList.add('hidden');
                 localStorage.setItem('study-notes-theme', 'dark');
             } else {
                 document.documentElement.classList.remove('dark');
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
+                if (sunIcon) sunIcon.classList.add('hidden');
+                if (moonIcon) moonIcon.classList.remove('hidden');
                 localStorage.setItem('study-notes-theme', 'light');
             }
             // 테마 변경 시 시뮬레이터 다시 그리기 (캔버스가 선언되었고 그리기 함수가 활성화된 경우만 실행)
@@ -1222,6 +1191,6 @@ int get() {
 
         window.addEventListener('resize', resizeCanvas);
     
-</script>
+  </script>
 </body>
 </html>
