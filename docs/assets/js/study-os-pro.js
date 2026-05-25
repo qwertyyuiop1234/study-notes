@@ -19,12 +19,12 @@
   function getPrefix(){
     const parts = location.pathname.split('/').filter(Boolean);
     const subjects = ['computer-architecture','operating-system','probability-and-statistics','machine-learning'];
-    const idx = parts.indexOf('study-notes');
+    const idx = parts.lastIndexOf('study-notes') >= 0 ? parts.lastIndexOf('study-notes') : parts.lastIndexOf('docs');
     const subjectIdx = parts.findIndex(part => subjects.includes(part));
-    const depth = idx >= 0
-      ? parts.length - idx - 1 - (location.pathname.endsWith('/') ? 0 : 1)
-      : subjectIdx >= 0
-        ? parts.length - subjectIdx - (location.pathname.endsWith('/') ? 0 : 1)
+    const depth = subjectIdx >= 0
+      ? parts.length - subjectIdx - (location.pathname.endsWith('/') ? 0 : 1)
+      : idx >= 0
+        ? parts.length - idx - 1 - (location.pathname.endsWith('/') ? 0 : 1)
         : 0;
     return depth <= 0 ? '' : '../'.repeat(depth);
   }
