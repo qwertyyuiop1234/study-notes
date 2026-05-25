@@ -1,0 +1,159 @@
+<!doctype html>
+<html class="light" lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Artificial Neural Networks, Perceptron & SoftMax · Machine Learning</title>
+<meta name="description" content="ANN, perceptron, SoftMax, Cross Entropy, XOR와 MLP를 개념 지도와 시각 도식, 계산 실험으로 이해하는 머신러닝 학습 노트."/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%239a4f32%22/%3E%3Ctext x=%2232%22 y=%2242%22 font-size=%2234%22 text-anchor=%22middle%22%3E%F0%9F%A6%9E%3C/text%3E%3C/svg%3E"/>
+<script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
+<link rel="stylesheet" href="../../../assets/css/study-os-pro.css?v=ann1-20260526a"/>
+<style>
+  .ann-hero-visual{margin-top:22px;border:1px solid var(--sop-line);border-radius:24px;background:var(--sop-paper);padding:14px;box-shadow:var(--sop-shadow-soft)}
+  .ann-hero-visual img,.ann-figure img{display:block;width:100%;height:auto;border-radius:18px;background:#fff;border:1px solid var(--sop-line)}
+  .ann-caption{margin:10px 4px 0;color:var(--sop-muted);font-size:13px;line-height:1.65;text-align:center}
+  .ann-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.ann-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ann-card{border:1px solid var(--sop-line);border-radius:18px;background:var(--sop-soft);padding:18px}.ann-card h3{margin:0 0 8px!important;font-size:19px!important}.ann-card p{margin:0;color:var(--sop-muted)}
+  .ann-flow{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}.ann-node{flex:1;min-width:150px;border:1px solid var(--sop-line);border-radius:18px;background:var(--sop-paper);padding:15px;text-align:center}.ann-node b{display:block;color:var(--accent,var(--sop-rose));margin-bottom:6px}.ann-arrow{display:grid;place-items:center;color:var(--accent,var(--sop-rose));font-weight:900;font-size:25px}
+  .ann-formula{font-family:var(--sop-mono);background:var(--sop-soft);border:1px solid var(--sop-line);border-radius:16px;padding:14px;overflow:auto;color:var(--sop-text);line-height:1.7}.ann-kicker{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--sop-line);border-radius:999px;background:var(--sop-paper);padding:6px 11px;color:var(--sop-muted);font:800 12px/1 var(--sop-mono)}
+  .ann-demo{display:grid;gap:12px}.ann-demo label{font-weight:800}.ann-demo input[type=range]{width:100%;accent-color:var(--accent,var(--sop-rose))}.ann-bar{height:14px;border-radius:999px;background:var(--sop-soft);overflow:hidden;border:1px solid var(--sop-line)}.ann-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--sop-primary),var(--sop-rose));width:0}.ann-quiz button{width:100%;text-align:left;margin:8px 0;border:1px solid var(--sop-line);border-radius:16px;background:var(--sop-paper);color:var(--sop-text);padding:13px;font-weight:800;cursor:pointer}.ann-quiz button:hover{border-color:var(--accent,var(--sop-rose));background:var(--sop-soft)}.ann-quiz button.correct{border-color:var(--sop-primary);background:var(--sop-tip)}.ann-quiz button.wrong{border-color:var(--sop-rose);background:var(--sop-warn)}
+  .ann-table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--sop-line);border-radius:18px;overflow:hidden}.ann-table th,.ann-table td{padding:12px 14px;border-bottom:1px solid var(--sop-line);vertical-align:top}.ann-table th{background:var(--sop-soft);text-align:left}.ann-table tr:last-child td{border-bottom:0}
+  @media(max-width:760px){.ann-grid,.ann-grid.two{grid-template-columns:1fr}.ann-arrow{display:none}}
+</style>
+<script defer src="../../../assets/js/study-os-pro.js?v=ann1-20260526a"></script>
+</head>
+<body>
+<main>
+  <section>
+    <div>
+      <span class="sop-eyebrow"><span class="sop-dot"></span>Machine Learning · Neural Networks · Concept Note</span>
+      <h1 class="sop-title"><span class="grad">Artificial Neural Network-1</span></h1>
+      <p class="sop-subtitle">ANN은 기존 선형모델의 <strong>weighted sum</strong>을 neuron 내부 계산으로 해석하고, activation과 layer를 쌓아 비선형 문제를 해결하는 모델이다. 이 노트는 perceptron, SoftMax, Cross Entropy, XOR와 MLP를 하나의 흐름으로 연결한다.</p>
+      <div class="sop-tags"><span>Perceptron</span><span>SoftMax</span><span>Cross Entropy</span><span>XOR</span><span>MLP</span></div>
+      <figure class="ann-hero-visual">
+        <picture><source srcset="assets/ann-1-mindmap.webp" type="image/webp"><img src="assets/ann-1-mindmap.jpg" alt="Hand-drawn concept map connecting neural networks, perceptrons, multilayer perceptrons, XOR, SoftMax, and Cross Entropy"/></picture>
+        <figcaption class="ann-caption">개념 지도: Neural Network에서 perceptron으로 내려가면 weighted sum과 activation이 나오고, single-layer의 선형 한계는 MLP와 XOR 설명으로 이어진다. 아래쪽은 SoftMax가 확률분포를 만들고 Cross Entropy가 정답 확률을 loss로 바꾸는 흐름이다.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <nav class="sop-note-toc" aria-label="Note table of contents">
+    <strong>Concept map</strong>
+    <div class="sop-note-toc-links">
+      <a href="#overview">0. 전체 지도</a><a href="#neuron">1. Artificial neuron</a><a href="#perceptron">2. Perceptron</a><a href="#softmax">3. SoftMax & CE</a><a href="#xor">4. XOR & MLP</a><a href="#lab">5. 계산 실험</a><a href="#exam">6. 시험 압축</a><a href="#quiz">7. 퀴즈</a>
+    </div>
+  </nav>
+
+  <article class="prose-lite">
+    <section id="overview">
+      <h2>0. 전체 지도: ANN-1은 무엇을 연결하는가?</h2>
+      <p>이 주제의 핵심은 “신경망”이라는 이름보다 <strong>계산 구조</strong>다. 하나의 artificial neuron은 입력을 받아 <span class="ann-kicker">weighted sum → activation → output</span>을 수행한다. 이것을 분류기로 보면 perceptron이고, 여러 개를 layer로 쌓으면 MLP가 된다.</p>
+      <div class="ann-flow" aria-label="ANN learning flow">
+        <div class="ann-node"><b>1. Linear score</b>z = w·x + b</div><div class="ann-arrow">→</div>
+        <div class="ann-node"><b>2. Activation</b>sigmoid / ReLU</div><div class="ann-arrow">→</div>
+        <div class="ann-node"><b>3. Loss</b>BCE / CE</div><div class="ann-arrow">→</div>
+        <div class="ann-node"><b>4. Update</b>Gradient Descent</div>
+      </div>
+      <div class="ann-grid" style="margin-top:16px">
+        <div class="ann-card"><h3>모델 관점</h3><p>ANN은 많은 neuron이 연결된 함수 근사기다. 각 neuron은 작은 선형모델과 activation을 가진다.</p></div>
+        <div class="ann-card"><h3>기하 관점</h3><p>perceptron 하나는 선형 경계만 만든다. hidden layer는 입력 공간을 바꿔 더 쉬운 분리를 만든다.</p></div>
+        <div class="ann-card"><h3>손실 관점</h3><p>SoftMax는 score를 확률분포로 바꾸고, Cross Entropy는 정답 class 확률을 loss로 바꾼다.</p></div>
+      </div>
+    </section>
+
+    <section id="neuron">
+      <h2>1. Artificial neuron: 생물학적 비유를 계산으로 바꾸기</h2>
+      <p>생물학적 neuron의 수상돌기, 시냅스, 세포체, 축색돌기 비유는 유용하지만, 시험 답변에서는 반드시 계산으로 번역해야 한다.</p>
+      <table class="ann-table"><thead><tr><th>비유</th><th>계산 요소</th><th>답안에서 쓸 말</th></tr></thead><tbody>
+        <tr><td>Dendrite</td><td>입력 feature x</td><td>여러 입력값이 neuron으로 들어온다.</td></tr>
+        <tr><td>Synapse</td><td>weight w</td><td>각 입력의 영향력이 weight로 조절된다.</td></tr>
+        <tr><td>Cell body</td><td>weighted sum</td><td>z = w₁x₁ + ... + wₙxₙ + b를 계산한다.</td></tr>
+        <tr><td>Axon / output</td><td>activation output</td><td>σ(z) 또는 다른 activation 결과가 다음 layer로 전달된다.</td></tr>
+      </tbody></table>
+      <figure class="ann-figure"><img src="assets/perceptron-flow.svg" alt="Perceptron weighted sum and activation visual diagram"><figcaption class="ann-caption">보조 도식 1: perceptron은 입력 벡터를 weighted sum으로 모은 뒤 activation을 통해 출력한다.</figcaption></figure>
+    </section>
+
+    <section id="perceptron">
+      <h2>2. Perceptron: 하나의 선형 decision surface</h2>
+      <p>Perceptron은 가장 기본적인 artificial neuron 분류기다. 입력이 2차원이라면 결정경계는 직선, 고차원에서는 hyperplane이다.</p>
+      <div class="ann-formula">z = w₁x₁ + w₂x₂ + ... + wₙxₙ + b<br>ŷ = activation(z)<br>decision boundary: w·x + b = 0</div>
+      <div class="ann-grid two" style="margin-top:16px">
+        <div class="ann-card"><h3>가능한 문제</h3><p>class를 하나의 직선 또는 평면으로 나눌 수 있는 linearly separable problem.</p></div>
+        <div class="ann-card"><h3>불가능한 문제</h3><p>XOR처럼 positive/negative point가 교차 배치된 not linearly separable problem.</p></div>
+      </div>
+      <p>중요한 함정은 activation이 있다고 해서 perceptron 하나가 복잡한 곡선 경계를 만드는 것은 아니라는 점이다. 경계는 여전히 <code>w·x+b=0</code>이다.</p>
+    </section>
+
+    <section id="softmax">
+      <h2>3. SoftMax와 Cross Entropy: score를 확률과 loss로 바꾸기</h2>
+      <p>다중 클래스 분류에서 각 class는 score를 가진다. score 자체는 확률이 아니므로, class 간 상대적 크기를 반영하여 합이 1인 확률분포로 바꾸는 함수가 SoftMax다.</p>
+      <figure class="ann-figure"><img src="assets/softmax-crossentropy.svg" alt="SoftMax probability distribution and Cross Entropy loss visual"><figcaption class="ann-caption">보조 도식 2: raw score는 SoftMax를 거쳐 확률분포가 되고, Cross Entropy는 정답 class 확률에 penalty를 부여한다.</figcaption></figure>
+      <div class="ann-grid two">
+        <div class="ann-card"><h3>SoftMax</h3><div class="ann-formula">S(zᵢ) = exp(zᵢ) / Σⱼ exp(zⱼ)</div><p>모든 class 확률이 양수이고 합이 1이 된다.</p></div>
+        <div class="ann-card"><h3>Cross Entropy</h3><div class="ann-formula">CE = -Σᵢ Lᵢ log(Sᵢ)</div><p>one-hot label이면 정답 class 항만 남아 CE = -log(S_correct)가 된다.</p></div>
+      </div>
+    </section>
+
+    <section id="xor">
+      <h2>4. XOR와 MLP: single-layer의 한계를 넘는 법</h2>
+      <p>XOR는 두 입력이 같으면 0, 다르면 1이다. 2차원 평면에서 1인 점들이 대각선에 놓이므로 직선 하나로 분리할 수 없다. MLP는 hidden layer가 새 feature를 만들어 이 문제를 해결한다.</p>
+      <figure class="ann-figure"><img src="assets/xor-representation.svg" alt="XOR input space transformed into linearly separable hidden representation"><figcaption class="ann-caption">보조 도식 3: 원래 입력 공간의 XOR는 선형 분리 불가능하지만, hidden layer를 거친 representation 공간에서는 최종 perceptron이 선형 분리할 수 있다.</figcaption></figure>
+      <table class="ann-table"><thead><tr><th>x₁</th><th>x₂</th><th>XOR y</th><th>의미</th></tr></thead><tbody>
+        <tr><td>0</td><td>0</td><td>0</td><td>같음</td></tr><tr><td>0</td><td>1</td><td>1</td><td>다름</td></tr><tr><td>1</td><td>0</td><td>1</td><td>다름</td></tr><tr><td>1</td><td>1</td><td>0</td><td>같음</td></tr>
+      </tbody></table>
+      <div class="ann-card"><h3>답안 핵심</h3><p>“MLP는 직선을 여러 개 긋기 때문에 XOR를 푼다”에서 멈추지 말고, <strong>hidden layer가 입력을 새로운 representation으로 바꾸어 최종 layer가 선형 분리 가능하게 만든다</strong>고 설명해야 한다.</p></div>
+    </section>
+
+    <section id="lab">
+      <h2>5. 계산 실험: SoftMax와 loss를 손으로 느끼기</h2>
+      <div class="ann-grid two">
+        <div class="ann-card ann-demo">
+          <h3>정답 class 확률에 따른 CE</h3>
+          <label for="prob">S_correct = <span id="probVal">0.70</span></label>
+          <input id="prob" type="range" min="0.01" max="0.99" step="0.01" value="0.70" oninput="updateCE()"/>
+          <div class="ann-bar"><span id="probBar"></span></div>
+          <div class="ann-formula" id="ceOut">CE = -log(0.70) ≈ 0.357</div>
+        </div>
+        <div class="ann-card ann-demo">
+          <h3>3-class SoftMax mini calculator</h3>
+          <label>scores = [<span id="s1v">2.0</span>, <span id="s2v">1.0</span>, <span id="s3v">0.1</span>]</label>
+          <input id="s1" type="range" min="-2" max="4" step="0.1" value="2" oninput="updateSoftmax()"/>
+          <input id="s2" type="range" min="-2" max="4" step="0.1" value="1" oninput="updateSoftmax()"/>
+          <input id="s3" type="range" min="-2" max="4" step="0.1" value="0.1" oninput="updateSoftmax()"/>
+          <div class="ann-formula" id="softmaxOut">SoftMax ≈ [0.659, 0.242, 0.099]</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="exam">
+      <h2>6. 시험/복습용 핵심 정리</h2>
+      <div class="ann-grid">
+        <div class="ann-card"><h3>한 문장 정의</h3><p>ANN은 weighted sum과 activation을 수행하는 artificial neuron들을 layer로 연결한 모델이다.</p></div>
+        <div class="ann-card"><h3>Perceptron 한계</h3><p>perceptron 하나는 선형 decision boundary만 만들기 때문에 XOR 같은 비선형 분리 문제를 풀 수 없다.</p></div>
+        <div class="ann-card"><h3>MLP 해결</h3><p>hidden layer와 nonlinear activation으로 representation을 바꾸어 최종 layer에서 선형 분리 가능하게 만든다.</p></div>
+      </div>
+      <h3>자주 헷갈리는 비교</h3>
+      <table class="ann-table"><thead><tr><th>비교</th><th>구분 기준</th></tr></thead><tbody>
+        <tr><td>Sigmoid vs SoftMax</td><td>sigmoid는 각 score를 독립적으로 0~1로 압축하고, SoftMax는 전체 score를 합이 1인 분포로 정규화한다.</td></tr>
+        <tr><td>BCE vs Cross Entropy</td><td>BCE는 binary classification, CE는 multiclass one-hot label과 SoftMax output에 주로 연결된다.</td></tr>
+        <tr><td>SVM kernel vs MLP</td><td>둘 다 비선형 문제를 선형 분리 가능한 표현으로 바꾸지만, MLP는 hidden representation을 학습한다.</td></tr>
+      </tbody></table>
+    </section>
+
+    <section id="quiz" class="ann-quiz">
+      <h2>7. 확인 문제</h2>
+      <p>각 문제의 정답을 클릭해봐. 오답은 왜 틀렸는지 바로 확인할 수 있다.</p>
+      <div class="ann-card" data-answer="b"><h3>Q1. Perceptron 하나의 decision boundary는?</h3><button data-choice="a">복잡한 곡선</button><button data-choice="b">w·x+b=0 형태의 선형 경계</button><button data-choice="c">항상 원형 경계</button><p class="quiz-result"></p></div>
+      <div class="ann-card" data-answer="c"><h3>Q2. one-hot label에서 Cross Entropy는 사실상 무엇이 되는가?</h3><button data-choice="a">모든 class 확률의 단순 평균</button><button data-choice="b">가장 낮은 확률의 음수 로그</button><button data-choice="c">정답 class 확률의 음수 로그</button><p class="quiz-result"></p></div>
+      <div class="ann-card" data-answer="a"><h3>Q3. XOR를 MLP가 해결하는 핵심 이유는?</h3><button data-choice="a">hidden layer가 새 representation을 만들어 최종 layer가 선형 분리할 수 있게 한다</button><button data-choice="b">SoftMax가 XOR를 직접 선형으로 만든다</button><button data-choice="c">activation이 없어도 layer를 많이 쌓으면 자동으로 비선형이 된다</button><p class="quiz-result"></p></div>
+    </section>
+  </article>
+</main>
+<script>
+function updateCE(){const p=parseFloat(document.getElementById('prob').value);document.getElementById('probVal').textContent=p.toFixed(2);document.getElementById('probBar').style.width=(p*100).toFixed(0)+'%';document.getElementById('ceOut').textContent=`CE = -log(${p.toFixed(2)}) ≈ ${(-Math.log(p)).toFixed(3)}`}
+function updateSoftmax(){const vals=['s1','s2','s3'].map(id=>parseFloat(document.getElementById(id).value));['s1v','s2v','s3v'].forEach((id,i)=>document.getElementById(id).textContent=vals[i].toFixed(1));const ex=vals.map(Math.exp);const sum=ex.reduce((a,b)=>a+b,0);const probs=ex.map(v=>v/sum);document.getElementById('softmaxOut').textContent=`SoftMax ≈ [${probs.map(v=>v.toFixed(3)).join(', ')}]`}
+document.querySelectorAll('.ann-quiz .ann-card').forEach(card=>{card.addEventListener('click',e=>{const btn=e.target.closest('button[data-choice]');if(!btn)return;card.querySelectorAll('button').forEach(b=>b.classList.remove('correct','wrong'));const ok=btn.dataset.choice===card.dataset.answer;btn.classList.add(ok?'correct':'wrong');card.querySelector('.quiz-result').textContent=ok?'정답. 이 포인트는 시험 답안에 그대로 써도 된다.':'오답. decision boundary, one-hot CE, hidden representation 중 무엇을 묻는지 다시 확인하자.'})});
+updateCE();updateSoftmax();
+</script>
+</body>
+</html>
