@@ -1,70 +1,70 @@
-<!DOCTYPE html>
-<html lang="ko" class="scroll-smooth">
+<!doctype html>
+<html class="scroll-smooth" lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Study Notes</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-  <link rel="stylesheet" href="assets/css/study-os-pro.css?v=theme-polish-20260525d" />
-  <script defer src="assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-</head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Study Notes</title><link href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%239a4f32%22/%3E%3Ctext x=%2232%22 y=%2242%22 font-size=%2234%22 text-anchor=%22middle%22%3E%F0%9F%A6%9E%3C/text%3E%3C/svg%3E" rel="icon"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&amp;family=Geist+Mono:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
+<link href="assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet">
+<script defer="" src="assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
+</link></head>
 <body>
-  <main class="sop-shell">
-    <section class="sop-hero">
-      <div class="sop-hero-grid">
-        <div class="sop-panel sop-hero-main">
-          <span class="sop-eyebrow"><span class="sop-dot"></span>AI Research Learning OS</span>
-          <h1 class="sop-title"><span class="grad">Study</span><br/>Notes</h1>
-          <p class="sop-subtitle">개념을 그냥 저장하는 페이지가 아니라, 읽고 → 비교하고 → 떠올리고 → 시험 답안으로 압축하기 위한 개인 학습 운영체제.</p>
-          <label class="sop-search" aria-label="Search study notes"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.35-4.35"></path></svg><input data-sop-search placeholder="Search subjects, notes, concepts..."/><kbd>⌘K</kbd></label>
-        </div>
-        <div class="sop-hero-side">
-          <div class="sop-metric-grid">
-            <div class="sop-panel sop-metric"><b>04</b><span>Core subjects</span></div>
-            <div class="sop-panel sop-metric"><b>09</b><span>Interactive notes</span></div>
-          </div>
-          <div class="sop-panel sop-focus-card">
-            <h2>오늘의 학습 흐름</h2><p>과목을 고르고, 핵심 노트를 열어서 Concept Map → 본문 → Recall Prompt 순서로 복습해.</p>
-            <div class="sop-flow"><div><i>1</i>Orient with concept map</div><div><i>2</i>Read central explanation</div><div><i>3</i>Self-check & exam compression</div></div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class="sop-section">
-      <div class="sop-section-head"><div><h2>Subject Cockpit</h2><p>과목별 노트를 학습 목적에 맞게 분리했어.</p></div><span class="sop-chip">Dark / Light ready</span></div>
-      <div class="sop-grid"><a class="sop-card sop-glass" data-sop-search-item href="computer-architecture/" style="--accent:#3b82f6">
-      <span class="sop-arrow">→</span><div class="sop-card-code">CA</div>
-      <h3>Computer Architecture</h3><p>컴퓨터구조 · Pipeline, cache, memory hierarchy, ISA, and performance reasoning.</p><span class="sop-status">2 active notes</span>
-    </a><a class="sop-card sop-glass" data-sop-search-item href="operating-system/" style="--accent:#8b5cf6">
-      <span class="sop-arrow">→</span><div class="sop-card-code">OS</div>
-      <h3>Operating System</h3><p>운영체제 · Concurrency, scheduling, memory, filesystems, and real OS failure modes.</p><span class="sop-status">5 active notes</span>
-    </a><a class="sop-card sop-glass" data-sop-search-item href="probability-and-statistics/" style="--accent:#10b981">
-      <span class="sop-arrow">→</span><div class="sop-card-code">PS</div>
-      <h3>Probability & Statistics</h3><p>확률과 통계 · Random variables, distributions, estimation, inference, and exam proofs.</p><span class="sop-status">0 notes yet</span>
-    </a><a class="sop-card sop-glass" data-sop-search-item href="machine-learning/" style="--accent:#f43f5e">
-      <span class="sop-arrow">→</span><div class="sop-card-code">ML</div>
-      <h3>Machine Learning</h3><p>머신러닝 · Embeddings, optimization, NLP, model comparison, and interactive demos.</p><span class="sop-status">2 active notes</span>
-    </a></div>
-    </section>
-    <section class="sop-section" style="padding-top:0">
-      <div class="sop-section-head"><div><h2>Active Notes</h2><p>현재 바로 공부할 수 있는 인터랙티브 노트.</p></div></div>
-      <div class="sop-bento">
-        <div class="sop-note-list">
-          <a class="sop-note-item sop-glass" data-sop-search-item href="computer-architecture/html/pipeline-hazards/" style="--accent:#3b82f6"><span class="sop-note-icon">CA</span><div><h3>Pipeline Hazards, Forwarding & Stalls</h3><p>Structural hazards, RAW data hazards, forwarding control, load-use detection, scheduling puzzle, and cycle simulator.</p></div><span class="sop-arrow">→</span></a>
-          <a class="sop-note-item sop-glass" data-sop-search-item href="computer-architecture/html/mips-pipeline/" style="--accent:#3b82f6"><span class="sop-note-icon">CA</span><div><h3>MIPS Pipeline Control & Datapath</h3><p>Single-cycle CPU limits, MIPS 5-stage pipeline, registers, control propagation, simulator, and quiz.</p></div><span class="sop-arrow">→</span></a>
-          <a class="sop-note-item sop-glass" data-sop-search-item href="machine-learning/html/rnn-lstm-attention/" style="--accent:#f43f5e"><span class="sop-note-icon">ML</span><div><h3>Recurrent Neural Networks, LSTM & Attention</h3><p>Sequential memory, weight sharing, BPTT, vanishing gradients, LSTM gates, Seq2Seq bottlenecks, and Luong attention calculators.</p></div><span class="sop-arrow">→</span></a>
-          <a class="sop-note-item sop-glass" data-sop-search-item href="machine-learning/html/text-representation/" style="--accent:#f43f5e"><span class="sop-note-icon">ML</span><div><h3>Text Representation & Word Embeddings</h3><p>One-hot, co-occurrence, SVD, Word2Vec, GloVe, FastText with live study tools.</p></div><span class="sop-arrow">→</span></a>
-          <a class="sop-note-item sop-glass" data-sop-search-item href="operating-system/html/concurrency-and-threads/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Concurrency and Threads</h3><p>Thread memory layout, scheduling nondeterminism, race conditions, mutexes, and condition variables.</p></div><span class="sop-arrow">→</span></a>
-          <a class="sop-note-item sop-glass" data-sop-search-item href="operating-system/html/common-concurrency-problems/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Common Concurrency Problems</h3><p>Race conditions, deadlock, starvation, and synchronization failure patterns.</p></div><span class="sop-arrow">→</span></a>
-                  <a class="sop-note-item sop-glass" data-sop-search-item href="operating-system/html/condition-variables/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Condition Variables</h3><p>Wait/signal, predicate + mutex discipline, Mesa semantics, producer-consumer bugs, and covering conditions with a live simulator.</p></div><span class="sop-arrow">→</span></a>
-          <a class="sop-note-item sop-glass" data-sop-search-item href="operating-system/html/semaphores/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Semaphores</h3><p>Binary/counting/ordering semaphores, producer-consumer synchronization, deadlock, and reader-writer locks.</p></div><span class="sop-arrow">→</span></a>
-          <a class="sop-note-item sop-glass" data-sop-search-item href="operating-system/html/io-devices-hdd/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>I/O Devices &amp; HDD</h3><p>Device interfaces, polling, interrupts, DMA, HDD geometry, I/O time, and disk scheduling simulators.</p></div><span class="sop-arrow">→</span></a>
-        </div>
-        <aside class="sop-sidebar-card sop-glass"><h3>Design intent</h3><p style="color:var(--sop-muted);line-height:1.7">메인 페이지는 과목 선택, 노트 페이지는 집중 독해, 사이드 cockpit은 복습과 진도 추적에 맞췄어.</p><div class="sop-tags"><span>72ch reading</span><span>Concept map</span><span>Recall</span><span>Exam prep</span></div></aside>
-      </div>
-    </section>
-  </main>
+<main class="sop-shell">
+<section class="sop-hero">
+<div class="sop-hero-grid">
+<div class="sop-panel sop-hero-main">
+<span class="sop-eyebrow"><span class="sop-dot"></span>AI Research Learning OS</span>
+<h1 class="sop-title"><span class="grad">Study</span><br/>Notes</h1>
+<p class="sop-subtitle">개념을 그냥 저장하는 페이지가 아니라, 읽고 → 비교하고 → 떠올리고 → 시험 답안으로 압축하기 위한 개인 학습 운영체제.</p>
+<label aria-label="Search study notes" class="sop-search"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.35-4.35"></path></svg><input data-sop-search="" placeholder="Search subjects, notes, concepts..."/><kbd>⌘K</kbd></label>
+</div>
+<div class="sop-hero-side">
+<div class="sop-metric-grid">
+<div class="sop-panel sop-metric"><b>04</b><span>Core subjects</span></div>
+<div class="sop-panel sop-metric"><b>09</b><span>Interactive notes</span></div>
+</div>
+<div class="sop-panel sop-focus-card">
+<h2>오늘의 학습 흐름</h2><p>과목을 고르고, 핵심 노트를 열어서 Concept Map → 본문 → Recall Prompt 순서로 복습해.</p>
+<div class="sop-flow"><div><i>1</i>Orient with concept map</div><div><i>2</i>Read central explanation</div><div><i>3</i>Self-check &amp; exam compression</div></div>
+</div>
+</div>
+</div>
+</section>
+<section class="sop-section">
+<div class="sop-section-head"><div><h2>Subject Cockpit</h2><p>과목별 노트를 학습 목적에 맞게 분리했어.</p></div><span class="sop-chip">Dark / Light ready</span></div>
+<div class="sop-grid"><a class="sop-card sop-glass" data-sop-search-item="" href="computer-architecture/" style="--accent:#3b82f6">
+<span class="sop-arrow">→</span><div class="sop-card-code">CA</div>
+<h3>Computer Architecture</h3><p>컴퓨터구조 · Pipeline, cache, memory hierarchy, ISA, and performance reasoning.</p><span class="sop-status">2 active notes</span>
+</a><a class="sop-card sop-glass" data-sop-search-item="" href="operating-system/" style="--accent:#8b5cf6">
+<span class="sop-arrow">→</span><div class="sop-card-code">OS</div>
+<h3>Operating System</h3><p>운영체제 · Concurrency, scheduling, memory, filesystems, and real OS failure modes.</p><span class="sop-status">5 active notes</span>
+</a><a class="sop-card sop-glass" data-sop-search-item="" href="probability-and-statistics/" style="--accent:#10b981">
+<span class="sop-arrow">→</span><div class="sop-card-code">PS</div>
+<h3>Probability &amp; Statistics</h3><p>확률과 통계 · Random variables, distributions, estimation, inference, and exam proofs.</p><span class="sop-status">0 notes yet</span>
+</a><a class="sop-card sop-glass" data-sop-search-item="" href="machine-learning/" style="--accent:#f43f5e">
+<span class="sop-arrow">→</span><div class="sop-card-code">ML</div>
+<h3>Machine Learning</h3><p>머신러닝 · Embeddings, optimization, NLP, model comparison, and interactive demos.</p><span class="sop-status">2 active notes</span>
+</a></div>
+</section>
+<section class="sop-section" style="padding-top:0">
+<div class="sop-section-head"><div><h2>Active Notes</h2><p>현재 바로 공부할 수 있는 인터랙티브 노트.</p></div></div>
+<div class="sop-bento">
+<div class="sop-note-list">
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="computer-architecture/html/pipeline-hazards/" style="--accent:#3b82f6"><span class="sop-note-icon">CA</span><div><h3>Pipeline Hazards, Forwarding &amp; Stalls</h3><p>Structural hazards, RAW data hazards, forwarding control, load-use detection, scheduling puzzle, and cycle simulator.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="computer-architecture/html/mips-pipeline/" style="--accent:#3b82f6"><span class="sop-note-icon">CA</span><div><h3>MIPS Pipeline Control &amp; Datapath</h3><p>Single-cycle CPU limits, MIPS 5-stage pipeline, registers, control propagation, simulator, and quiz.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="machine-learning/html/rnn-lstm-attention/" style="--accent:#f43f5e"><span class="sop-note-icon">ML</span><div><h3>Recurrent Neural Networks, LSTM &amp; Attention</h3><p>Sequential memory, weight sharing, BPTT, vanishing gradients, LSTM gates, Seq2Seq bottlenecks, and Luong attention calculators.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="machine-learning/html/text-representation/" style="--accent:#f43f5e"><span class="sop-note-icon">ML</span><div><h3>Text Representation &amp; Word Embeddings</h3><p>One-hot, co-occurrence, SVD, Word2Vec, GloVe, FastText with live study tools.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="operating-system/html/concurrency-and-threads/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Concurrency and Threads</h3><p>Thread memory layout, scheduling nondeterminism, race conditions, mutexes, and condition variables.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="operating-system/html/common-concurrency-problems/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Common Concurrency Problems</h3><p>Race conditions, deadlock, starvation, and synchronization failure patterns.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="operating-system/html/condition-variables/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Condition Variables</h3><p>Wait/signal, predicate + mutex discipline, Mesa semantics, producer-consumer bugs, and covering conditions with a live simulator.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="operating-system/html/semaphores/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>Semaphores</h3><p>Binary/counting/ordering semaphores, producer-consumer synchronization, deadlock, and reader-writer locks.</p></div><span class="sop-arrow">→</span></a>
+<a class="sop-note-item sop-glass" data-sop-search-item="" href="operating-system/html/io-devices-hdd/" style="--accent:#8b5cf6"><span class="sop-note-icon">OS</span><div><h3>I/O Devices &amp; HDD</h3><p>Device interfaces, polling, interrupts, DMA, HDD geometry, I/O time, and disk scheduling simulators.</p></div><span class="sop-arrow">→</span></a>
+</div>
+<aside class="sop-sidebar-card sop-glass"><h3>Design intent</h3><p style="color:var(--sop-muted);line-height:1.7">메인 페이지는 과목 선택, 노트 페이지는 집중 독해, 사이드 cockpit은 복습과 진도 추적에 맞췄어.</p><div class="sop-tags"><span>72ch reading</span><span>Concept map</span><span>Recall</span><span>Exam prep</span></div></aside>
+</div>
+</section>
+</main>
 </body></html>
