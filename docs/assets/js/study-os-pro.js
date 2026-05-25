@@ -51,7 +51,12 @@
     localStorage.setItem('study-notes-theme', mode);
     document.querySelectorAll('[data-sop-theme]').forEach(btn => {
       btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
-      btn.innerHTML = icon(dark ? 'sun' : 'moon');
+      const isSidebarBtn = btn.closest('.sop-note-toc') || btn.classList.contains('btn');
+      if (isSidebarBtn) {
+        btn.innerHTML = icon(dark ? 'sun' : 'moon') + ' 테마 전환';
+      } else {
+        btn.innerHTML = icon(dark ? 'sun' : 'moon');
+      }
     });
   }
   const saved = localStorage.getItem('study-notes-theme');
