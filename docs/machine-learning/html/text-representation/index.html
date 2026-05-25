@@ -54,13 +54,7 @@
     .dark .sidebar-active { background: rgba(5,150,105,.22); color: #34d399; border-left-color: #34d399; }
     .math-scroll { overflow-x: auto; overflow-y: hidden; }
   </style>
-<script>
-    (function () {
-      const saved = localStorage.getItem('study-notes-theme');
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (saved === 'dark') document.documentElement.classList.add('dark');
-    })();
-  </script>
+<script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
 <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
 <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
 </head>
