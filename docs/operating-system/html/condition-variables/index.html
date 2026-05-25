@@ -87,7 +87,7 @@
     main h4{font-size:19px!important;line-height:1.35!important;font-weight:800!important;letter-spacing:-.012em}
     main h3.text-xs,main h3.text-sm{font-size:24px!important}main h4.text-xs,main h4.text-sm{font-size:19px!important}
 </style></head>
-<body><div class="wrap"><aside><div class="brand"><a aria-label="이전 페이지로 이동" class="brand-link" href="../../index.html" onclick="if (history.length &gt; 1) { event.preventDefault(); history.back(); }">🦞 OS Concurrency</a></div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드 모델에서 상호배제를 넘어 조건 만족 대기를 지원하는 조건 변수(Condition Variable)와 생산자-소비자 버그 패턴을 완전 정복합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<body><div class="wrap"><aside><div class="brand"><a aria-label="이전 페이지로 이동" class="brand-link" href="../../index.html" data-back-link>🦞 OS Concurrency</a></div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드 모델에서 상호배제를 넘어 조건 만족 대기를 지원하는 조건 변수(Condition Variable)와 생산자-소비자 버그 패턴을 완전 정복합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
 <main><section class="hero" id="top"><span class="eyebrow">Operating System · Concurrency · Concept Note · Masterclass Note</span><h1>동시성 제어의 정점: 조건 변수(Condition Variables)</h1><p style="font-size:20px;color:var(--muted);max-width:950px">이 학습 대시보드는 멀티스레드 프로그래밍 환경에서 특정 조건의 만족 여부에 따라 스레드를 효율적으로 관리하는 조건 변수(Condition Variable)의 기초 이론부터, 실제 현업에서 맞닥뜨리는 치명적인 버그 패턴 및 이를 보완하는 완벽한 동기화 기법까지 체계적으로 정리합니다.</p><div><span class="pill">Condition Variables</span><span class="pill">Mesa Semantics</span><span class="pill">Producer/Consumer</span><span class="pill">Covering Conditions</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2><p>이 학습 대시보드는 멀티스레드 프로그래밍 환경에서 특정 조건의 만족 여부에 따라 스레드를 효율적으로 관리하는 조건 변수(Condition Variable)의 기초 이론부터, 실제 현업에서 맞닥뜨리는 치명적인 버그 패턴 및 이를 보완하는 완벽한 동기화 기법까지 체계적으로 정리합니다.</p><div class="grid"><div class="mini"><h3>학습 흐름</h3><ul><li>1. 특정 조건 대기: 무식한 스핀 대기(Spin-waiting)의 한계</li><li>2. 구원의 열쇠: 조건 변수(Condition Variable)와 핵심 API</li><li>3. 올바른 구현의 삼위일체: 왜 상태 변수(State Var)와 뮤텍스 락(Lock)이 함께 있어야 하는가?</li><li>4. 생산자-소비자 문제(Bounded Buffer)와 IF 문의 참사</li><li>5. 진화하는 동기화: While 도입과 '단일 조건 변수'의 한계로 인한 Total Sleep 데드락</li><li>6. 다중 슬롯 원형 버퍼 확장 &amp; 커버링 조건(Covering Conditions)</li><li>동시성 오동작 &amp; 제어 시각화 시뮬레이터</li><li>8. 확인 문제와 해설</li></ul></div><div class="mini"><h3>핵심 태그</h3><ul><li>Condition Variables</li><li>Mesa Semantics</li><li>Producer/Consumer</li><li>Covering Conditions</li></ul></div></div><div class="callout ok"><b>읽는 법:</b> 왼쪽 목차의 0–9 구조를 따라 개념 → 정의/수식 → 직관 → 예제 → 함정 → 실험 → 복습 순서로 읽으면 된다.</div></section><section class="card" id="concept"><h2>1. 핵심 개념</h2><div class="mini source-section">
 <div class="callout ok">
 <strong>지난 시간 복습:</strong> 카운터, 연결 리스트, 큐, 해시 테이블 등에 적용한 <strong>락 기반 동시성 자료구조(Lock-based concurrent data structures)</strong>를 통해 상호 배제를 달성했습니다. 하지만 '단순 독점'을 넘어 <strong>"스레드가 조건이 참이 될 때까지 대기해야 하는 상황"</strong>을 어떻게 효율적으로 다룰 수 있을까요?
@@ -1035,4 +1035,16 @@ window.addEventListener('DOMContentLoaded', updateDemo);
   });
 
   window.addEventListener('resize', resizeCanvas);
-</script></body></html>
+</script><script>
+(function(){
+  document.querySelectorAll('[data-back-link]').forEach(link => {
+    link.addEventListener('click', event => {
+      if (window.history.length > 1) {
+        event.preventDefault();
+        window.history.back();
+      }
+    });
+  });
+})();
+</script>
+</body></html>

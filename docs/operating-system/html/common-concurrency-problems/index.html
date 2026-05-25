@@ -90,7 +90,7 @@
     main h4{font-size:19px!important;line-height:1.35!important;font-weight:800!important;letter-spacing:-.012em}
     main h3.text-xs,main h3.text-sm{font-size:24px!important}main h4.text-xs,main h4.text-sm{font-size:19px!important}
 </style></head>
-<body><div class="wrap"><aside><div class="brand"><a aria-label="이전 페이지로 이동" class="brand-link" href="../../index.html" onclick="if (history.length &gt; 1) { event.preventDefault(); history.back(); }">🦞 OS Concurrency</a></div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드 모델에서 발생하는 대표적인 동시성 오류(비데드락 버그, 데드락 버그)의 원인과 예방/회피 기법을 학습합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<body><div class="wrap"><aside><div class="brand"><a aria-label="이전 페이지로 이동" class="brand-link" href="../../index.html" data-back-link>🦞 OS Concurrency</a></div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드 모델에서 발생하는 대표적인 동시성 오류(비데드락 버그, 데드락 버그)의 원인과 예방/회피 기법을 학습합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
 <main><section class="hero" id="top"><span class="eyebrow">Operating System · Concurrency · Masterclass Note</span><h1>Common Concurrency Problems</h1><p style="font-size:20px;color:var(--muted);max-width:950px">A study note on semaphore recap, non-deadlock bugs, deadlock causes, the four conditions, prevention, avoidance, recovery, CAS, exam prompts, and concurrency pitfalls.</p><div><span class="pill">Semaphores</span><span class="pill">Non-deadlock Bugs</span><span class="pill">Deadlocks</span><span class="pill">CAS &amp; Lock-free</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2>
 <p>세마포어와 뮤텍스를 활용하여 상호 배제와 순서 제어를 구현하더라도, 개발자의 미흡한 락 설계나 흐름 판단 누락으로 인해 실제 시스템에는 다양한 동시성 오류가 발생합니다. 이 노트의 목적은 동시성 버그를 체계적으로 분류하고, 발생 조건과 수학적 회피 공식을 학습하여 결함 없는 멀티스레드 코드를 도출하는 것입니다.</p>
 <div class="grid">
@@ -345,4 +345,16 @@ window.addEventListener('DOMContentLoaded', updateDemo);
       fb.innerHTML = `<strong>❌ Incorrect.</strong> Re-read the relevant section and try again.`;
     }
   }));
-</script></body></html>
+</script><script>
+(function(){
+  document.querySelectorAll('[data-back-link]').forEach(link => {
+    link.addEventListener('click', event => {
+      if (window.history.length > 1) {
+        event.preventDefault();
+        window.history.back();
+      }
+    });
+  });
+})();
+</script>
+</body></html>

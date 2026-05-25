@@ -86,7 +86,7 @@
     main h4{font-size:19px!important;line-height:1.35!important;font-weight:800!important;letter-spacing:-.012em}
     main h3.text-xs,main h3.text-sm{font-size:24px!important}main h4.text-xs,main h4.text-sm{font-size:19px!important}
 </style></head>
-<body><div class="wrap"><aside><div class="brand"><a aria-label="이전 페이지로 이동" class="brand-link" href="../../index.html" onclick="if (history.length &gt; 1) { event.preventDefault(); history.back(); }">🦞 OS Concurrency</a></div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">정수 토큰(token), 원자적 wait/post 연산, 그리고 대기 큐를 통해 상호 배제, 순서화, 자원 카운팅 문제를 우아하게 해결하는 세마포어(Semaphore)의 핵심 이론과 실제 활용 패턴을 정리합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<body><div class="wrap"><aside><div class="brand"><a aria-label="이전 페이지로 이동" class="brand-link" href="../../index.html" data-back-link>🦞 OS Concurrency</a></div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">정수 토큰(token), 원자적 wait/post 연산, 그리고 대기 큐를 통해 상호 배제, 순서화, 자원 카운팅 문제를 우아하게 해결하는 세마포어(Semaphore)의 핵심 이론과 실제 활용 패턴을 정리합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
 <main><section class="hero" id="top"><span class="eyebrow">Operating System · Concurrency · Concept Note · Masterclass Note</span><h1>세마포어 (Semaphores)</h1><p style="font-size:20px;color:var(--muted);max-width:950px">정수 token, atomic wait/post, waiting queue로 mutual exclusion, event ordering, resource counting을 표현하는 운영체제 동기화 노트.</p><div><span class="pill">Binary Semaphore</span><span class="pill">Counting Semaphore</span><span class="pill">Producer/Consumer</span><span class="pill">Reader-Writer Lock</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2><p>정수 token, atomic wait/post, waiting queue로 mutual exclusion, event ordering, resource counting을 표현하는 운영체제 동기화 노트.</p><div class="grid"><div class="mini"><h3>학습 흐름</h3><ul><li>0. 동기화 프리미티브의 큰 그림</li><li>1. CV 복습과 Join 패턴</li><li>2. POSIX Semaphore API의 의미</li><li>3. Binary Semaphore: Lock으로 쓰는 경우</li><li>4. Semaphore로 Ordering(순서) 표현하기</li><li>5. Producer/Consumer 문제</li><li>6. 잘못된 Mutex와 데드락</li><li>7. 완벽한 세마포어 해법</li></ul></div><div class="mini"><h3>핵심 태그</h3><ul><li>Binary Semaphore</li><li>Counting Semaphore</li><li>Producer/Consumer</li><li>Reader-Writer Lock</li></ul></div></div><div class="callout ok"><b>읽는 법:</b> 왼쪽 목차의 0–9 구조를 따라 개념 → 정의/수식 → 직관 → 예제 → 함정 → 실험 → 복습 순서로 읽으면 된다.</div></section><section class="card" id="concept"><h2>1. 핵심 개념</h2><div class="mini source-section" id="sec-binary-semaphore">
 <h3 class="legacy-section-title">3. Binary Semaphore: Lock으로 쓰는 경우</h3>
 <p>세마포어를 상호 배제(Mutex) 역할을 하는 Lock처럼 사용하는 패턴입니다.</p>
@@ -558,4 +558,16 @@ function checkSemQuiz(){
     out.textContent = `최종 점수: ${score} / ${total} — ${score===total?'세마포어의 역할과 활용법을 완벽히 마스터했습니다!':'기초 변수와 wait/post 순서를 다시 복습해보세요.'}`;
     triggerMathJax();
   }
-</script></body></html>
+</script><script>
+(function(){
+  document.querySelectorAll('[data-back-link]').forEach(link => {
+    link.addEventListener('click', event => {
+      if (window.history.length > 1) {
+        event.preventDefault();
+        window.history.back();
+      }
+    });
+  });
+})();
+</script>
+</body></html>
