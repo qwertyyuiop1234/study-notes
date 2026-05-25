@@ -182,6 +182,11 @@
         else main.prepend(toc);
       }
     }
+    const finalToc = document.querySelector('.sop-note-toc');
+    if (finalToc) {
+      const rowCount = main.children.length;
+      finalToc.style.setProperty('grid-row', `1 / span ${rowCount + 1}`, 'important');
+    }
   }
   
   // --- Ebbinghaus Spaced Repetition System ---
