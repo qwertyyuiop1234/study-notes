@@ -1,542 +1,491 @@
+<!doctype html>
 <!DOCTYPE html>
-<html class="scroll-smooth" lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MIPS Pipeline Control and Datapath · Computer Architecture</title>
-  <meta name="description" content="Korean study note on MIPS pipelining: single-cycle limits, pipeline throughput, five stages, performance, pipeline registers, load datapath fix, and control signal propagation." />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    window.tailwind=window.tailwind||{};
-    tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Geist','Inter','Noto Sans KR','system-ui','sans-serif'],mono:['Geist Mono','JetBrains Mono','ui-monospace','monospace']}}}};
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>MIPS Pipeline Control and Datapath · Computer Architecture</title>
+<meta content="Korean study note on MIPS pipelining: single-cycle limits, pipeline throughput, five stages, performance, pipeline registers, load datapath fix, and control signal propagation." name="description"/>
+<script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-  <script>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"]]},svg:{fontCache:'global'}};</script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-  <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
-  <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-  <style>
-    :root{color-scheme:dark}html:not(.dark){color-scheme:light}body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    .code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
-    .stage-card{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045)}
-    .pipe-cell{border:1px solid rgba(255,255,255,.1);border-radius:.9rem;padding:.6rem;text-align:center;font-weight:900;font-family:'Geist Mono',monospace}
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+    :root{--bg:#f7f4ee;--paper:#fffdfa;--ink:#28231d;--muted:#70675d;--line:#e4d9cc;--accent:#9a4f32;--accent2:#2f6f68;--accent3:#7a5aa6;--soft:#f0e7dc;--code:#24211f;--codefg:#f7efe4;--shadow:0 20px 60px rgba(64,42,22,.12)}
+    html.dark{--bg:#171514;--paper:#211f1d;--ink:#f4eee6;--muted:#c6b9aa;--line:#3d3731;--accent:#e19a73;--accent2:#7fd0c7;--accent3:#c4a5ff;--soft:#2b2723;--code:#111;--codefg:#f8efe3;--shadow:0 22px 70px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(154,79,50,.11),transparent 36%),linear-gradient(180deg,var(--bg),#efe7dc);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;line-height:1.75;letter-spacing:-.01em}
+    html.dark body{background:radial-gradient(circle at 20% 0%,rgba(225,154,115,.12),transparent 36%),linear-gradient(180deg,var(--bg),#111)}
+    .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:28px}
+    aside{position:sticky;top:24px;height:calc(100vh - 48px);overflow:auto;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    html.dark aside{background:rgba(30,28,26,.6)}
+    main{min-width:0}.hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+    .hero{padding:44px;margin-bottom:24px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(47,111,104,.18),transparent 70%);border-radius:50%}
+    .card{padding:34px;margin:20px 0}.mini{padding:18px;border-radius:18px;background:var(--soft);border:1px solid var(--line)}
+    h1{font-size:clamp(34px,5vw,64px);line-height:1.05;margin:0 0 16px}h2{font-size:clamp(26px,3vw,40px);line-height:1.15;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}h3{font-size:24px;margin:28px 0 12px}h4{font-size:19px;margin:22px 0 8px}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--accent);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.08em}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:6px 11px;border-radius:999px;margin:4px;font-size:13px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .brand{font-size:20px;font-weight:900;margin-bottom:14px}.sourcebox{font-size:13px;color:var(--muted);background:var(--soft);border:1px solid var(--line);padding:12px;border-radius:16px;margin:12px 0 16px}
+    .toc a{display:block;color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:12px;font-size:14px}.toc a:hover{background:var(--soft);color:var(--ink)}
+    .sticky-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.btn:hover{transform:translateY(-1px)}
+    .callout{border-left:5px solid var(--accent2);background:var(--soft);padding:16px 18px;border-radius:18px;margin:18px 0}.callout.ok{border-left-color:var(--accent2)}.callout.warn{border-left-color:#c58a2d}.callout.danger{border-left-color:#b95145}
+    .term{font-weight:900;color:var(--accent)}.formula{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:16px;overflow:auto;margin:14px 0}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--soft);text-align:left}tr:last-child td{border-bottom:0}
+    pre{background:var(--code);color:var(--codefg);border-radius:18px;padding:16px;overflow:auto}code{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px}.figure{margin:20px 0;text-align:center}.figure img{max-width:100%;border-radius:18px;border:1px solid var(--line);background:white}.caption{font-size:13px;color:var(--muted);margin-top:8px}.svgbox{overflow:auto;background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:10px}.svgbox svg{max-width:100%;height:auto}.timeline{display:grid;gap:12px}.step{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}.num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:900}.quiz details{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0}.quiz summary{cursor:pointer}
+    .simrow{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center;margin:10px 0}.bar{height:16px;background:var(--line);border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%}
+    @media(max-width:900px){.wrap{display:block;padding:14px}aside{position:relative;height:auto;margin-bottom:18px}.grid,.grid3{grid-template-columns:1fr}.hero,.card{padding:24px}.simrow{grid-template-columns:1fr}}
+    @media print{aside,.sticky-actions{display:none}.wrap{display:block;max-width:none}.card,.hero{box-shadow:none;break-inside:avoid}body{background:white}}
+
+
+    /* Masterclass compatibility layer for pre-existing interactive note content */
+    .source-section{margin:16px 0}.source-section>h3:first-child{margin-top:0}.source-section .card{box-shadow:none}.legacy-section-title{margin-top:0;color:var(--accent)}
+    .hidden{display:none!important}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.items-center{align-items:center}.items-start{align-items:flex-start}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.flex-wrap{flex-wrap:wrap}.flex-col{flex-direction:column}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.space-y-2>*+*{margin-top:.5rem}.space-y-3>*+*{margin-top:.75rem}.space-y-4>*+*{margin-top:1rem}.space-x-2>*+*{margin-left:.5rem}.space-x-3>*+*{margin-left:.75rem}
+    .w-full{width:100%}.max-w-none{max-width:none}.overflow-auto{overflow:auto}.overflow-x-auto{overflow-x:auto}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.align-top{vertical-align:top}.font-semibold{font-weight:600}.font-bold{font-weight:800}.font-black{font-weight:900}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:.04em}
+    .text-xs{font-size:12px}.text-sm{font-size:14px}.text-base{font-size:16px}.text-lg{font-size:18px}.text-xl{font-size:20px}.text-2xl{font-size:24px}.leading-relaxed{line-height:1.75}.leading-tight{line-height:1.2}
+    .p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}
+    .m-0{margin:0}.mt-0{margin-top:0}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mb-0{margin-bottom:0}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mx-auto{margin-left:auto;margin-right:auto}
+    .rounded-lg{border-radius:12px}.rounded-xl{border-radius:16px}.rounded-2xl{border-radius:20px}.rounded-full{border-radius:999px}.border{border:1px solid var(--line)}.border-2{border:2px solid var(--line)}.shadow,.shadow-lg{box-shadow:var(--shadow)}
+    .bg-slate-50,.bg-white,.bg-rose-50,.bg-blue-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-purple-50,.bg-gray-50{background:var(--soft)}.bg-slate-900,.bg-slate-950,.bg-black{background:var(--code);color:var(--codefg)}.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600{color:var(--muted)}.text-slate-800,.text-slate-900,.text-white{color:var(--ink)}.text-blue-400,.text-blue-500,.text-indigo-500,.text-indigo-600,.text-rose-500,.text-rose-600,.text-emerald-500,.text-emerald-600,.text-amber-500,.text-amber-600{color:var(--accent)}
+    button,.quiz-btn,input[type="button"],input[type="submit"]{font-family:inherit}.quiz-btn,.quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;transition:all .2s}.quiz-btn:hover,.quiz-option:hover{transform:translateY(-1px);border-color:var(--accent)}.quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}.quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}
+    input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px}input[type="range"]{padding:0;accent-color:var(--accent)}label{font-weight:700}canvas{max-width:100%;background:var(--paper);border:1px solid var(--line);border-radius:18px}.math-scroll{overflow-x:auto;overflow-y:hidden}
+    @media(min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.md\:flex{display:flex}.md\:block{display:block}}
+
+
+/* Page Specific simulator styles */
+    .stage-card{border:1px solid var(--line);background:var(--soft)}
+    .pipe-cell{border:1px solid var(--line);border-radius:.9rem;padding:.6rem;text-align:center;font-weight:900;font-family:monospace}
     .pipe-if{background:rgba(56,189,248,.22)}
     .pipe-id{background:rgba(167,139,250,.22)}
     .pipe-ex{background:rgba(245,158,11,.22)}
     .pipe-mem{background:rgba(52,211,153,.22)}
     .pipe-wb{background:rgba(251,113,133,.22)}
-    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
-    .prose-lite code{font-family:'Geist Mono',monospace;font-weight:700;color:#bfdbfe;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.22);padding:.08rem .35rem;border-radius:.45rem}
-    .prose-lite pre{background:#020617;border:1px solid rgba(255,255,255,.12);border-radius:1rem;padding:1rem;overflow:auto;color:#e2e8f0;margin-top:.8rem;font-family:'Geist Mono',monospace}
-  </style>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-  <div class="wrap">
-    <aside class="sop-note-toc">
-      <div class="brand">🦞 MIPS Pipeline</div>
-      <div class="sticky-actions">
-        <button class="btn" type="button" data-sop-theme>테마 전환</button>
-        <button class="btn" type="button" data-sop-print>PDF 저장</button>
+    .quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;font-family:inherit;transition:all 0.2s}
+    .quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}
+    .quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}</style></head>
+<body><div class="wrap"><aside><div class="brand">🦞 MIPS Pipeline</div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">클럭 주기를 독립된 stage로 쪼개고 여러 명령어를 컨베이어 벨트처럼 겹쳐 수행하여 CPU 성능과 처리량(throughput)을 극대화하는 파이프라인의 구조적 원리를 학습합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<main><section class="hero" id="top"><span class="eyebrow">Computer Architecture · Processor Design · Masterclass Note</span><h1>MIPS Processor Pipeline</h1><p style="font-size:20px;color:var(--muted);max-width:950px">싱글 사이클의 하드웨어 한계를 허물고, 명령어·데이터·제어 신호를 단계별로 동기화하는 MIPS 5-stage pipeline의 핵심을 정리한 노트.</p><div><span class="pill">5-Stage Datapath</span><span class="pill">Pipeline Registers</span><span class="pill">Control Propagation</span><span class="pill">Load Hazard Fix</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2><p>싱글 사이클의 하드웨어 한계를 허물고, 명령어·데이터·제어 신호를 단계별로 동기화하는 MIPS 5-stage pipeline의 핵심을 정리한 노트.</p><div class="grid"><div class="mini"><h3>학습 흐름</h3><ul><li>1. Single Cycle CPU의 한계와 파이프라인 개요</li><li>2. 빨래방 비유로 이해하는 파이프라인 법칙</li><li>3. MIPS 5단계 파이프라인: IF-ID-EX-MEM-WB</li><li>4. 파이프라인 성능 분석과 MIPS ISA의 비밀</li><li>5. 파이프라인 레지스터와 정보 격리</li><li>6. Load 명령어의 datapath 오류와 수정</li><li>7. 파이프라인 제어 신호의 전파</li><li>인터랙티브 실험: MIPS 5-stage pipeline flow</li></ul></div><div class="mini"><h3>핵심 태그</h3><ul><li>5-Stage Datapath</li><li>Pipeline Registers</li><li>Control Propagation</li><li>Load Hazard Fix</li></ul></div></div><div class="callout ok"><b>읽는 법:</b> 왼쪽 목차의 0–9 구조를 따라 개념 → 정의/수식 → 직관 → 예제 → 함정 → 실험 → 복습 순서로 읽으면 된다.</div></section><section class="card" id="concept"><h2>1. 핵심 개념</h2><div class="mini source-section" id="sec-registers">
+<h3 class="legacy-section-title">5. 파이프라인 레지스터와 정보 격리</h3>
+<p><strong>Pipeline register는 각기 다른 cycle에서 처리 중인 서로 다른 명령어들이 서로의 연산 정보를 덮어쓰지 못하도록 stage 사이를 물리적으로 격리하는 checkpoint 장벽이다.</strong></p>
+<p>동시에 여러 명령어가 pipeline 안에서 흐를 때 stage 사이에 임시 저장 장치가 없다면, EX에서 ALU 연산을 수행하는 순간 뒤따라오던 ID stage의 값이 섞여 연산 장치를 망칠 수 있습니다. 따라서 각 stage 경계에는 매 clock마다 이전 결과를 잡아두고 다음 단계로만 밀어주는 pipeline register가 필요합니다.</p>
+<h3>Pipeline register bit width 구성 예시</h3>
+<div class="grid">
+<div class="mini">
+<strong>IF/ID — 64 bits</strong>
+<p style="font-size: 12px; color: var(--muted); margin-top: 4px;">instruction 32 bits + PC+4 32 bits.</p>
+</div>
+<div class="mini">
+<strong>ID/EX — 147 bits</strong>
+<p style="font-size: 12px; color: var(--muted); margin-top: 4px;">control 9 bits, read data 1/2, sign-extended immediate, PC+4, Rt/Rd 번호 등.</p>
+</div>
+<div class="mini">
+<strong>EX/MEM — 107 bits</strong>
+<p style="font-size: 12px; color: var(--muted); margin-top: 4px;">남은 control, branch target, ALU result, zero flag, store data, write register 번호.</p>
+</div>
+<div class="mini">
+<strong>MEM/WB — 71 bits</strong>
+<p style="font-size: 12px; color: var(--muted); margin-top: 4px;">최종 control, memory read data, ALU result, write register 번호.</p>
+</div>
+</div>
+</div><div class="mini source-section" id="sec-control">
+<h3 class="legacy-section-title">7. 파이프라인 제어 신호의 전파</h3>
+<p><strong>Control signal은 ID stage에서 한 번에 생성되고, 해당 signal이 사용될 물리 stage에 맞춰 pipeline register를 타고 instruction과 동기화되어 흐른다.</strong></p>
+<h3>Stage별 control signal mapping</h3>
+<table>
+<thead>
+<tr>
+<th>사용 stage</th>
+<th>control signals</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><b>EX</b></td>
+<td><code>RegDst</code>, <code>ALUOp1</code>, <code>ALUOp0</code>, <code>ALUSrc</code></td>
+<td>목적지 선택, ALU 종류, ALU 피연산자 선택</td>
+</tr>
+<tr>
+<td><b>MEM</b></td>
+<td><code>Branch</code>, <code>MemRead</code>, <code>MemWrite</code></td>
+<td>분기 판별, memory read/write</td>
+</tr>
+<tr>
+<td><b>WB</b></td>
+<td><code>RegWrite</code>, <code>MemtoReg</code></td>
+<td>register write 여부, write-back data source 선택</td>
+</tr>
+</tbody>
+</table>
+<h3 style="margin-top: 24px;">주요 instruction별 control table</h3>
+<table style="text-align: center;">
+<thead>
+<tr>
+<th style="text-align: left;">Instruction</th>
+<th>RegDst</th>
+<th>ALUOp</th>
+<th>ALUSrc</th>
+<th>Branch</th>
+<th>MemRead</th>
+<th>MemWrite</th>
+<th>RegWrite</th>
+<th>MemtoReg</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><b>R-format</b></td>
+<td>1</td>
+<td>10</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><b>lw</b></td>
+<td>0</td>
+<td>00</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><b>sw</b></td>
+<td>X</td>
+<td>00</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>X</td>
+</tr>
+<tr>
+<td style="text-align: left;"><b>beq</b></td>
+<td>X</td>
+<td>01</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>X</td>
+</tr>
+</tbody>
+</table>
+</div></section><section class="card" id="math"><h2>2. 수식과 정의</h2><div class="mini source-section" id="sec-performance">
+<h3 class="legacy-section-title">4. 파이프라인 성능 분석과 MIPS ISA의 비밀</h3>
+<p><strong>파이프라인의 1클럭 주기는 가장 느린 단일 stage의 지연 시간에 묶이지만, 균등하게 나뉜 하드웨어는 clock cycle time을 크게 줄일 수 있다.</strong></p>
+<h3>실제 수치로 보는 차이</h3>
+<p>레지스터 읽기/쓰기 공정(ID, WB)이 각각 100ps, 나머지 공정(IF, EX, MEM)이 각각 200ps라고 합시다. 싱글 사이클 구현은 가장 긴 <code>lw</code> 경로인 $200+100+200+200+100=800\text{ps}$가 한 cycle을 결정합니다. 반면 pipeline 구현은 가장 느린 단일 공정인 200ps가 cycle time의 기준이 됩니다.</p>
+<h3>100개 명령어 처리 성능비 비교</h3>
+<div class="grid3">
+<div class="mini">
+<h4>Single-cycle</h4>
+<p style="font-size: 12px;">Cycle time = 45ns, CPI = 1<br/>총 시간 = $45\text{ns} \times 100 = 4500\text{ns}$</p>
+</div>
+<div class="mini">
+<h4>Multicycle</h4>
+<p style="font-size: 12px;">Cycle time = 10ns, 평균 CPI = 3.6<br/>총 시간 = $10\text{ns} \times 3.6 \times 100 = 3600\text{ns}$</p>
+</div>
+<div class="mini">
+<h4>Ideal pipeline</h4>
+<p style="font-size: 12px;">Cycle time = 10ns, CPI ≈ 1<br/>총 시간 = $10\text{ns} \times (100+4)=1040\text{ns}$</p>
+</div>
+</div>
+<p style="margin-top: 12px;">따라서 성능 개선비는 $4500/1040 \approx 4.33$배가 됩니다. 실제로는 hazard와 pipeline register overhead 때문에 이상적인 수치보다 낮아질 수 있습니다.</p>
+<h3>MIPS ISA가 pipeline에 최적화된 이유</h3>
+<ul>
+<li><strong>모든 명령어가 32비트 고정 길이:</strong> IF와 ID가 매우 규칙적으로 진행됩니다.</li>
+<li><strong>정형화된 명령어 형식:</strong> register 번호가 고정된 bit 위치에 있어 decode와 register read를 병렬적으로 준비하기 쉽습니다.</li>
+<li><strong>엄격한 load/store architecture:</strong> memory 접근이 <code>lw</code>, <code>sw</code>로 제한되어 EX에서 주소를 계산하고 MEM에서 memory를 밟는 흐름이 규칙적입니다.</li>
+</ul>
+</div></section><section class="card" id="intuition"><h2>3. 직관과 그림</h2><div class="mini source-section" id="sec-laundry">
+<h3 class="legacy-section-title">2. 빨래방 비유로 이해하는 파이프라인 법칙</h3>
+<p><strong>파이프라이닝은 개별 작업의 소요 시간(latency)을 본질적으로 단축시키지 않으며, 전체 작업 처리량(throughput)을 증가시키는 기술이다.</strong></p>
+<h3>빨래방 공식</h3>
+<p>네 사람이 각각 한 더미씩의 빨래를 세탁, 건조, 개기 순서로 처리한다고 합시다. 각 공정별 소요 시간은 세탁 30분, 건조 40분, 개기 20분입니다.</p>
+<div class="grid">
+<div class="mini">
+<h3>순차적 빨래</h3>
+<p>Ann의 빨래가 세탁, 건조, 개기까지 모두 끝난 후에야 Brian이 세탁기에 빨래를 넣습니다. 4개의 빨래 더미를 처리하려면 총 $90\text{분} \times 4 = 360\text{분}$이 걸립니다.</p>
+</div>
+<div class="mini">
+<h3>파이프라인 빨래</h3>
+<p>Ann의 세탁이 끝나고 건조기로 넘어가자마자 Brian은 즉시 세탁기를 돌립니다. 서로 다른 자원을 동시에 사용하므로 4더미의 처리가 약 210분에 마무리될 수 있습니다.</p>
+</div>
+</div>
+<table>
+<thead>
+<tr>
+<th>구분</th>
+<th>순차 처리</th>
+<th>파이프라인 처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><b>총 소요 시간</b></td>
+<td>6시간</td>
+<td>3.5시간</td>
+</tr>
+<tr>
+<td><b>개별 latency</b></td>
+<td>90분</td>
+<td>90분, 거의 동일</td>
+</tr>
+<tr>
+<td><b>throughput</b></td>
+<td>0.66 더미/시간</td>
+<td>1.14 더미/시간</td>
+</tr>
+</tbody>
+</table>
+<h3>아키텍처적 교훈</h3>
+<ul>
+<li><strong>개별 latency는 감소하지 않는다:</strong> Ann의 빨래는 여전히 끝날 때까지 전체 공정을 거칩니다.</li>
+<li><strong>속도 향상비의 한계는 pipeline 단계 수와 관련된다:</strong> 이상적으로 $N$단계 pipeline은 최대 $N$배에 가까운 throughput 개선을 기대할 수 있습니다.</li>
+<li><strong>가장 느린 단계가 전체 속도를 좌우한다:</strong> 건조기가 가장 느리면 그 단계가 병목이 됩니다. Pipeline 효율을 극대화하려면 단계 시간이 균형 잡혀야 합니다.</li>
+</ul>
+</div><div class="mini source-section" id="sec-stages">
+<h3 class="legacy-section-title">3. MIPS 5단계 파이프라인: IF-ID-EX-MEM-WB</h3>
+<p><strong>MIPS 구조는 명령어 실행 과정을 독립된 5개의 물리적 stage로 쪼개어 동시 실행 흐름을 제어한다.</strong></p>
+<div class="grid3">
+<div class="stage-card mini">
+<b style="font-family: monospace; font-size: 20px; color: var(--accent);">IF</b>
+<p style="font-size: 12px; margin-top: 4px;">PC가 가리키는 instruction memory에서 32비트 명령어를 읽고, PC+4를 준비한다.</p>
+</div>
+<div class="stage-card mini">
+<b style="font-family: monospace; font-size: 20px; color: var(--accent2);">ID</b>
+<p style="font-size: 12px; margin-top: 4px;">명령어를 decode하고 Rs/Rt register 값을 읽으며 immediate를 확장한다.</p>
+</div>
+<div class="stage-card mini">
+<b style="font-family: monospace; font-size: 20px; color: var(--accent3);">EX</b>
+<p style="font-size: 12px; margin-top: 4px;">ALU 연산, load/store 주소 계산, branch 비교와 target 계산을 수행한다.</p>
+</div>
+<div class="stage-card mini">
+<b style="font-family: monospace; font-size: 20px; color: var(--accent2);">MEM</b>
+<p style="font-size: 12px; margin-top: 4px;"><code>lw</code>, <code>sw</code>가 data memory를 읽거나 쓴다. 다른 명령어는 통과한다.</p>
+</div>
+<div class="stage-card mini">
+<b style="font-family: monospace; font-size: 20px; color: var(--accent);">WB</b>
+<p style="font-size: 12px; margin-top: 4px;">ALU 결과나 load data를 register file의 목적지 register에 기록한다.</p>
+</div>
+</div>
+<div class="callout ok">
+<b>직관적 비유: 자동차 조립 공장</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">IF는 기본 뼈대 강판을 가져오고, ID는 엔진과 조립 설명서를 확인하며, EX는 실린더와 프레임을 용접하고, MEM은 내부 마감 공정을 처리하며, WB는 번호판을 붙이고 완성차로 등록하는 과정에 비유할 수 있습니다.</p>
+</div>
+</div></section><section class="card" id="examples"><h2>4. 예제</h2><p>예제와 절차형 설명은 원본 학습 흐름 안에 보존되어 있다.</p></section><section class="card" id="pitfalls"><h2>5. 자주 틀리는 부분</h2><div class="mini source-section" id="sec-single-cycle">
+<h3 class="legacy-section-title">1. Single Cycle CPU의 한계와 파이프라인 개요</h3>
+<p><strong>싱글 사이클 구현은 모든 명령어가 동일한 1클럭 주기를 가지므로, 가장 긴 경로(Critical Path)인 load 명령어에 의해 전체 클럭 주기가 강제 하향 평준화되는 비효율성을 갖는다.</strong></p>
+<h3>싱글 사이클 CPU의 작동 한계점</h3>
+<p>싱글 사이클 하드웨어 설계는 아주 단순하고 이해하기 쉽습니다. 하나의 클럭 주기 동안 단 하나의 명령어만 완전히 시작되고 완료됩니다. 하지만 이 철학은 치명적인 성능 저하의 주범이 됩니다. CPU 클럭 주기의 길이는 가장 긴 지연을 갖는 명령어에 맞춰 결정되어야 하기 때문입니다.</p>
+<p>MIPS 명령어 중 가장 긴 작업 경로인 <strong>임계 경로(Critical Path)</strong>를 갖는 것은 대표적으로 <code>lw</code>입니다. <code>lw</code>는 명령어 메모리 읽기 → 레지스터 파일 읽기 → ALU 주소 연산 → 데이터 메모리 읽기 → 레지스터 파일 다시 쓰기 단계를 모두 차례대로 통과해야 하므로 큰 전파 지연을 수반합니다.</p>
+<h3>공통 케이스의 고속화 원칙 위배</h3>
+<p>컴퓨터 아키텍처의 황금 규칙인 “가장 흔하게 발생하는 일을 빠르게 만들라”는 원칙에 비추어 보면, 드물게 쓰이는 무거운 명령어 때문에 자주 실행되는 단순 연산의 속도까지 낮춰야 하는 싱글 사이클 구조는 비효율적입니다. 명령어에 따라 클럭 주기를 매번 유동적으로 조절하는 것은 물리적 회로 설계 수준에서 현실적이지 않습니다.</p>
+<div class="callout warn">
+<b>🛒 직관적 비유: 대형 마트의 무식한 계산대</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">물건 하나를 산 사람과 카트 가득 물건을 채운 사람이 뒤섞인 계산대를 생각합시다. 싱글 사이클은 카트 가득 채운 사람의 긴 계산이 완전히 끝날 때까지, 뒤에 있는 물건 하나만 가진 사람의 결제도 전혀 진행하지 않는 계산대와 같습니다.</p>
+</div>
+</div><div class="mini source-section" id="sec-load-fix">
+<h3 class="legacy-section-title">6. Load 명령어의 datapath 오류와 수정</h3>
+<p><strong>기본 pipeline에서 load 명령어가 write-back 단계에서 엉뚱한 register에 값을 기록할 수 있는 문제는, 목적지 register 정보의 도착 timing이 data와 동기화되지 않아서 발생한다.</strong></p>
+<h3>치명적인 하드웨어 버그 분석</h3>
+<p><code>lw $10, 20($1)</code>이 동작한다고 합시다. 이 명령어는 WB stage에서 data memory에서 가져온 값을 register file의 <code>$10</code>에 써야 합니다. 하지만 WB cycle이 되었을 때 register file의 Write Register 입력이 현재 ID stage에 있는 완전히 다른 최신 명령어의 register 번호를 바라본다면 문제가 생깁니다.</p>
+<p>결과적으로 <code>lw</code>가 가져온 data는 원래 가야 할 <code>$10</code>이 아니라 뒤쪽 instruction의 register에 덮어써질 수 있습니다. 이는 data는 pipeline을 타고 WB까지 왔지만, “어디에 써야 하는가”라는 destination identifier가 함께 오지 않았기 때문에 생기는 오류입니다.</p>
+<div class="callout ok">
+<b>하드웨어 해결책: Write register의 동반 전파</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">해결은 간단하지만 중요합니다. ID stage에서 이미 확정된 목적지 register 번호, 즉 Rt 또는 Rd를 최종 WB stage까지 <strong>data와 함께 pipeline register에 태워 전파</strong>해야 합니다. 그러면 register 번호는 ID/EX → EX/MEM → MEM/WB를 차례로 통과하고, WB timing에 data와 정확히 일치된 상태로 register file의 write address에 들어갑니다.</p>
+</div>
+</div></section><section class="card" id="interactive"><h2>6. 인터랙티브 실험</h2><div class="mini source-section" id="sec-simulator">
+<h3 class="legacy-section-title">인터랙티브 실험: MIPS 5-stage pipeline flow</h3>
+<p style="font-size: 13px; color: var(--muted);">연속된 instruction set이 clock cycle마다 IF, ID, EX, MEM, WB를 어떻게 지나가는지 확인해보자. 아래 버튼을 누르면 cycle별 pipeline register와 stage 상태가 갱신된다.</p>
+<div class="grid" style="grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 18px;">
+<div class="stage-card mini" style="text-align: center;">
+<b style="font-size: 18px; color: var(--accent);">IF</b>
+<p id="stage-if" style="font-weight: 800; font-size: 11px; margin-top: 8px;">-</p>
+</div>
+<div class="stage-card mini" style="text-align: center;">
+<b style="font-size: 18px; color: var(--accent2);">ID</b>
+<p id="stage-id" style="font-weight: 800; font-size: 11px; margin-top: 8px;">-</p>
+</div>
+<div class="stage-card mini" style="text-align: center;">
+<b style="font-size: 18px; color: var(--accent3);">EX</b>
+<p id="stage-ex" style="font-weight: 800; font-size: 11px; margin-top: 8px;">-</p>
+</div>
+<div class="stage-card mini" style="text-align: center;">
+<b style="font-size: 18px; color: var(--accent2);">MEM</b>
+<p id="stage-mem" style="font-weight: 800; font-size: 11px; margin-top: 8px;">-</p>
+</div>
+<div class="stage-card mini" style="text-align: center;">
+<b style="font-size: 18px; color: var(--accent);">WB</b>
+<p id="stage-wb" style="font-weight: 800; font-size: 11px; margin-top: 8px;">-</p>
+</div>
+</div>
+<div class="callout ok" id="sim-status" style="margin-top: 18px;">
+        시뮬레이터가 준비되었습니다. 다음 사이클을 눌러 CC1부터 확인하세요.
       </div>
-      <div class="sourcebox">클럭 주기를 독립된 stage로 쪼개고 여러 명령어를 컨베이어 벨트처럼 겹쳐 수행하여 CPU 성능과 처리량(throughput)을 극대화하는 파이프라인의 구조적 원리를 학습합니다.</div>
-      <nav class="toc">
-        <a href="#sec-single-cycle">1. Single-cycle CPU의 한계</a>
-        <a href="#sec-laundry">2. 빨래방 비유와 pipeline 법칙</a>
-        <a href="#sec-stages">3. MIPS 5단계: IF-ID-EX-MEM-WB</a>
-        <a href="#sec-performance">4. Performance와 ISA 설계</a>
-        <a href="#sec-registers">5. Pipeline registers</a>
-        <a href="#sec-load-fix">6. Load datapath fix</a>
-        <a href="#sec-control">7. Control signal propagation</a>
-        <a href="#sec-simulator">Interactive Lab</a>
-        <a href="#quiz">자가 성취도 퀴즈</a>
-      </nav>
-    </aside>
+<h3 style="margin-top: 24px;">Multi-clock-cycle diagram</h3>
+<div id="pipe-grid" style="overflow-x: auto;"></div>
+<div style="display: flex; gap: 8px; margin-top: 18px;">
+<button class="btn" onclick="nextCycle()" style="background: var(--accent); color: white; border: none; font-weight: 850;">다음 사이클 실행 →</button>
+<button class="btn" onclick="resetPipeline()">리셋</button>
+</div>
+</div></section><section class="card" id="exam"><h2>7. 시험/복습용 핵심 정리</h2><p>위 내용을 구두로 설명할 수 있는지 점검하라: 핵심 정의, 작동 순서, 대표 함정, 해결 기준을 한 문장씩 말할 수 있어야 한다.</p></section><section class="card quiz" id="quiz"><h2>8. 확인 문제와 해설</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<h2>자가 성취도 퀴즈</h2>
+<span class="pill" id="quiz-progress" style="background: var(--soft); color: var(--accent);"></span>
+</div>
+<div class="space-y-4" id="quiz-body">
+<p id="quiz-question" style="font-size: 16px; font-weight: 800;"></p>
+<div id="quiz-options" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;"></div>
+<div id="quiz-feedback" style="display: none; margin-top: 14px;"></div>
+<div style="text-align: right; margin-top: 18px;">
+<button class="btn" id="quiz-next" onclick="nextQuiz()" style="display: none; background: var(--accent2); color: white; border: none;">다음 문제</button>
+</div>
+</div>
+</section><section class="card" id="sources"><h2>9. 사용 자료와 출처</h2><ul><li>Course lecture notes and self-contained study note content.</li></ul></section></main>
+</div><script>
+const STORAGE_KEY='masterclass-study-note-theme';
+function toggleTheme(){
+  document.documentElement.classList.toggle('dark');
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem(STORAGE_KEY,document.documentElement.classList.contains('dark')?'dark':'light');
+}
+(function(){
+  const t=localStorage.getItem(STORAGE_KEY);
+  if(t==='dark'){
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }else{
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }
+})();
+function updateDemo(){
+  const slider=document.getElementById('demoSlider');
+  const value=document.getElementById('demoValue');
+  const bar=document.getElementById('demoBar');
+  const out=document.getElementById('demoOut');
+  if(!slider||!value||!bar||!out) return;
+  const v=parseFloat(slider.value);
+  value.textContent=v.toFixed(0);
+  bar.style.width=v+'%';
+  out.textContent=`현재 값: ${v}\n여기에 개념별 계산 결과나 해석을 연결하면 된다.`;
+}
+window.addEventListener('DOMContentLoaded', updateDemo);
+</script><script>
+const instr=['lw $10, 20($1)','sub $11, $2, $3','add $12, $3, $4','lw $13, 24($1)','add $14, $5, $6'];
+  const stages=['IF','ID','EX','MEM','WB'];
+  let cycle=0;
 
-    <main class="prose-lite">
-      <section class="hero" id="top">
-        <span class="eyebrow">Computer Architecture · Processor Design · Concept Note</span>
-        <h1>MIPS Processor Pipeline</h1>
-        <p style="font-size:20px;color:var(--muted);max-width:950px">싱글 사이클의 하드웨어 한계를 허물고, 명령어·데이터·제어 신호를 단계별로 동기화하는 MIPS 5-stage pipeline의 핵심을 정리한 노트.</p>
-        <div>
-          <span class="pill">5-Stage Datapath</span>
-          <span class="pill">Pipeline Registers</span>
-          <span class="pill">Control Propagation</span>
-          <span class="pill">Load Hazard Fix</span>
-        </div>
-      </section>
+  function buildGrid(){
+    let html='<table style="width: 100%; border-collapse: separate; border-spacing: 6px; margin: 12px 0;"><thead><tr><th style="text-align: left; padding: 8px;">Instruction</th>';
+    for(let c=1;c<=9;c++) html+=`<th style="text-align: center; padding: 8px;">CC${c}</th>`;
+    html+='</tr></thead><tbody>';
+    instr.forEach((ins,r)=>{
+      html+=`<tr><td style="padding: 8px; font-family: monospace; font-weight: 700;">${ins}</td>`;
+      for(let c=1;c<=9;c++){
+        const st=stages[c-r-1]||'';
+        const klass=st?('pipe-'+st.toLowerCase()):'';
+        html+=`<td id="cell-${r}-${c}" class="pipe-cell ${klass}">${st||'-'}</td>`
+      }
+      html+='</tr>'
+    });
+    html+='</tbody></table>';
+    document.getElementById('pipe-grid').innerHTML=html;
+  }
 
-      <!-- Section 1 -->
-      <section class="card" id="sec-single-cycle">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 1</span>
-          <h2 style="border:none;padding:0;margin:0">Single Cycle CPU의 한계와 파이프라인 개요</h2>
-        </div>
-        <p><strong>싱글 사이클 구현은 모든 명령어가 동일한 1클럭 주기를 가지므로, 가장 긴 경로(Critical Path)인 load 명령어에 의해 전체 클럭 주기가 강제 하향 평준화되는 비효율성을 갖는다.</strong></p>
-        
-        <h4 class="font-bold mt-4">싱글 사이클 CPU의 작동 한계점</h4>
-        <p>싱글 사이클 하드웨어 설계는 아주 단순하고 이해하기 쉽다. 하나의 클럭 주기 동안 단 하나의 명령어만 완전히 시작되고 완료된다. 하지만 이 철학은 치명적인 성능 저하의 주범이 된다. CPU 클럭 주기의 길이는 가장 긴 지연을 갖는 명령어에 맞춰 결정되어야 하기 때문이다.</p>
-        <p>MIPS 명령어 중 가장 긴 작업 경로인 <strong>임계 경로(Critical Path)</strong>를 갖는 것은 대표적으로 <code>lw</code>이다. <code>lw</code>는 명령어 메모리 읽기 → 레지스터 파일 읽기 → ALU 주소 연산 → 데이터 메모리 읽기 → 레지스터 파일 다시 쓰기 단계를 모두 차례대로 통과해야 하므로 큰 전파 지연을 수반한다.</p>
-        
-        <h4 class="font-bold mt-4">공통 케이스의 고속화 원칙 위배</h4>
-        <p>컴퓨터 아키텍처의 황금 규칙인 “가장 흔하게 발생하는 일을 빠르게 만들라”는 원칙에 비추어 보면, 드물게 쓰이는 무거운 명령어 때문에 자주 실행되는 단순 연산의 속도까지 낮춰야 하는 싱글 사이클 구조는 비효율적이다. 명령어에 따라 클럭 주기를 매번 유동적으로 조절하는 것은 물리적 회로 설계 수준에서 현실적이지 않다.</p>
-        
-        <div class="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-xl border border-amber-200 dark:border-amber-900/30 text-amber-950 dark:text-amber-200 flex items-start space-x-3 mt-4">
-          <span class="text-2xl">🛒</span>
-          <div>
-            <h4 class="font-bold mb-1">직관적 비유: 대형 마트의 무식한 계산대</h4>
-            <p class="text-sm">
-              물건 하나를 산 사람과 카트 가득 물건을 채운 사람이 뒤섞인 계산대를 생각하자. 싱글 사이클은 카트 가득 채운 사람의 긴 계산이 완전히 끝날 때까지, 뒤에 있는 물건 하나만 가진 사람의 결제도 전혀 진행하지 않는 계산대와 같다.
-            </p>
-          </div>
-        </div>
-      </section>
+  function paint(){
+    ['if','id','ex','mem','wb'].forEach(x=>document.getElementById('stage-'+x).textContent='-');
+    instr.forEach((ins,r)=>{
+      const st=stages[cycle-r-1];
+      if(st) document.getElementById('stage-'+st.toLowerCase()).textContent=ins;
+    });
+    document.querySelectorAll('.pipe-cell').forEach(x=>x.style.outline='none');
+    instr.forEach((_,r)=>{
+      const cell=document.getElementById(`cell-${r}-${cycle}`);
+      if(cell) cell.style.outline='3px solid var(--accent)'
+    });
+    document.getElementById('sim-status').innerHTML = cycle===0 ? '시뮬레이터가 준비되었습니다.' : `<strong>Current cycle: CC${cycle}.</strong> 각 instruction이 서로 다른 stage에 겹쳐 존재하는 것을 확인하세요.`;
+  }
 
-      <!-- Section 2 -->
-      <section class="card" id="sec-laundry">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 2</span>
-          <h2 style="border:none;padding:0;margin:0">빨래방 비유로 이해하는 파이프라인 법칙</h2>
-        </div>
-        <p><strong>파이프라이닝은 개별 작업의 소요 시간(latency)을 본질적으로 단축시키지 않으며, 전체 작업 처리량(throughput)을 증가시키는 기술이다.</strong></p>
-        
-        <h4 class="font-bold mt-4">빨래방 공식</h4>
-        <p>네 사람이 각각 한 더미씩의 빨래를 세탁, 건조, 개기 순서로 처리한다고 하자. 각 공정별 소요 시간은 세탁 30분, 건조 40분, 개기 20분이다.</p>
-        
-        <div class="grid gap-4 md:grid-cols-2 mt-4">
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0">순차적 빨래</h4>
-            <p class="text-sm">Ann의 빨래가 세탁, 건조, 개기까지 모두 끝난 후에야 Brian이 세탁기에 빨래를 넣는다. 4개의 빨래 더미를 처리하려면 총 $90\text{분} \times 4 = 360\text{분}$이 걸린다.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0">파이프라인 빨래</h4>
-            <p class="text-sm">Ann의 세탁이 끝나고 건조기로 넘어가자마자 Brian은 즉시 세탁기를 돌린다. 서로 다른 자원을 동시에 사용하므로 4더미의 처리가 약 210분에 마무리될 수 있다.</p>
-          </div>
-        </div>
+  function nextCycle(){
+    cycle=Math.min(cycle+1,9);
+    paint()
+  }
 
-        <div class="mt-5 overflow-x-auto">
-          <table class="w-full min-w-[600px] overflow-hidden rounded-xl text-sm">
-            <thead class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300">
-              <tr>
-                <th class="p-3 text-left">구분</th>
-                <th class="p-3 text-left">순차 처리</th>
-                <th class="p-3 text-left">파이프라인 처리</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
-              <tr>
-                <td class="p-3 font-semibold">총 소요 시간</td>
-                <td class="p-3">6시간</td>
-                <td class="p-3">3.5시간</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold">개별 latency</td>
-                <td class="p-3">90분</td>
-                <td class="p-3">90분, 거의 동일</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold">throughput</td>
-                <td class="p-3">0.66 더미/시간</td>
-                <td class="p-3">1.14 더미/시간</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+  function resetPipeline(){
+    cycle=0;
+    paint()
+  }
 
-        <h4 class="font-bold mt-6">아키텍처적 교훈</h4>
-        <ul class="list-disc list-inside pl-4 space-y-1">
-          <li><strong>개별 latency는 감소하지 않는다:</strong> Ann의 빨래는 여전히 끝날 때까지 전체 공정을 거친다.</li>
-          <li><strong>속도 향상비의 한계는 pipeline 단계 수와 관련된다:</strong> 이상적으로 $N$단계 pipeline은 최대 $N$배에 가까운 throughput 개선을 기대할 수 있다.</li>
-          <li><strong>가장 느린 단계가 전체 속도를 좌우한다:</strong> 건조기가 가장 느리면 그 단계가 병목이 된다. Pipeline 효율을 극대화하려면 단계 시간이 균형 잡혀야 한다.</li>
-        </ul>
-      </section>
+  buildGrid();
+  paint();
 
-      <!-- Section 3 -->
-      <section class="card" id="sec-stages">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 3</span>
-          <h2 style="border:none;padding:0;margin:0">MIPS 5단계 파이프라인: IF-ID-EX-MEM-WB</h2>
-        </div>
-        <p><strong>MIPS 구조는 명령어 실행 과정을 독립된 5개의 물리적 stage로 쪼개어 동시 실행 흐름을 제어한다.</strong></p>
-        
-        <div class="grid gap-3 md:grid-cols-5 mt-4">
-          <div class="stage-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-            <b class="font-mono text-2xl text-cyan-500 dark:text-cyan-300">IF</b>
-            <p class="mt-2 text-xs leading-relaxed">PC가 가리키는 instruction memory에서 32비트 명령어를 읽고, PC+4를 준비한다.</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-            <b class="font-mono text-2xl text-violet-500 dark:text-violet-300">ID</b>
-            <p class="mt-2 text-xs leading-relaxed">명령어를 decode하고 Rs/Rt register 값을 읽으며 immediate를 확장한다.</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-            <b class="font-mono text-2xl text-amber-500 dark:text-amber-300">EX</b>
-            <p class="mt-2 text-xs leading-relaxed">ALU 연산, load/store 주소 계산, branch 비교와 target 계산을 수행한다.</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-            <b class="font-mono text-2xl text-emerald-500 dark:text-emerald-300">MEM</b>
-            <p class="mt-2 text-xs leading-relaxed"><code>lw</code>, <code>sw</code>가 data memory를 읽거나 쓴다. 다른 명령어는 통과한다.</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-            <b class="font-mono text-2xl text-rose-500 dark:text-rose-300">WB</b>
-            <p class="mt-2 text-xs leading-relaxed">ALU 결과나 load data를 register file의 목적지 register에 기록한다.</p>
-          </div>
-        </div>
+  const quiz=[
+    {q:'Pipeline이 주로 개선하는 것은?',a:['개별 instruction latency','Instruction throughput','Instruction memory 크기'],ok:1,why:'Pipeline은 fill 이후 매 cycle 완료율을 높여 throughput을 개선한다.'},
+    {q:'Single-cycle clock period를 제한하는 대표적 원인은?',a:['가장 긴 critical path','가장 짧은 ALU path','register 이름 길이'],ok:0,why:'Clock은 가장 긴 combinational path가 안정될 시간을 보장해야 한다.'},
+    {q:'lw의 destination register number는 왜 MEM/WB까지 가야 하는가?',a:['WB stage에서 어느 register에 쓸지 알아야 하기 때문에','ALU가 register number를 더하기 때문에','PC를 계산해야 하기 때문에'],ok:0,why:'Load data와 write destination이 같은 instruction context로 WB에 도착해야 한다.'},
+    {q:'Control signal은 pipeline에서 어떻게 처리되는가?',a:['ID에서 만들고 stage별 사용 시점까지 함께 전달한다','매 stage가 opcode를 새로 memory에서 읽는다','WB에서 모든 control을 처음 만든다'],ok:0,why:'ID에서 생성된 EX/MEM/WB control bundle이 pipeline register를 타고 이동한다.'}
+  ];
+  let qi=0;
 
-        <div class="bg-indigo-50 dark:bg-indigo-950/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30 mt-6 text-sm flex items-start space-x-3">
-          <span>🚗</span>
-          <div>
-            <strong>직관적 비유: 자동차 조립 공장</strong><br/>
-            IF는 기본 뼈대 강판을 가져오고, ID는 엔진과 조립 설명서를 확인하며, EX는 실린더와 프레임을 용접하고, MEM은 내부 마감 공정을 처리하며, WB는 번호판을 붙이고 완성차로 등록하는 과정에 비유할 수 있다.
-          </div>
-        </div>
-      </section>
+  function renderQuiz(){
+    const item=quiz[qi];
+    document.getElementById('quiz-question').textContent=item.q;
+    document.getElementById('quiz-progress').textContent=(qi+1)+' / '+quiz.length;
 
-      <!-- Section 4 -->
-      <section class="card" id="sec-performance">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 4</span>
-          <h2 style="border:none;padding:0;margin:0">파이프라인 성능 분석과 MIPS ISA의 비밀</h2>
-        </div>
-        <p><strong>파이프라인의 1클럭 주기는 가장 느린 단일 stage의 지연 시간에 묶이지만, 균등하게 나뉜 하드웨어는 clock cycle time을 크게 줄일 수 있다.</strong></p>
-        
-        <h4 class="font-bold mt-4">실제 수치로 보는 차이</h4>
-        <p>레지스터 읽기/쓰기 공정(ID, WB)이 각각 100ps, 나머지 공정(IF, EX, MEM)이 각각 200ps라고 하자. 싱글 사이클 구현은 가장 긴 <code>lw</code> 경로인 $200+100+200+200+100=800\text{ps}$가 한 cycle을 결정한다. 반면 pipeline 구현은 가장 느린 단일 공정인 200ps가 cycle time의 기준이 된다.</p>
-        
-        <h4 class="font-bold mt-4">100개 명령어 처리 성능비 비교</h4>
-        <div class="grid gap-4 md:grid-cols-3 mt-3">
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <h5 class="font-bold mt-0">Single-cycle</h5>
-            <p class="text-xs">Cycle time = 45ns, CPI = 1<br/>총 시간 = $45\text{ns} \times 100 = 4500\text{ns}$</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <h5 class="font-bold mt-0">Multicycle</h5>
-            <p class="text-xs">Cycle time = 10ns, 평균 CPI = 3.6<br/>총 시간 = $10\text{ns} \times 3.6 \times 100 = 3600\text{ns}$</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <h5 class="font-bold mt-0">Ideal pipeline</h5>
-            <p class="text-xs">Cycle time = 10ns, CPI ≈ 1<br/>총 시간 = $10\text{ns} \times (100+4)=1040\text{ns}$</p>
-          </div>
-        </div>
-        <p class="text-sm mt-3">
-          따라서 성능 개선비는 $4500/1040 \approx 4.33$배가 된다. 실제로는 hazard와 pipeline register overhead 때문에 이상적인 수치보다 낮아질 수 있다.
-        </p>
+    const fb=document.getElementById('quiz-feedback');
+    fb.style.display = 'none';
+    fb.className = 'callout';
 
-        <h4 class="font-bold mt-4">MIPS ISA가 pipeline에 최적화된 이유</h4>
-        <ul class="list-disc list-inside pl-4 space-y-1">
-          <li><strong>모든 명령어가 32비트 고정 길이:</strong> IF와 ID가 매우 규칙적으로 진행된다.</li>
-          <li><strong>정형화된 명령어 형식:</strong> register 번호가 고정된 bit 위치에 있어 decode와 register read를 병렬적으로 준비하기 쉽다.</li>
-          <li><strong>엄격한 load/store architecture:</strong> memory 접근이 <code>lw</code>, <code>sw</code>로 제한되어 EX에서 주소를 계산하고 MEM에서 memory를 밟는 흐름이 규칙적이다.</li>
-        </ul>
-      </section>
+    document.getElementById('quiz-next').style.display = 'none';
+    const box=document.getElementById('quiz-options');
+    box.innerHTML='';
+    item.a.forEach((opt,i)=>{
+      const b=document.createElement('button');
+      b.className='quiz-option';
+      b.textContent=opt;
+      b.onclick=()=>{
+        // Disable all buttons
+        document.querySelectorAll('.quiz-option').forEach((btn, idx) => {
+            btn.disabled = true;
+            if (idx === item.ok) btn.classList.add('correct');
+        });
 
-      <!-- Section 5 -->
-      <section class="card" id="sec-registers">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 5</span>
-          <h2 style="border:none;padding:0;margin:0">파이프라인 레지스터와 정보 격리</h2>
-        </div>
-        <p><strong>Pipeline register는 각기 다른 cycle에서 처리 중인 서로 다른 명령어들이 서로의 연산 정보를 덮어쓰지 못하도록 stage 사이를 물리적으로 격리하는 checkpoint 장벽이다.</strong></p>
-        <p>동시에 여러 명령어가 pipeline 안에서 흐를 때 stage 사이에 임시 저장 장치가 없다면, EX에서 ALU 연산을 수행하는 순간 뒤따라오던 ID stage의 값이 섞여 연산 장치를 망칠 수 있다. 따라서 각 stage 경계에는 매 clock마다 이전 결과를 잡아두고 다음 단계로만 밀어주는 pipeline register가 필요하다.</p>
-        
-        <h4 class="font-bold mt-4">Pipeline register bit width 구성 예시</h4>
-        <div class="grid gap-3 md:grid-cols-2 mt-3 text-sm">
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <strong>IF/ID — 64 bits</strong>
-            <p class="text-xs mt-1 text-slate-500">instruction 32 bits + PC+4 32 bits.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <strong>ID/EX — 147 bits</strong>
-            <p class="text-xs mt-1 text-slate-500">control 9 bits, read data 1/2, sign-extended immediate, PC+4, Rt/Rd 번호 등.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <strong>EX/MEM — 107 bits</strong>
-            <p class="text-xs mt-1 text-slate-500">남은 control, branch target, ALU result, zero flag, store data, write register 번호.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <strong>MEM/WB — 71 bits</strong>
-            <p class="text-xs mt-1 text-slate-500">최종 control, memory read data, ALU result, write register 번호.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 6 -->
-      <section class="card" id="sec-load-fix">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 6</span>
-          <h2 style="border:none;padding:0;margin:0">Load 명령어의 datapath 오류와 수정</h2>
-        </div>
-        <p><strong>기본 pipeline에서 load 명령어가 write-back 단계에서 엉뚱한 register에 값을 기록할 수 있는 문제는, 목적지 register 정보의 도착 timing이 data와 동기화되지 않아서 발생한다.</strong></p>
-        
-        <h4 class="font-bold mt-4">치명적인 하드웨어 버그 분석</h4>
-        <p><code>lw $10, 20($1)</code>이 동작한다고 하자. 이 명령어는 WB stage에서 data memory에서 가져온 값을 register file의 <code>$10</code>에 써야 한다. 하지만 WB cycle이 되었을 때 register file의 Write Register 입력이 현재 ID stage에 있는 완전히 다른 최신 명령어의 register 번호를 바라본다면 문제가 생긴다.</p>
-        <p>결과적으로 <code>lw</code>가 가져온 data는 원래 가야 할 <code>$10</code>이 아니라 뒤쪽 instruction의 register에 덮어써질 수 있다. 이는 data는 pipeline을 타고 WB까지 왔지만, “어디에 써야 하는가”라는 destination identifier가 함께 오지 않았기 때문에 생기는 오류다.</p>
-        
-        <h4 class="font-bold mt-4">하드웨어 해결책: Write register의 동반 전파</h4>
-        <p>해결은 간단하지만 중요하다. ID stage에서 이미 확정된 목적지 register 번호, 즉 Rt 또는 Rd를 최종 WB stage까지 <strong>data와 함께 pipeline register에 태워 전파</strong>해야 한다. 그러면 register 번호는 ID/EX → EX/MEM → MEM/WB를 차례로 통과하고, WB timing에 data와 정확히 일치된 상태로 register file의 write address에 들어간다.</p>
-      </section>
-
-      <!-- Section 7 -->
-      <section class="card" id="sec-control">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 7</span>
-          <h2 style="border:none;padding:0;margin:0">파이프라인 제어 신호의 전파</h2>
-        </div>
-        <p><strong>Control signal은 ID stage에서 한 번에 생성되고, 해당 signal이 사용될 물리 stage에 맞춰 pipeline register를 타고 instruction과 동기화되어 흐른다.</strong></p>
-        
-        <h4 class="font-bold mt-4">Stage별 control signal mapping</h4>
-        <div class="overflow-x-auto mt-2">
-          <table class="w-full min-w-[600px] overflow-hidden rounded-xl text-sm">
-            <thead class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300">
-              <tr>
-                <th class="p-3 text-left">사용 stage</th>
-                <th class="p-3 text-left">control signals</th>
-                <th class="p-3 text-left">의미</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
-              <tr>
-                <td class="p-3 font-bold">EX</td>
-                <td class="p-3"><code>RegDst</code>, <code>ALUOp1</code>, <code>ALUOp0</code>, <code>ALUSrc</code></td>
-                <td class="p-3">목적지 선택, ALU 종류, ALU 피연산자 선택</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-bold">MEM</td>
-                <td class="p-3"><code>Branch</code>, <code>MemRead</code>, <code>MemWrite</code></td>
-                <td class="p-3">분기 판별, memory read/write</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-bold">WB</td>
-                <td class="p-3"><code>RegWrite</code>, <code>MemtoReg</code></td>
-                <td class="p-3">register write 여부, write-back data source 선택</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h4 class="font-bold mt-6">주요 instruction별 control table</h4>
-        <div class="overflow-x-auto mt-2">
-          <table class="w-full min-w-[700px] overflow-hidden rounded-xl text-sm text-center">
-            <thead class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300">
-              <tr>
-                <th class="p-3 text-left">Instruction</th>
-                <th class="p-3">RegDst</th>
-                <th class="p-3">ALUOp</th>
-                <th class="p-3">ALUSrc</th>
-                <th class="p-3">Branch</th>
-                <th class="p-3">MemRead</th>
-                <th class="p-3">MemWrite</th>
-                <th class="p-3">RegWrite</th>
-                <th class="p-3">MemtoReg</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
-              <tr>
-                <td class="p-3 text-left font-bold">R-format</td>
-                <td>1</td>
-                <td>10</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>1</td>
-                <td>0</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-left font-bold">lw</td>
-                <td>0</td>
-                <td>00</td>
-                <td>1</td>
-                <td>0</td>
-                <td>1</td>
-                <td>0</td>
-                <td>1</td>
-                <td>1</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-left font-bold">sw</td>
-                <td>X</td>
-                <td>00</td>
-                <td>1</td>
-                <td>0</td>
-                <td>0</td>
-                <td>1</td>
-                <td>0</td>
-                <td>X</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-left font-bold">beq</td>
-                <td>X</td>
-                <td>01</td>
-                <td>0</td>
-                <td>1</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>X</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Section 8 - Interactive Lab -->
-      <section class="card" id="sec-simulator">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-full">Lab</span>
-          <h2 style="border:none;padding:0;margin:0">Interactive lab: MIPS 5-stage pipeline flow</h2>
-        </div>
-        <p class="text-sm mb-4">연속된 instruction set이 clock cycle마다 IF, ID, EX, MEM, WB를 어떻게 지나가는지 확인해보자. 아래 버튼을 누르면 cycle별 pipeline register와 stage 상태가 갱신된다.</p>
-        
-        <div class="grid gap-3 md:grid-cols-5 mt-4">
-          <div class="stage-card rounded-2xl p-4 text-center border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
-            <b class="font-mono text-cyan-500 dark:text-cyan-300 text-lg">IF</b>
-            <p id="stage-if" class="mt-2 text-xs font-bold">-</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 text-center border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
-            <b class="font-mono text-violet-500 dark:text-violet-300 text-lg">ID</b>
-            <p id="stage-id" class="mt-2 text-xs font-bold">-</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 text-center border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
-            <b class="font-mono text-amber-500 dark:text-amber-300 text-lg">EX</b>
-            <p id="stage-ex" class="mt-2 text-xs font-bold">-</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 text-center border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
-            <b class="font-mono text-emerald-500 dark:text-emerald-300 text-lg">MEM</b>
-            <p id="stage-mem" class="mt-2 text-xs font-bold">-</p>
-          </div>
-          <div class="stage-card rounded-2xl p-4 text-center border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
-            <b class="font-mono text-rose-500 dark:text-rose-300 text-lg">WB</b>
-            <p id="stage-wb" class="mt-2 text-xs font-bold">-</p>
-          </div>
-        </div>
-
-        <p id="sim-status" class="mt-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/30 p-4 text-xs font-medium text-slate-600 dark:text-slate-300">
-          시뮬레이터가 준비되었습니다. 다음 사이클을 눌러 CC1부터 확인하세요.
-        </p>
-        
-        <h3 class="font-bold text-sm mt-6 mb-2">Multi-clock-cycle diagram</h3>
-        <div id="pipe-grid" class="overflow-x-auto"></div>
-        
-        <div class="mt-5 flex flex-wrap gap-3">
-          <button onclick="nextCycle()" class="rounded-full bg-blue-600 px-6 py-3 font-black text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/15">다음 사이클 실행 →</button>
-          <button onclick="resetPipeline()" class="rounded-full bg-slate-600 px-6 py-3 font-black text-white hover:bg-slate-700 transition-all">리셋</button>
-        </div>
-      </section>
-
-      <!-- Quiz Section -->
-      <section class="card" id="quiz">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-full">Quiz</span>
-          <h2 style="border:none;padding:0;margin:0">자가 성취도 퀴즈</h2>
-        </div>
-        <div id="quiz-body" class="mt-4 space-y-4">
-          <p id="quiz-question" class="text-base font-black"></p>
-          <div id="quiz-options" class="mt-4 grid gap-3"></div>
-          <p id="quiz-feedback" class="mt-4 hidden rounded-2xl p-4 font-semibold text-xs leading-relaxed border"></p>
-          <div class="mt-5 flex items-center justify-between">
-            <span id="quiz-progress" class="text-xs font-bold text-blue-500"></span>
-            <button id="quiz-next" onclick="nextQuiz()" class="hidden rounded-full bg-blue-600 px-5 py-2.5 font-black text-white text-xs hover:bg-blue-700 transition-all">다음 문제</button>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const instr=['lw $10, 20($1)','sub $11, $2, $3','add $12, $3, $4','lw $13, 24($1)','add $14, $5, $6'];
-    const stages=['IF','ID','EX','MEM','WB'];
-    let cycle=0;
-    
-    function buildGrid(){
-      let html='<table class="mt-3 w-full min-w-[700px] border-separate border-spacing-2 text-xs"><tr><th class="p-2 text-left text-slate-500 font-bold">Instruction</th>';
-      for(let c=1;c<=9;c++) html+=`<th class="p-2 text-slate-500 font-bold text-center">CC${c}</th>`;
-      html+='</tr>';
-      instr.forEach((ins,r)=>{
-        html+=`<tr><td class="p-2 font-mono font-semibold text-slate-600 dark:text-slate-300">${ins}</td>`;
-        for(let c=1;c<=9;c++){
-          const st=stages[c-r-1]||'';
-          const klass=st?('pipe-'+st.toLowerCase()):'';
-          html+=`<td id="cell-${r}-${c}" class="pipe-cell ${klass}">${st||'-'}</td>`
+        fb.style.display = 'block';
+        if(i===item.ok){
+          b.classList.add('correct');
+          fb.className = 'callout ok';
+          fb.innerHTML=`<strong>✅ 정답!</strong><br>${item.why}`;
+        } else {
+          b.classList.add('wrong');
+          fb.className = 'callout danger';
+          fb.innerHTML=`<strong>❌ 오답입니다. 다시 도전해 보세요!</strong><br>${item.why}`;
         }
-        html+='</tr>'
-      });
-      html+='</table>';
-      document.getElementById('pipe-grid').innerHTML=html;
-    }
-    
-    function paint(){
-      ['if','id','ex','mem','wb'].forEach(x=>document.getElementById('stage-'+x).textContent='-');
-      instr.forEach((ins,r)=>{
-        const st=stages[cycle-r-1];
-        if(st) document.getElementById('stage-'+st.toLowerCase()).textContent=ins;
-      });
-      document.querySelectorAll('.pipe-cell').forEach(x=>x.style.outline='none');
-      instr.forEach((_,r)=>{
-        const cell=document.getElementById(`cell-${r}-${cycle}`);
-        if(cell) cell.style.outline='3px solid rgba(96,165,250,.85)'
-      });
-      document.getElementById('sim-status').textContent=cycle===0?'시뮬레이터가 준비되었습니다.':`Current cycle: CC${cycle}. 각 instruction이 서로 다른 stage에 겹쳐 존재하는 것을 확인하세요.`
-    }
-    
-    function nextCycle(){
-      cycle=Math.min(cycle+1,9);
-      paint()
-    }
-    
-    function resetPipeline(){
-      cycle=0;
-      paint()
-    }
-    
-    buildGrid();
-    paint();
+        document.getElementById('quiz-next').style.display = 'block';
+      };
+      box.appendChild(b)
+    });
+  }
 
-    const quiz=[
-      {q:'Pipeline이 주로 개선하는 것은?',a:['개별 instruction latency','Instruction throughput','Instruction memory 크기'],ok:1,why:'Pipeline은 fill 이후 매 cycle 완료율을 높여 throughput을 개선한다.'},
-      {q:'Single-cycle clock period를 제한하는 대표적 원인은?',a:['가장 긴 critical path','가장 짧은 ALU path','register 이름 길이'],ok:0,why:'Clock은 가장 긴 combinational path가 안정될 시간을 보장해야 한다.'},
-      {q:'lw의 destination register number는 왜 MEM/WB까지 가야 하는가?',a:['WB stage에서 어느 register에 쓸지 알아야 하기 때문에','ALU가 register number를 더하기 때문에','PC를 계산해야 하기 때문에'],ok:0,why:'Load data와 write destination이 같은 instruction context로 WB에 도착해야 한다.'},
-      {q:'Control signal은 pipeline에서 어떻게 처리되는가?',a:['ID에서 만들고 stage별 사용 시점까지 함께 전달한다','매 stage가 opcode를 새로 memory에서 읽는다','WB에서 모든 control을 처음 만든다'],ok:0,why:'ID에서 생성된 EX/MEM/WB control bundle이 pipeline register를 타고 이동한다.'}
-    ];
-    let qi=0;
-    
-    function renderQuiz(){
-      const item=quiz[qi];
-      document.getElementById('quiz-question').textContent=item.q;
-      document.getElementById('quiz-progress').textContent=(qi+1)+' / '+quiz.length;
-      document.getElementById('quiz-feedback').className='mt-4 hidden rounded-2xl p-4 font-semibold text-xs border';
-      document.getElementById('quiz-next').classList.add('hidden');
-      const box=document.getElementById('quiz-options');
-      box.innerHTML='';
-      item.a.forEach((opt,i)=>{
-        const b=document.createElement('button');
-        b.className='w-full rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-left font-bold transition hover:bg-slate-100 dark:hover:bg-slate-900 text-xs';
-        b.textContent=opt;
-        b.onclick=()=>{
-          const fb=document.getElementById('quiz-feedback');
-          fb.classList.remove('hidden');
-          fb.classList.remove('bg-emerald-50','text-emerald-800','border-emerald-200','dark:bg-emerald-950/20','dark:text-emerald-300','dark:border-emerald-900/30');
-          fb.classList.remove('bg-rose-50','text-rose-800','border-rose-200','dark:bg-rose-950/20','dark:text-rose-300','dark:border-rose-900/30');
-          if(i===item.ok){
-            fb.classList.add('bg-emerald-50','text-emerald-800','border-emerald-200','dark:bg-emerald-950/20','dark:text-emerald-300','dark:border-emerald-900/30');
-            fb.innerHTML=`<strong>✅ 정답!</strong><br>${item.why}`;
-          } else {
-            fb.classList.add('bg-rose-50','text-rose-800','border-rose-200','dark:bg-rose-950/20','dark:text-rose-300','dark:border-rose-900/30');
-            fb.innerHTML=`<strong>❌ 오답입니다. 다시 도전해 보세요!</strong><br>${item.why}`;
-          }
-          document.getElementById('quiz-next').classList.remove('hidden')
-        };
-        box.appendChild(b)
-      });
-    }
-    
-    function nextQuiz(){
-      qi=(qi+1)%quiz.length;
-      renderQuiz()
-    }
-    
-    renderQuiz();
-  </script>
-</body>
-</html>
+  function nextQuiz(){
+    qi=(qi+1)%quiz.length;
+    renderQuiz()
+  }
+
+  renderQuiz();
+</script></body></html>

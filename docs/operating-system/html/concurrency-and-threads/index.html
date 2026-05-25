@@ -1,115 +1,122 @@
+<!doctype html>
 <!DOCTYPE html>
-<html class="scroll-smooth" lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Concurrency and Threads · Operating System</title>
-  <meta name="description" content="English study note on OS concurrency and threads: thread memory layout, scheduling nondeterminism, race conditions, critical sections, mutexes, and condition variables." />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Geist','Inter','Noto Sans KR','system-ui','sans-serif'], mono: ['Geist Mono','JetBrains Mono','ui-monospace','monospace'] }, animation: { float: 'float 14s ease-in-out infinite', 'float-delayed': 'float 18s ease-in-out 2s infinite', 'fade-in-up': 'fadeInUp .7s ease-out forwards' }, keyframes: { float: { '0%,100%': { transform:'translate(0,0) scale(1)' }, '33%': { transform:'translate(24px,-32px) scale(1.05)' }, '66%': { transform:'translate(-18px,22px) scale(.97)' } }, fadeInUp: { '0%': { opacity:'0', transform:'translateY(20px)' }, '100%': { opacity:'1', transform:'translateY(0)' } } } } } };
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Concurrency and Threads · Operating System</title>
+<meta content="Study note on OS concurrency and threads: thread memory layout, scheduling nondeterminism, race conditions, critical sections, mutexes, and condition variables." name="description"/>
+<script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-  <style>
-    :root{color-scheme:dark}html:not(.dark){color-scheme:light}body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    .code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
-    .step.active{border-color:rgba(139,92,246,.7);background:rgba(139,92,246,.14)}
-    .step.complete{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.09)}
-    .quiz-option.correct{border-color:rgba(16,185,129,.75);background:rgba(16,185,129,.14)}
-    .quiz-option.wrong{border-color:rgba(248,113,113,.75);background:rgba(248,113,113,.13)}
-    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
-  </style>
-  <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
-  <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-  <div class="wrap">
-    <aside class="sop-note-toc">
-      <div class="brand">🦞 OS Concurrency</div>
-      <div class="sticky-actions">
-        <button class="btn" type="button" data-sop-theme>테마 전환</button>
-        <button class="btn" type="button" data-sop-print>PDF 저장</button>
-      </div>
-      <div class="sourcebox">스레드의 개념, 프로세스와의 차이점, 메모리 구조, 동기화 도구(Mutex, Condition Variable)의 기본을 학습합니다.</div>
-      <nav class="toc">
-        <a href="#threads">1. Thread 정의 및 메모리 구조</a>
-        <a href="#why">2. 스레드 사용 이유</a>
-        <a href="#scheduler">3. 스레드 생성과 Nondeterminism</a>
-        <a href="#race">4. Shared Data & Race Condition</a>
-        <a href="#critical">5. 임계 영역과 상호 배제</a>
-        <a href="#mutex">6. 원자성 및 Mutex 실습</a>
-        <a href="#conditions">7. Condition Variable과 신호</a>
-        <a href="#simulator">Interactive Simulator</a>
-        <a href="#quiz">Self-check Quiz</a>
-      </nav>
-    </aside>
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+    :root{--bg:#f7f4ee;--paper:#fffdfa;--ink:#28231d;--muted:#70675d;--line:#e4d9cc;--accent:#9a4f32;--accent2:#2f6f68;--accent3:#7a5aa6;--soft:#f0e7dc;--code:#24211f;--codefg:#f7efe4;--shadow:0 20px 60px rgba(64,42,22,.12)}
+    html.dark{--bg:#171514;--paper:#211f1d;--ink:#f4eee6;--muted:#c6b9aa;--line:#3d3731;--accent:#e19a73;--accent2:#7fd0c7;--accent3:#c4a5ff;--soft:#2b2723;--code:#111;--codefg:#f8efe3;--shadow:0 22px 70px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(154,79,50,.11),transparent 36%),linear-gradient(180deg,var(--bg),#efe7dc);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;line-height:1.75;letter-spacing:-.01em}
+    html.dark body{background:radial-gradient(circle at 20% 0%,rgba(225,154,115,.12),transparent 36%),linear-gradient(180deg,var(--bg),#111)}
+    .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:28px}
+    aside{position:sticky;top:24px;height:calc(100vh - 48px);overflow:auto;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    html.dark aside{background:rgba(30,28,26,.6)}
+    main{min-width:0}.hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+    .hero{padding:44px;margin-bottom:24px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(47,111,104,.18),transparent 70%);border-radius:50%}
+    .card{padding:34px;margin:20px 0}.mini{padding:18px;border-radius:18px;background:var(--soft);border:1px solid var(--line)}
+    h1{font-size:clamp(34px,5vw,64px);line-height:1.05;margin:0 0 16px}h2{font-size:clamp(26px,3vw,40px);line-height:1.15;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}h3{font-size:24px;margin:28px 0 12px}h4{font-size:19px;margin:22px 0 8px}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--accent);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.08em}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:6px 11px;border-radius:999px;margin:4px;font-size:13px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .brand{font-size:20px;font-weight:900;margin-bottom:14px}.sourcebox{font-size:13px;color:var(--muted);background:var(--soft);border:1px solid var(--line);padding:12px;border-radius:16px;margin:12px 0 16px}
+    .toc a{display:block;color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:12px;font-size:14px}.toc a:hover{background:var(--soft);color:var(--ink)}
+    .sticky-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.btn:hover{transform:translateY(-1px)}
+    .callout{border-left:5px solid var(--accent2);background:var(--soft);padding:16px 18px;border-radius:18px;margin:18px 0}.callout.ok{border-left-color:var(--accent2)}.callout.warn{border-left-color:#c58a2d}.callout.danger{border-left-color:#b95145}
+    .term{font-weight:900;color:var(--accent)}.formula{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:16px;overflow:auto;margin:14px 0}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--soft);text-align:left}tr:last-child td{border-bottom:0}
+    pre{background:var(--code);color:var(--codefg);border-radius:18px;padding:16px;overflow:auto}code{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px}.figure{margin:20px 0;text-align:center}.figure img{max-width:100%;border-radius:18px;border:1px solid var(--line);background:white}.caption{font-size:13px;color:var(--muted);margin-top:8px}.svgbox{overflow:auto;background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:10px}.svgbox svg{max-width:100%;height:auto}.timeline{display:grid;gap:12px}.step{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}.num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:900}.quiz details{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0}.quiz summary{cursor:pointer}
+    .simrow{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center;margin:10px 0}.bar{height:16px;background:var(--line);border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%}
+    @media(max-width:900px){.wrap{display:block;padding:14px}aside{position:relative;height:auto;margin-bottom:18px}.grid,.grid3{grid-template-columns:1fr}.hero,.card{padding:24px}.simrow{grid-template-columns:1fr}}
+    @media print{aside,.sticky-actions{display:none}.wrap{display:block;max-width:none}.card,.hero{box-shadow:none;break-inside:avoid}body{background:white}}
 
-    <main class="prose-lite">
-      <section class="hero" id="top">
-        <span class="eyebrow">Operating System · Concurrency · Concept Note</span>
-        <h1>Concurrency and Threads</h1>
-        <p style="font-size:20px;color:var(--muted);max-width:950px">A full study note on the OS mechanisms behind threads, memory layouts, scheduling nondeterminism, race conditions, critical sections, mutexes, and condition variables.</p>
-        <div>
-          <span class="pill">Threads</span>
-          <span class="pill">Mutex</span>
-          <span class="pill">Condition Variables</span>
-          <span class="pill">OS Fundamentals</span>
-        </div>
-      </section>
 
-      <section class="card" id="threads">
-        <h2>1. Thread definition and memory layout</h2>
-        <p><strong>A thread is an independent CPU execution flow inside one process, while threads in the same process share the address space such as heap and code.</strong></p>
-        <h3>Process versus thread</h3>
-        <p>A traditional <strong>process</strong> runs independently with a fully isolated memory space. In a <strong>multithreaded program</strong>, several execution flows live inside one large shared address space. Each thread still needs its own execution state: a <strong>program counter (PC)</strong>, a private set of <strong>registers</strong>, and its own <strong>stack</strong> for return addresses, parameters, and local variables. The <strong>heap</strong>, where shared global or dynamically allocated data can live, and the compiled <strong>code</strong> region are shared.</p>
-        <h3>Thread context switch</h3>
-        <p>A process context switch is expensive because the OS must switch to a different virtual-memory mapping such as another page table. A <strong>thread context switch</strong> inside the same process is much lighter: the OS saves the outgoing thread's PC and registers into its <strong>TCB (Thread Control Block)</strong>, then restores the next thread's TCB state. The page table does not need to be replaced because the address space is the same.</p>
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="code rounded-2xl p-5">
-            <h4 class="font-black text-white">Single-threaded address space</h4>
-            <ul class="mt-3 text-sm text-slate-300">
-              <li>Program Code</li>
-              <li>Heap — shared resource area</li>
-              <li>One Stack</li>
-            </ul>
-          </div>
-          <div class="code rounded-2xl p-5">
-            <h4 class="font-black text-white">Multithreaded address space</h4>
-            <ul class="mt-3 text-sm text-slate-300">
-              <li>Program Code — shared</li>
-              <li>Heap — shared</li>
-              <li>Stack 1 — Thread A</li>
-              <li>Stack 2 — Thread B</li>
-            </ul>
-          </div>
-        </div>
-        <h3>Intuition: roommates under one roof</h3>
-        <p>A process is like a separate apartment household. Accessing another household's kitchen or tools requires heavier communication such as IPC or pipes. Threads are like roommates in one apartment: they freely share the living room and kitchen, meaning the shared address space, heap, and code, but each has a private bedroom and phone, meaning stack, registers, and PC.</p>
-        <p><strong>Why not share the stack?</strong> If several threads shared one stack while running different functions, return addresses, arguments, and local variables would become tangled. Independent stacks are technically necessary for independent control flow.</p>
-        <div class="callout ok"><b>TL;DR:</b> A thread is a lightweight process-like execution flow. It can switch without changing the virtual-memory table; code and heap are shared, while PC, registers, and stack are private.</div>
-      </section>
+    /* Masterclass compatibility layer for pre-existing interactive note content */
+    .source-section{margin:16px 0}.source-section>h3:first-child{margin-top:0}.source-section .card{box-shadow:none}.legacy-section-title{margin-top:0;color:var(--accent)}
+    .hidden{display:none!important}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.items-center{align-items:center}.items-start{align-items:flex-start}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.flex-wrap{flex-wrap:wrap}.flex-col{flex-direction:column}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.space-y-2>*+*{margin-top:.5rem}.space-y-3>*+*{margin-top:.75rem}.space-y-4>*+*{margin-top:1rem}.space-x-2>*+*{margin-left:.5rem}.space-x-3>*+*{margin-left:.75rem}
+    .w-full{width:100%}.max-w-none{max-width:none}.overflow-auto{overflow:auto}.overflow-x-auto{overflow-x:auto}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.align-top{vertical-align:top}.font-semibold{font-weight:600}.font-bold{font-weight:800}.font-black{font-weight:900}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:.04em}
+    .text-xs{font-size:12px}.text-sm{font-size:14px}.text-base{font-size:16px}.text-lg{font-size:18px}.text-xl{font-size:20px}.text-2xl{font-size:24px}.leading-relaxed{line-height:1.75}.leading-tight{line-height:1.2}
+    .p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}
+    .m-0{margin:0}.mt-0{margin-top:0}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mb-0{margin-bottom:0}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mx-auto{margin-left:auto;margin-right:auto}
+    .rounded-lg{border-radius:12px}.rounded-xl{border-radius:16px}.rounded-2xl{border-radius:20px}.rounded-full{border-radius:999px}.border{border:1px solid var(--line)}.border-2{border:2px solid var(--line)}.shadow,.shadow-lg{box-shadow:var(--shadow)}
+    .bg-slate-50,.bg-white,.bg-rose-50,.bg-blue-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-purple-50,.bg-gray-50{background:var(--soft)}.bg-slate-900,.bg-slate-950,.bg-black{background:var(--code);color:var(--codefg)}.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600{color:var(--muted)}.text-slate-800,.text-slate-900,.text-white{color:var(--ink)}.text-blue-400,.text-blue-500,.text-indigo-500,.text-indigo-600,.text-rose-500,.text-rose-600,.text-emerald-500,.text-emerald-600,.text-amber-500,.text-amber-600{color:var(--accent)}
+    button,.quiz-btn,input[type="button"],input[type="submit"]{font-family:inherit}.quiz-btn,.quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;transition:all .2s}.quiz-btn:hover,.quiz-option:hover{transform:translateY(-1px);border-color:var(--accent)}.quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}.quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}
+    input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px}input[type="range"]{padding:0;accent-color:var(--accent)}label{font-weight:700}canvas{max-width:100%;background:var(--paper);border:1px solid var(--line);border-radius:18px}.math-scroll{overflow-x:auto;overflow-y:hidden}
+    @media(min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.md\:flex{display:flex}.md\:block{display:block}}
 
-      <section class="card" id="why">
-        <h2>2. Why use threads?</h2>
-        <p><strong>Threads are used for computational parallelism on multicore hardware and for keeping a program useful while slow I/O would otherwise block execution.</strong></p>
-        <h3>1) Parallelism</h3>
-        <p>Modern hardware cannot endlessly increase one CPU core's speed, so systems use multiple cores. Threads let a large computation be split into independent pieces and run on several cores at the same time, dramatically improving throughput when the work is parallelizable.</p>
-        <h3>2) Avoiding blocking latency</h3>
-        <p>Disk reads and network communication are extremely slow compared with CPU operations. In a single-threaded program, one blocking I/O call can stop the whole process until data arrives. In a multithreaded program, if one thread blocks on I/O, the OS scheduler can switch to another ready thread and keep the CPU doing useful work.</p>
-        <h3>Intuition: supermarket checkout lines</h3>
-        <p>With a single checkout line, one customer's refund or price check delays everyone behind them. With multiple lines, other checkout lanes continue serving customers, so the whole store remains productive.</p>
-        <div class="callout"><b>TL;DR:</b> Threads exploit multiple CPUs for faster computation and bypass waiting time by giving idle cores other ready work while a thread waits for I/O.</div>
-      </section>
 
-      <section class="card" id="scheduler">
-        <h2>3. Thread creation and scheduler nondeterminism</h2>
-        <p><strong>Threads can be created with system APIs, but once they start, the exact execution order is controlled by the OS scheduler and is nondeterministic.</strong></p>
-        <h3>POSIX thread creation in C</h3>
-        <p>On Linux/Unix systems, multithreaded C programs commonly use <strong>pthread</strong>. <code>pthread_create()</code> starts a new thread, and <code>pthread_join()</code> lets the parent wait until the thread finishes so resources can be reclaimed.</p>
-        <pre><code>#include &lt;pthread.h&gt;
+/* Page Specific simulator styles in terms of the design variables */
+    .sim-step{border:1px solid var(--line);background:var(--soft);padding:14px;border-radius:18px;margin:12px 0;transition:all 0.2s}
+    .sim-step.active{border-color:var(--accent);background:var(--paper);box-shadow:0 0 0 3px rgba(154,79,50,.2)}
+    .sim-step.complete{border-color:var(--accent2);opacity:0.6}
+    .quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;font-family:inherit;transition:all 0.2s}
+    .quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}
+    .quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}</style></head>
+<body><div class="wrap"><aside><div class="brand">🦞 OS Concurrency</div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드의 개념, 프로세스와의 차이점, 메모리 구조, 동기화 도구(Mutex, Condition Variable)의 기본을 학습합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<main><section class="hero" id="top"><span class="eyebrow">Operating System · Concurrency · Masterclass Note</span><h1>Concurrency and Threads</h1><p style="font-size:20px;color:var(--muted);max-width:950px">A full study note on the OS mechanisms behind threads, memory layouts, scheduling nondeterminism, race conditions, critical sections, mutexes, and condition variables.</p><div><span class="pill">Threads</span><span class="pill">Mutex</span><span class="pill">Condition Variables</span><span class="pill">OS Concurrency</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2>
+<p>동시성(concurrency)은 현대 운영체제와 고성능 애플리케이션의 근간입니다. 본 단원에서는 프로세스의 뒤를 잇는 경량 실행 흐름인 스레드를 이해하고, 왜 동시성 처리가 필연적으로 경쟁 상태(race condition)를 유발하는지, 그리고 뮤텍스(mutex)와 조건 변수(condition variable)가 왜 필요한지 총망라합니다.</p>
+<div class="grid">
+<div class="mini"><h3>먼저 이해할 것</h3><ul><li>단일 프로세스의 메모리 구조 (Stack, Heap, Code)</li><li>CPU Context Switch의 전반적 메커니즘</li><li>프로세스 스케줄러의 비결정성(Nondeterminism)</li></ul></div>
+<div class="mini"><h3>최종적으로 할 수 있어야 할 것</h3><ul><li>스레드와 프로세스의 차이를 메모리 공유 유무로 서술</li><li>임계 영역(Critical Section)의 발생 원인 증명</li><li>뮤텍스 및 조건 변수의 올바른 바인딩 패턴 적용</li></ul></div>
+</div>
+<div class="callout ok"><b>읽는 법:</b> 개념 → 메모리 구조 → 경쟁 상황 분석 → 뮤텍스/CV 해법 순서로 학습하며, 시뮬레이터를 통해 하드웨어 레벨의 경쟁을 직접 목격해보세요.</div>
+</section><section class="card" id="concept"><h2>1. 핵심 개념</h2>
+<p><span class="term">스레드 (Thread)</span>은/는 프로세스 내의 독립적인 실행 단위이며, 같은 프로세스 내부의 스레드들은 <strong>Heap, Global Data, Code 영역을 자유롭게 공유</strong>합니다.</p>
+<div class="grid">
+<div class="mini"><h3>스레드 주소 공간</h3><p>스레드는 독립된 Program Counter (PC), 레지스터 셋, 그리고 <strong>사설 스택(Private Stack)</strong>을 가집니다. 그 외 힙과 코드는 모든 스레드가 한 지붕 아래에서 공유합니다.</p></div>
+<div class="mini"><h3>스레드 문맥 교환</h3><p>프로세스 문맥 교환과 달리, 스레드 문맥 교환(Thread Context Switch)은 가상 메모리 테이블(Page Table)을 변경하지 않으므로 비용이 현격하게 저렴합니다. TCB(Thread Control Block)에 PC와 레지스터만 백업/복구하면 됩니다.</p></div>
+</div>
+<div class="callout"><b>핵심 직관: 한 지붕 아래 룸메이트</b> 프로세스가 완전히 독립된 개별 아파트 호수라면, 스레드는 한 아파트 아래 방을 나눠 쓰는 룸메이트들입니다. 거실과 부엌(힙, 코드)은 자유롭게 같이 쓰지만, 자기 방과 일기장(스택, PC/레지스터)은 따로 가집니다.</div>
+</section><section class="card" id="math"><h2>2. 수식과 정의</h2>
+<p>공유 데이터 증감에 락이 없을 때 발생하는 데이터 누락 공식과 임계 범위 논리입니다.</p>
+<div class="formula">$$\text{counter} = \text{counter} + 1$$</div>
+<p>한 줄의 고차 언어 코드는 어셈블리/하드웨어 레벨에서 다음과 같은 3개의 원자적이지 않은 과정으로 쪼개집니다.</p>
+<table>
+<thead>
+<tr><th>기호/단계</th><th>의미</th><th>주의점</th></tr>
+</thead>
+<tbody>
+<tr><td><code>1. LOAD</code></td><td>메모리의 값을 CPU 레지스터(<code>%eax</code>)로 로드</td><td>이 단계 완료 후 선점(Preemption)당하면 값 유실 위험이 생김</td></tr>
+<tr><td><code>2. INCR</code></td><td>레지스터 내의 값을 1 증가</td><td>레지스터 값만 바뀌며 메모리에는 아직 반영되지 않음</td></tr>
+<tr><td><code>3. STORE</code></td><td>레지스터의 값을 메모리 주소에 다시 기록</td><td>동시에 여러 스레드가 쓰면 나중에 쓴 스레드가 앞선 값을 덮어씀</td></tr>
+</tbody>
+</table>
+</section><section class="card" id="intuition"><h2>3. 직관과 그림</h2>
+<p>스레드가 주소 공간(Address Space)을 어떻게 공유하고 쪼개 쓰는지 보여주는 논리 서식입니다.</p>
+<div class="grid">
+<div class="mini">
+<strong class="term">단일 스레드 프로세스</strong>
+<ul>
+<li>Program Code (공유)</li>
+<li>Heap (공유)</li>
+<li>Single Stack</li>
+</ul>
+</div>
+<div class="mini">
+<strong class="term">멀티 스레드 프로세스</strong>
+<ul>
+<li>Program Code (공유)</li>
+<li>Heap (공유)</li>
+<li>Stack (Thread A 사설)</li>
+<li>Stack (Thread B 사설)</li>
+</ul>
+</div>
+</div>
+</section><section class="card" id="examples"><h2>4. 예제</h2>
+<p>POSIX thread API를 활용한 기본적인 C언어 스레드 생성과 동기화 예제입니다.</p>
+<pre><code>#include &lt;pthread.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;assert.h&gt;
 
@@ -123,205 +130,214 @@ int main(int argc, char *argv[]) {
     int rc;
 
     printf("main: begin\n");
-    rc = pthread_create(&p1, NULL, mythread, "A"); assert(rc == 0);
-    rc = pthread_create(&p2, NULL, mythread, "B"); assert(rc == 0);
+    rc = pthread_create(&amp;p1, NULL, mythread, "A"); assert(rc == 0);
+    rc = pthread_create(&amp;p2, NULL, mythread, "B"); assert(rc == 0);
     rc = pthread_join(p1, NULL); assert(rc == 0);
     rc = pthread_join(p2, NULL); assert(rc == 0);
     printf("main: end\n");
     return 0;
 }</code></pre>
-        <h3>Nondeterministic scheduling</h3>
-        <p>If this simple program is executed many times, the output order is not guaranteed to be identical. Sometimes <code>A</code> appears first, sometimes <code>B</code> appears first, and sometimes both worker threads finish before the main thread reaches the join calls. The fine-grained timing depends on the internal state and decisions of the OS scheduler. This is <strong>nondeterministic execution</strong>.</p>
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="mini">
-            <h4 class="font-black text-violet-600 dark:text-violet-300">Scenario 1: Thread 1 priority</h4>
-            <ol class="list-decimal pl-5 mt-2 space-y-1 text-sm">
-              <li>main prints “main: begin”</li>
-              <li>Thread 1 and Thread 2 are created</li>
-              <li>main waits for Thread 1</li>
-              <li>Thread 1 prints “A”</li>
-              <li>main waits for Thread 2</li>
-              <li>Thread 2 prints “B”</li>
-              <li>main prints “main: end”</li>
-            </ol>
-          </div>
-          <div class="mini">
-            <h4 class="font-black text-cyan-600 dark:text-cyan-300">Scenario 2: main moves quickly</h4>
-            <ol class="list-decimal pl-5 mt-2 space-y-1 text-sm">
-              <li>main prints “main: begin”</li>
-              <li>Thread 1 is created</li>
-              <li>Thread 1 immediately prints “A”</li>
-              <li>Thread 2 is created</li>
-              <li>main waits for both threads</li>
-              <li>Thread 2 later prints “B”</li>
-              <li>main prints “main: end”</li>
-            </ol>
-          </div>
-        </div>
-        <div class="callout ok"><b>TL;DR:</b> <code>pthread_create</code> launches threads and <code>pthread_join</code> synchronizes with them, but the scheduler controls the exact timing, so execution is inherently nondeterministic.</div>
-      </section>
-
-      <section class="card" id="race">
-        <h2>4. Shared data and race conditions</h2>
-        <p><strong>A race condition occurs when multiple execution flows write shared data concurrently and the final result depends on timing rather than logical correctness.</strong></p>
-        <h3>The shared counter mystery</h3>
-        <p>Suppose two threads each increment a global <code>counter</code> ten million times. The expected final value is exactly twenty million, but real executions can produce smaller and different values.</p>
-        <pre><code>static volatile int counter = 0;
-
-void *mythread(void *arg) {
-    for (int i = 0; i &lt; 1e7; i++) {
-        counter = counter + 1; // critical section!
-    }
-    return NULL;
+<p>이 코드는 운영체제 스케줄러의 비결정성(Nondeterminism) 때문에 실행할 때마다 <code>A</code>와 <code>B</code>의 출력 순서가 달라질 수 있습니다.</p>
+</section><section class="card" id="pitfalls"><h2>5. 자주 틀리는 부분</h2>
+<p>동시성 동기화를 처리할 때 흔히 저지르는 오해와 교훈입니다.</p>
+<div class="grid">
+<div class="mini"><h3>오해 1</h3><p>스레드는 가상 메모리 공간을 아예 공유하지 않는다? 아닙니다, stack을 제외한 code와 heap을 완전 공유합니다.</p></div>
+<div class="mini"><h3>오해 2</h3><p><code>counter = counter + 1;</code>은 한 번에 일어나서 안전하다? 아닙니다, 어셈블리 단계에서 load-increment-store로 분할되므로 위험합니다.</p></div>
+<div class="mini"><h3>오해 3</h3><p>락을 걸기만 하면 모두 만사 해결이다? 락을 해제(unlock)하지 않거나 교차 획득하면 교착 상태(Deadlock)에 빠집니다.</p></div>
+<div class="mini"><h3>해결 기준</h3><p>임계 영역 내에서는 무조건 상호 배제(Mutual Exclusion)를 달성하기 위해 Mutex Lock을 적용해야 합니다.</p></div>
+</div>
+<div class="callout danger"><b>시험 함정:</b> 스레드가 락을 쥔 채 <code>pthread_cond_wait</code>가 아닌 일반 busy wait나 무한 루프에 돌입하면 시스템의 다른 스레드들이 락을 얻지 못하고 완전히 고갈되는 참사가 발생합니다.</div>
+</section><section class="card" id="interactive"><h2>6. 인터랙티브 실험</h2>
+<p>아래 단계별 어셈블리 시뮬레이터를 조작해 락이 없는 두 스레드가 교차 갱신을 할 때 어떻게 최종 연산값 유실(Lost Update) 경쟁 상태를 초래하는지 눈으로 추적해보세요.</p>
+<div class="mini">
+<div class="grid3 text-center" style="margin-bottom:18px">
+<div class="mini">
+<span style="font-size:12px;color:var(--muted)">메인 메모리 Counter</span><br/>
+<b id="sim-mem" style="font-size:32px;color:var(--accent)">0</b>
+</div>
+<div class="mini">
+<span style="font-size:12px;color:var(--muted)">Thread 1 레지스터</span><br/>
+<b id="sim-t1" style="font-size:32px;color:var(--accent2)">-</b>
+</div>
+<div class="mini">
+<span style="font-size:12px;color:var(--muted)">Thread 2 레지스터</span><br/>
+<b id="sim-t2" style="font-size:32px;color:var(--accent3)">-</b>
+</div>
+</div>
+<div id="sim-steps" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:18px;padding:12px;background:var(--paper)"></div>
+<p id="sim-feedback" style="margin-top:12px;font-weight:900;color:#b95145"></p>
+<div style="margin-top:16px;display:flex;gap:12px">
+<button class="btn" onclick="stepForward()">Run next instruction →</button>
+<button class="btn" onclick="resetSimulator()">Reset</button>
+</div>
+</div>
+</section><section class="card" id="exam"><h2>7. 시험/복습용 핵심 정리</h2>
+<div class="grid">
+<div class="mini"><h3>반드시 말할 수 있어야 하는 것</h3><ul><li>스레드가 사설로 갖는 3요소 (PC, Registers, Stack)</li><li>임계 영역(Critical Section)의 의미와 예시</li><li>원자성(Atomicity)과 상호 배제(Mutual Exclusion)</li></ul></div>
+<div class="mini"><h3>비교해서 구분할 것</h3><ul><li>Process Context Switch vs Thread Context Switch</li><li>Busy Waiting (spinning) vs Condition Variable Sleep</li><li>Mutex Lock vs Condition Variable Signal</li></ul></div>
+</div>
+<div class="callout"><b>구두시험 답변 템플릿:</b> "스레드는 가상 메모리 테이블을 교체하지 않는 경량 실행 흐름으로, 힙 영역 공유로 인한 데이터 오염을 막기 위해 뮤텍스 락과 조건 변수로 임계 영역을 보호해야 합니다."</div>
+</section><section class="card quiz" id="quiz"><h2>8. 확인 문제와 해설</h2>
+<div id="quiz-body">
+<p id="quiz-question" style="font-weight:900;font-size:17px"></p>
+<div id="quiz-options" style="margin-top:14px;display:flex;flex-direction:column;gap:10px"></div>
+<p class="callout" id="quiz-feedback" style="display:none"></p>
+<div style="margin-top:18px;display:flex;justify-content:between;align-items:center">
+<span id="quiz-progress" style="font-size:12px;font-weight:700;color:var(--muted)"></span>
+<button class="btn" id="quiz-next" onclick="nextQuiz()" style="display:none">Next question</button>
+</div>
+</div>
+</section><section class="card" id="sources"><h2>9. 사용 자료와 출처</h2>
+<ul>
+<li>Operating Systems: Three Easy Pieces (OSTEP) - Chapter 26 (Concurrency: An Introduction)</li>
+<li>Silberschatz Operating System Concepts, 10th Edition - Chapter 6 (Synchronization Tools)</li>
+<li>POSIX Threads Programming Guide - IEEE Std 1003.1</li>
+</ul>
+</section></main>
+</div><script>
+const STORAGE_KEY='masterclass-study-note-theme';
+function toggleTheme(){
+  document.documentElement.classList.toggle('dark');
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem(STORAGE_KEY,document.documentElement.classList.contains('dark')?'dark':'light');
 }
-
-// Possible output:
-// main: done with both (counter = 20000000) // lucky
-// main: done with both (counter = 19345221) // lost updates
-// main: done with both (counter = 19221041) // different every run</code></pre>
-        <h3>Why one C line is not one hardware step</h3>
-        <p>The high-level statement <code>counter = counter + 1;</code> is not performed as one indivisible action. At the hardware level, it becomes a sequence: <strong>load</strong> the memory value into a CPU register such as <code>%eax</code>, <strong>increment</strong> that register, then <strong>store</strong> the register value back into memory.</p>
-        <h3>A destructive context-switch interleaving</h3>
-        <p>Thread 1 reads memory value 50 into its register and locally computes 51. Before it stores the value back, the scheduler preempts it. Thread 2 also reads the still-unchanged memory value 50, computes 51, and stores 51. When Thread 1 resumes, it stores its old computed 51 as well. Two increments happened, but memory increased only from 50 to 51 instead of 52. One update was lost.</p>
-        <div class="callout danger"><b>Why call this a race?</b> Because the correctness of the final state depends on which thread reaches the memory write first, like a race whose winner changes the outcome.</div>
-      </section>
-
-      <section class="card" id="critical">
-        <h2>5. Critical sections and mutual exclusion</h2>
-        <p><strong>Mutual exclusion is the principle that at most one thread may enter a critical section at a time.</strong></p>
-        <h3>Critical section</h3>
-        <p>A <strong>critical section</strong> is the part of code that can cause a race condition because it accesses and writes shared resources such as global variables or shared data structures. In the counter example, <code>counter = counter + 1;</code> is the critical section.</p>
-        <h3>Mutual exclusion</h3>
-        <p><strong>Mutual exclusion</strong> prevents another thread from entering the same dangerous region while one thread is already executing it. It locks the region so the shared memory cannot be modified by multiple threads at the same time.</p>
-        <h3>Intuition: airplane restroom lock</h3>
-        <p>An airplane restroom is a critical section. Once a passenger enters and locks the door, everyone else must wait until the passenger finishes and unlocks it. The lock enforces mutual exclusion.</p>
-        <div class="callout ok"><b>TL;DR:</b> A critical section is code that can break when multiple threads touch it together. Mutual exclusion ensures only one thread enters at a time.</div>
-      </section>
-
-      <section class="card" id="mutex">
-        <h2>6. Atomicity and mutex practice</h2>
-        <p><strong>Atomicity means all-or-nothing execution: an operation completes as one indivisible unit or does not occur, with no other operation interleaving in the middle.</strong></p>
-        <h3>Limits of hardware atomic operations</h3>
-        <p>Hardware may provide atomic machine instructions for simple integer operations, but those are limited. They cannot directly protect complex algorithms such as safely transforming a tree structure or sorting and updating a long list. Operating systems and libraries build general synchronization primitives on top of lower-level hardware support. A central primitive is the <strong>mutex</strong>.</p>
-        <h3>Mutex API summary</h3>
-        <div class="grid gap-3 md:grid-cols-2">
-          <div class="mini">
-            <b>pthread_mutex_lock()</b>
-            <p class="text-sm mt-1 text-slate-600 dark:text-slate-400">Acquire the lock before entering the critical section. If another thread owns it, block until it is available.</p>
-          </div>
-          <div class="mini">
-            <b>pthread_mutex_unlock()</b>
-            <p class="text-sm mt-1 text-slate-600 dark:text-slate-400">Release the lock after finishing so another waiting thread can proceed.</p>
-          </div>
-          <div class="mini">
-            <b>pthread_mutex_trylock()</b>
-            <p class="text-sm mt-1 text-slate-600 dark:text-slate-400">Try to acquire the lock; if it is already held, return an error immediately instead of waiting.</p>
-          </div>
-          <div class="mini">
-            <b>pthread_mutex_timedlock()</b>
-            <p class="text-sm mt-1 text-slate-600 dark:text-slate-400">Wait only up to a specified timeout; if the lock is not released in time, give up.</p>
-          </div>
-        </div>
-        <h3>Safe counter increment with a mutex</h3>
-        <pre><code>#include &lt;pthread.h&gt;
-
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-// Or dynamically: pthread_mutex_init(&lock, NULL);
-
-void *mythread(void *arg) {
-    for (int i = 0; i &lt; 1e7; i++) {
-        pthread_mutex_lock(&lock);
-        counter = counter + 1; // only one thread can execute this region
-        pthread_mutex_unlock(&lock);
-    }
-    return NULL;
+(function(){
+  const t=localStorage.getItem(STORAGE_KEY);
+  if(t==='dark'){
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }else{
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }
+})();
+function updateDemo(){
+  const slider=document.getElementById('demoSlider');
+  const value=document.getElementById('demoValue');
+  const bar=document.getElementById('demoBar');
+  const out=document.getElementById('demoOut');
+  if(!slider||!value||!bar||!out) return;
+  const v=parseFloat(slider.value);
+  value.textContent=v.toFixed(0);
+  bar.style.width=v+'%';
+  out.textContent=`현재 값: ${v}\n여기에 개념별 계산 결과나 해석을 연결하면 된다.`;
 }
+window.addEventListener('DOMContentLoaded', updateDemo);
+</script><script>
 
-// When finished: pthread_mutex_destroy(&lock);</code></pre>
-        <div class="callout danger"><b>What if a thread locks but forgets to unlock?</b> The program can fall into <b>deadlock</b>. The thread that took the key never returns it, so other threads wait forever and the system can become stuck.</div>
-      </section>
 
-      <section class="card" id="conditions">
-        <h2>7. Condition variables and signaling</h2>
-        <p><strong>A condition variable is an event-signaling mechanism that safely coordinates ordering between threads when one action must happen before another can proceed.</strong></p>
-        <h3>Wastefulness of spinning</h3>
-        <p>If Thread B wants to wait until a shared flag <code>ready == 1</code>, the crude method is busy waiting:</p>
-        <pre><code>while (ready == 0) {
-    // spin / busy wait
-}</code></pre>
-        <p>This wastes CPU cycles, can keep useful threads from running, and can interact badly with weak memory consistency models or compiler optimization.</p>
-        <h3>Elegant waiting with condition variables</h3>
-        <p>A <code>pthread_cond_t</code> lets a thread sleep instead of burning CPU. <code>pthread_cond_wait(cond, mutex)</code> atomically releases the mutex and puts the thread to sleep; otherwise no other thread could change the condition. When the sleeping thread receives a signal, it wakes and reacquires the mutex before continuing. <code>pthread_cond_signal(cond)</code> wakes one waiting thread.</p>
-        <h3>Canonical coding template</h3>
-        <pre><code>pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond  = PTHREAD_COND_INITIALIZER;
-int ready = 0;
 
-void *waiter_thread(void *arg) {
-    pthread_mutex_lock(&lock);
-    while (ready == 0) { // use while, not if, to handle spurious wakeups
-        pthread_cond_wait(&cond, &lock);
+  const simSteps=[
+    ['Start: both Thread 1 and Thread 2 enter a loop that increments counter once each. Initial counter = 0.',0,'-','-'],
+    ['Thread 1 loads counter value 0 from memory into its private %eax register.',0,0,'-'],
+    ['Context switch: Thread 1 is preempted. Its temporary register value 0 is saved in its thread state.',0,0,'-'],
+    ['Thread 2 runs and loads the still-unchanged memory value 0 into its own %eax register.',0,0,0],
+    ['Thread 2 increments its register value to 1.',0,0,1],
+    ['Thread 2 stores its computed value 1 back into memory, so counter becomes 1.',1,0,1],
+    ['Context switches back. Thread 1 resumes with its old %eax value 0.',1,0,1],
+    ['Thread 1 increments its old register value to 1.',1,1,1],
+    ['Thread 1 stores %eax=1 back to memory, overwriting memory with the same value.',1,1,1],
+    ['Done: both threads believe they incremented the counter, but the final value is 1 rather than expected 2. This is a race condition.',1,1,1]
+  ];
+  let simIndex=0;
+
+  function buildSim(){
+    const box=document.getElementById('sim-steps');
+    box.innerHTML='';
+    simSteps.forEach((s,i)=>{
+      const d=document.createElement('div');
+      d.id='sim-step-'+i;
+      d.className='sim-step';
+      d.textContent=(i+1)+'. '+s[0];
+      box.appendChild(d);
+    });
+  }
+
+  function paintSim(i){
+    const s=simSteps[i];
+    document.getElementById('sim-mem').textContent=s[1];
+    document.getElementById('sim-t1').textContent=s[2];
+    document.getElementById('sim-t2').textContent=s[3];
+    simSteps.forEach((_,idx)=>{
+      const el=document.getElementById('sim-step-'+idx);
+      el.className='sim-step';
+      if(idx<i) el.classList.add('complete');
+      if(idx===i) el.classList.add('active');
+    });
+    document.getElementById('sim-feedback').textContent=i===simSteps.length-1?'Lost update: without synchronization such as a mutex, the two increments collapse into one visible update.':'';
+  }
+
+  function stepForward(){
+    paintSim(Math.min(simIndex,simSteps.length-1));
+    if(simIndex<simSteps.length-1) simIndex++;
+  }
+
+  function resetSimulator(){
+    simIndex=0;
+    buildSim();
+    paintSim(0);
+  }
+
+  const quiz=[
+    {q:'Why is a thread context switch usually much lighter than a full process context switch?',o:['It does not need to replace the virtual-memory page table when threads share one address space.','Threads never use registers or program counters.','Threads cannot have private stacks.','The scheduler ignores thread state transitions.'],a:0,d:'Threads in the same process share code and heap, so the expensive address-space/page-table switch is avoided; only thread execution state such as PC and registers must be saved/restored.'},
+    {q:'Which state must each thread keep independently?',o:['Code and global data regions','Program counter, register set, and stack','Heap and dynamic allocation arena','No private state at all'],a:1,d:'A separate PC, registers, and stack are required to control each independent execution flow.'},
+    {q:'What term describes an operation that runs all-or-nothing without being interrupted in the middle?',o:['Nondeterminism','Busy waiting','Mutual exclusion','Atomicity'],a:3,d:'Atomicity means the operation is indivisible from the point of view of other threads.'},
+    {q:'For condition variables, which function wakes a waiting thread, and what lock should be paired with the condition predicate?',o:['pthread_cond_signal / mutex lock','pthread_join / read lock','pthread_cond_wait / barrier lock','pthread_mutex_init / file lock'],a:0,d:'Condition variables are used with a mutex. Waiters check the predicate in a while loop; signal wakes a waiter after the condition is made true while protected by the mutex.'}
+  ];
+  let qi=0;
+
+  function renderQuiz(){
+    const q=quiz[qi];
+    document.getElementById('quiz-question').textContent=q.q;
+    document.getElementById('quiz-progress').textContent=(qi+1)+' / '+quiz.length;
+
+    const fb=document.getElementById('quiz-feedback');
+    fb.style.display='none';
+    fb.className='callout';
+
+    document.getElementById('quiz-next').style.display='none';
+    const opts=document.getElementById('quiz-options');
+    opts.innerHTML='';
+    q.o.forEach((text,i)=>{
+      const b=document.createElement('button');
+      b.className='quiz-option';
+      b.textContent=text;
+      b.onclick=()=>selectQuiz(i,b);
+      opts.appendChild(b);
+    });
+  }
+
+  function selectQuiz(i,btn){
+    const q=quiz[qi];
+    document.querySelectorAll('.quiz-option').forEach((b,idx)=>{
+      b.disabled=true;
+      if(idx===q.a) b.classList.add('correct');
+    });
+
+    const fb=document.getElementById('quiz-feedback');
+    fb.style.display='block';
+    if(i===q.a){
+      btn.classList.add('correct');
+      fb.innerHTML=`<strong>✅ Correct!</strong><br>${q.d}`;
+      fb.classList.add('ok');
+    }else{
+      btn.classList.add('wrong');
+      fb.innerHTML=`<strong>❌ Incorrect.</strong><br>${q.d}`;
+      fb.classList.add('danger');
     }
-    // safely perform the dependent work
-    pthread_mutex_unlock(&lock);
-    return NULL;
-}
+    document.getElementById('quiz-next').style.display='block';
+  }
 
-void *worker_thread(void *arg) {
-    pthread_mutex_lock(&lock);
-    ready = 1;
-    pthread_cond_signal(&cond);
-    pthread_mutex_unlock(&lock);
-    return NULL;
-}</code></pre>
-        <div class="callout"><b>Intuition: cafe pager</b> Standing at the counter and asking “Is my drink ready?” every half-second is spinning. Taking a pager and sitting down is a condition variable: wait comfortably, then respond when the pager signals.</div>
-      </section>
+  function nextQuiz(){
+    qi++;
+    if(qi<quiz.length) renderQuiz();
+    else{
+      document.getElementById('quiz-body').innerHTML='<div style="text-align:center;padding:24px"><h3 style="margin-top:0">Completed: Thread Fundamentals Cleared</h3><p style="color:var(--muted)">You reviewed memory layout, nondeterminism, race conditions, mutexes, and condition variables.</p><button class="btn" style="margin-top:12px" onclick="qi=0;location.reload()">Restart Quiz</button></div>';
+    }
+  }
 
-      <section class="card" id="simulator">
-        <h2>Interactive lab: race-condition hardware trace</h2>
-        <p>This simulator walks through how two threads can both try to increment a shared global counter without any guard, causing a lost update at the assembly-level load/increment/store sequence.</p>
-        <div class="grid gap-4 md:grid-cols-3">
-          <div class="mini text-center">
-            <p class="text-sm text-slate-500 dark:text-white/50">Main memory counter</p>
-            <b id="sim-mem" class="text-4xl">0</b>
-            <p class="text-xs text-slate-500 dark:text-white/40">expected final value: 2</p>
-          </div>
-          <div class="mini text-center">
-            <p class="text-sm text-slate-500 dark:text-white/50">Thread 1 register</p>
-            <b id="sim-t1" class="text-4xl">-</b>
-            <p class="text-xs text-slate-500 dark:text-white/40">%eax temporary</p>
-          </div>
-          <div class="mini text-center">
-            <p class="text-sm text-slate-500 dark:text-white/50">Thread 2 register</p>
-            <b id="sim-t2" class="text-4xl">-</b>
-            <p class="text-xs text-slate-500 dark:text-white/40">%eax temporary</p>
-          </div>
-        </div>
-        <div id="sim-steps" class="mt-5 max-h-80 space-y-2 overflow-y-auto rounded-2xl border border-white/10 p-3"></div>
-        <p id="sim-feedback" class="mt-4 font-bold text-rose-400"></p>
-        <div class="mt-5 flex flex-wrap gap-3">
-          <button onclick="stepForward()" class="btn shadow-lg shadow-violet-500/20">Run next instruction →</button>
-          <button onclick="resetSimulator()" class="btn">Reset</button>
-        </div>
-      </section>
-
-      <section class="card" id="quiz">
-        <h2>Self-check quiz</h2>
-        <div id="quiz-body" class="mt-4">
-          <p id="quiz-question" class="text-lg font-black"></p>
-          <div id="quiz-options" class="mt-4 grid gap-3"></div>
-          <p id="quiz-feedback" class="mt-4 hidden rounded-2xl p-4 font-semibold"></p>
-          <div class="mt-5 flex items-center justify-between">
-            <span id="quiz-progress" class="text-sm font-bold text-violet-500"></span>
-            <button id="quiz-next" onclick="nextQuiz()" class="hidden rounded-2xl bg-violet-500 px-5 py-3 font-black text-white">Next question</button>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const simSteps=[['Start: both Thread 1 and Thread 2 enter a loop that increments counter once each. Initial counter = 0.',0,'-','-'],['Thread 1 loads counter value 0 from memory into its private %eax register.',0,0,'-'],['Context switch: Thread 1 is preempted. Its temporary register value 0 is saved in its thread state.',0,0,'-'],['Thread 2 runs and loads the still-unchanged memory value 0 into its own %eax register.',0,0,0],['Thread 2 increments its register value to 1.',0,0,1],['Thread 2 stores its computed value 1 back into memory, so counter becomes 1.',1,0,1],['Context switches back. Thread 1 resumes with its old %eax value 0.',1,0,1],['Thread 1 increments its old register value to 1.',1,1,1],['Thread 1 stores %eax=1 back to memory, overwriting memory with the same value.',1,1,1],['Done: both threads believe they incremented the counter, but the final value is 1 rather than expected 2. This is a race condition.',1,1,1]];let simIndex=0;function buildSim(){const box=document.getElementById('sim-steps');box.innerHTML='';simSteps.forEach((s,i)=>{const d=document.createElement('div');d.id='sim-step-'+i;d.className='step rounded-xl border border-white/10 p-3 text-sm text-slate-600 dark:text-white/58';d.textContent=(i+1)+'. '+s[0];box.appendChild(d);});}function paintSim(i){const s=simSteps[i];document.getElementById('sim-mem').textContent=s[1];document.getElementById('sim-t1').textContent=s[2];document.getElementById('sim-t2').textContent=s[3];simSteps.forEach((_,idx)=>{const el=document.getElementById('sim-step-'+idx);el.classList.remove('active','complete');if(idx<i)el.classList.add('complete');if(idx===i)el.classList.add('active');});document.getElementById('sim-feedback').textContent=i===simSteps.length-1?'Lost update: without synchronization such as a mutex, the two increments collapse into one visible update.':'';}function stepForward(){paintSim(Math.min(simIndex,simSteps.length-1));if(simIndex<simSteps.length-1)simIndex++;}function resetSimulator(){simIndex=0;buildSim();paintSim(0);}const quiz=[{q:'Why is a thread context switch usually much lighter than a full process context switch?',o:['It does not need to replace the virtual-memory page table when threads share one address space.','Threads never use registers or program counters.','Threads cannot have private stacks.','The scheduler ignores thread state transitions.'],a:0,d:'Threads in the same process share code and heap, so the expensive address-space/page-table switch is avoided; only thread execution state such as PC and registers must be saved/restored.'},{q:'Which state must each thread keep independently?',o:['Code and global data regions','Program counter, register set, and stack','Heap and dynamic allocation arena','No private state at all'],a:1,d:'A separate PC, registers, and stack are required to control each independent execution flow.'},{q:'What term describes an operation that runs all-or-nothing without being interrupted in the middle?',o:['Nondeterminism','Busy waiting','Mutual exclusion','Atomicity'],a:3,d:'Atomicity means the operation is indivisible from the point of view of other threads.'},{q:'For condition variables, which function wakes a waiting thread, and what lock should be paired with the condition predicate?',o:['pthread_cond_signal / mutex lock','pthread_join / read lock','pthread_cond_wait / barrier lock','pthread_mutex_init / file lock'],a:0,d:'Condition variables are used with a mutex. Waiters check the predicate in a while loop; signal wakes a waiter after the condition is made true while protected by the mutex.'}];let qi=0;function renderQuiz(){const q=quiz[qi];document.getElementById('quiz-question').textContent=q.q;document.getElementById('quiz-progress').textContent=(qi+1)+' / '+quiz.length;document.getElementById('quiz-feedback').className='mt-4 hidden rounded-2xl p-4 font-semibold';document.getElementById('quiz-next').classList.add('hidden');const opts=document.getElementById('quiz-options');opts.innerHTML='';q.o.forEach((text,i)=>{const b=document.createElement('button');b.className='quiz-option rounded-2xl border border-slate-200 bg-white/70 p-4 text-left font-semibold transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5';b.textContent=text;b.onclick=()=>selectQuiz(i,b);opts.appendChild(b);});}function selectQuiz(i,btn){const q=quiz[qi];document.querySelectorAll('.quiz-option').forEach((b,idx)=>{b.disabled=true;if(idx===q.a)b.classList.add('correct');});const fb=document.getElementById('quiz-feedback');fb.classList.remove('hidden');if(i===q.a){btn.classList.add('correct');fb.textContent='Correct. '+q.d;fb.classList.add('bg-emerald-500/10','text-emerald-500');}else{btn.classList.add('wrong');fb.textContent='Not quite. '+q.d;fb.classList.add('bg-rose-500/10','text-rose-500');}document.getElementById('quiz-next').classList.remove('hidden');}function nextQuiz(){qi++;if(qi<quiz.length)renderQuiz();else{document.getElementById('quiz-body').innerHTML='<div class="rounded-3xl border border-violet-500/20 bg-violet-500/10 p-8 text-center"><h3 class="text-2xl font-black">Completed: thread fundamentals cleared</h3><p class="mt-3 text-slate-600 dark:text-white/60">You reviewed memory layout, nondeterminism, race conditions, mutexes, and condition variables.</p><button class="mt-5 rounded-2xl bg-violet-500 px-5 py-3 font-black text-white" onclick="qi=0;location.reload()">Restart quiz</button></div>';}}window.addEventListener('load',()=>{resetSimulator();renderQuiz();});
-  </script>
-</body>
-</html>
+  window.addEventListener('load',()=>{
+    resetSimulator();
+    renderQuiz();
+  });
+</script></body></html>

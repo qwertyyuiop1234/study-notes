@@ -1,429 +1,80 @@
+<!doctype html>
 <!DOCTYPE html>
-<html class="scroll-smooth" lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Condition Variables · Operating System</title>
-  <meta name="description" content="Study note on condition variables: wait/signal, state predicate, mutex, Mesa semantics, producer-consumer pitfalls, covering conditions, simulator, and quiz." />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    window.tailwind=window.tailwind||{};
-    tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Geist','Inter','Noto Sans KR','system-ui','sans-serif'],mono:['Geist Mono','JetBrains Mono','ui-monospace','monospace']}}}};
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Condition Variables · Operating System</title>
+<meta content="Study note on condition variables: wait/signal, state predicate, mutex, Mesa semantics, producer-consumer pitfalls, covering conditions, simulator, and quiz." name="description"/>
+<script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-  <style>
-    :root{color-scheme:dark}html:not(.dark){color-scheme:light}body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    .code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
-    .step.active{border-color:rgba(139,92,246,.7);background:rgba(139,92,246,.14)}
-    .step.complete{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.09)}
-    .quiz-option.correct{border-color:rgba(16,185,129,.75);background:rgba(16,185,129,.14)}
-    .quiz-option.wrong{border-color:rgba(248,113,113,.75);background:rgba(248,113,113,.13)}
-    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
-    #simCanvas{min-height:360px;width:100%;border-radius:18px;background:var(--sop-paper)!important;border:1px solid var(--sop-line)!important}
-  </style>
-  <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
-  <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-  <div class="wrap">
-    <aside class="sop-note-toc">
-      <div class="brand">🦞 OS Concurrency</div>
-      <div class="sticky-actions">
-        <button class="btn" type="button" data-sop-theme>테마 전환</button>
-        <button class="btn" type="button" data-sop-print>PDF 저장</button>
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+    :root{--bg:#f7f4ee;--paper:#fffdfa;--ink:#28231d;--muted:#70675d;--line:#e4d9cc;--accent:#9a4f32;--accent2:#2f6f68;--accent3:#7a5aa6;--soft:#f0e7dc;--code:#24211f;--codefg:#f7efe4;--shadow:0 20px 60px rgba(64,42,22,.12)}
+    html.dark{--bg:#171514;--paper:#211f1d;--ink:#f4eee6;--muted:#c6b9aa;--line:#3d3731;--accent:#e19a73;--accent2:#7fd0c7;--accent3:#c4a5ff;--soft:#2b2723;--code:#111;--codefg:#f8efe3;--shadow:0 22px 70px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(154,79,50,.11),transparent 36%),linear-gradient(180deg,var(--bg),#efe7dc);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;line-height:1.75;letter-spacing:-.01em}
+    html.dark body{background:radial-gradient(circle at 20% 0%,rgba(225,154,115,.12),transparent 36%),linear-gradient(180deg,var(--bg),#111)}
+    .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:28px}
+    aside{position:sticky;top:24px;height:calc(100vh - 48px);overflow:auto;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    html.dark aside{background:rgba(30,28,26,.6)}
+    main{min-width:0}.hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+    .hero{padding:44px;margin-bottom:24px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(47,111,104,.18),transparent 70%);border-radius:50%}
+    .card{padding:34px;margin:20px 0}.mini{padding:18px;border-radius:18px;background:var(--soft);border:1px solid var(--line)}
+    h1{font-size:clamp(34px,5vw,64px);line-height:1.05;margin:0 0 16px}h2{font-size:clamp(26px,3vw,40px);line-height:1.15;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}h3{font-size:24px;margin:28px 0 12px}h4{font-size:19px;margin:22px 0 8px}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--accent);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.08em}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:6px 11px;border-radius:999px;margin:4px;font-size:13px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .brand{font-size:20px;font-weight:900;margin-bottom:14px}.sourcebox{font-size:13px;color:var(--muted);background:var(--soft);border:1px solid var(--line);padding:12px;border-radius:16px;margin:12px 0 16px}
+    .toc a{display:block;color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:12px;font-size:14px}.toc a:hover{background:var(--soft);color:var(--ink)}
+    .sticky-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.btn:hover{transform:translateY(-1px)}
+    .callout{border-left:5px solid var(--accent2);background:var(--soft);padding:16px 18px;border-radius:18px;margin:18px 0}.callout.ok{border-left-color:var(--accent2)}.callout.warn{border-left-color:#c58a2d}.callout.danger{border-left-color:#b95145}
+    .term{font-weight:900;color:var(--accent)}.formula{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:16px;overflow:auto;margin:14px 0}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--soft);text-align:left}tr:last-child td{border-bottom:0}
+    pre{background:var(--code);color:var(--codefg);border-radius:18px;padding:16px;overflow:auto}code{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px}.figure{margin:20px 0;text-align:center}.figure img{max-width:100%;border-radius:18px;border:1px solid var(--line);background:white}.caption{font-size:13px;color:var(--muted);margin-top:8px}.svgbox{overflow:auto;background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:10px}.svgbox svg{max-width:100%;height:auto}.timeline{display:grid;gap:12px}.step{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}.num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:900}.quiz details{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0}.quiz summary{cursor:pointer}
+    .simrow{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center;margin:10px 0}.bar{height:16px;background:var(--line);border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%}
+    @media(max-width:900px){.wrap{display:block;padding:14px}aside{position:relative;height:auto;margin-bottom:18px}.grid,.grid3{grid-template-columns:1fr}.hero,.card{padding:24px}.simrow{grid-template-columns:1fr}}
+    @media print{aside,.sticky-actions{display:none}.wrap{display:block;max-width:none}.card,.hero{box-shadow:none;break-inside:avoid}body{background:white}}
+
+
+    /* Masterclass compatibility layer for pre-existing interactive note content */
+    .source-section{margin:16px 0}.source-section>h3:first-child{margin-top:0}.source-section .card{box-shadow:none}.legacy-section-title{margin-top:0;color:var(--accent)}
+    .hidden{display:none!important}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.items-center{align-items:center}.items-start{align-items:flex-start}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.flex-wrap{flex-wrap:wrap}.flex-col{flex-direction:column}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.space-y-2>*+*{margin-top:.5rem}.space-y-3>*+*{margin-top:.75rem}.space-y-4>*+*{margin-top:1rem}.space-x-2>*+*{margin-left:.5rem}.space-x-3>*+*{margin-left:.75rem}
+    .w-full{width:100%}.max-w-none{max-width:none}.overflow-auto{overflow:auto}.overflow-x-auto{overflow-x:auto}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.align-top{vertical-align:top}.font-semibold{font-weight:600}.font-bold{font-weight:800}.font-black{font-weight:900}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:.04em}
+    .text-xs{font-size:12px}.text-sm{font-size:14px}.text-base{font-size:16px}.text-lg{font-size:18px}.text-xl{font-size:20px}.text-2xl{font-size:24px}.leading-relaxed{line-height:1.75}.leading-tight{line-height:1.2}
+    .p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}
+    .m-0{margin:0}.mt-0{margin-top:0}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mb-0{margin-bottom:0}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mx-auto{margin-left:auto;margin-right:auto}
+    .rounded-lg{border-radius:12px}.rounded-xl{border-radius:16px}.rounded-2xl{border-radius:20px}.rounded-full{border-radius:999px}.border{border:1px solid var(--line)}.border-2{border:2px solid var(--line)}.shadow,.shadow-lg{box-shadow:var(--shadow)}
+    .bg-slate-50,.bg-white,.bg-rose-50,.bg-blue-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-purple-50,.bg-gray-50{background:var(--soft)}.bg-slate-900,.bg-slate-950,.bg-black{background:var(--code);color:var(--codefg)}.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600{color:var(--muted)}.text-slate-800,.text-slate-900,.text-white{color:var(--ink)}.text-blue-400,.text-blue-500,.text-indigo-500,.text-indigo-600,.text-rose-500,.text-rose-600,.text-emerald-500,.text-emerald-600,.text-amber-500,.text-amber-600{color:var(--accent)}
+    button,.quiz-btn,input[type="button"],input[type="submit"]{font-family:inherit}.quiz-btn,.quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;transition:all .2s}.quiz-btn:hover,.quiz-option:hover{transform:translateY(-1px);border-color:var(--accent)}.quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}.quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}
+    input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px}input[type="range"]{padding:0;accent-color:var(--accent)}label{font-weight:700}canvas{max-width:100%;background:var(--paper);border:1px solid var(--line);border-radius:18px}.math-scroll{overflow-x:auto;overflow-y:hidden}
+    @media(min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.md\:flex{display:flex}.md\:block{display:block}}
+
+
+/* Page Specific simulator styles */
+    #simCanvas{min-height:360px;width:100%;border-radius:18px;background:var(--paper)!important;border:1px solid var(--line)!important}
+    .quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;font-family:inherit;transition:all 0.2s}
+    .quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}
+    .quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}</style></head>
+<body><div class="wrap"><aside><div class="brand">🦞 OS Concurrency</div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드 모델에서 상호배제를 넘어 조건 만족 대기를 지원하는 조건 변수(Condition Variable)와 생산자-소비자 버그 패턴을 완전 정복합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<main><section class="hero" id="top"><span class="eyebrow">Operating System · Concurrency · Concept Note · Masterclass Note</span><h1>동시성 제어의 정점: 조건 변수(Condition Variables)</h1><p style="font-size:20px;color:var(--muted);max-width:950px">이 학습 대시보드는 멀티스레드 프로그래밍 환경에서 특정 조건의 만족 여부에 따라 스레드를 효율적으로 관리하는 조건 변수(Condition Variable)의 기초 이론부터, 실제 현업에서 맞닥뜨리는 치명적인 버그 패턴 및 이를 보완하는 완벽한 동기화 기법까지 체계적으로 정리합니다.</p><div><span class="pill">Condition Variables</span><span class="pill">Mesa Semantics</span><span class="pill">Producer/Consumer</span><span class="pill">Covering Conditions</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2><p>이 학습 대시보드는 멀티스레드 프로그래밍 환경에서 특정 조건의 만족 여부에 따라 스레드를 효율적으로 관리하는 조건 변수(Condition Variable)의 기초 이론부터, 실제 현업에서 맞닥뜨리는 치명적인 버그 패턴 및 이를 보완하는 완벽한 동기화 기법까지 체계적으로 정리합니다.</p><div class="grid"><div class="mini"><h3>학습 흐름</h3><ul><li>1. 특정 조건 대기: 무식한 스핀 대기(Spin-waiting)의 한계</li><li>2. 구원의 열쇠: 조건 변수(Condition Variable)와 핵심 API</li><li>3. 올바른 구현의 삼위일체: 왜 상태 변수(State Var)와 뮤텍스 락(Lock)이 함께 있어야 하는가?</li><li>4. 생산자-소비자 문제(Bounded Buffer)와 IF 문의 참사</li><li>5. 진화하는 동기화: While 도입과 '단일 조건 변수'의 한계로 인한 Total Sleep 데드락</li><li>6. 다중 슬롯 원형 버퍼 확장 &amp; 커버링 조건(Covering Conditions)</li><li>동시성 오동작 &amp; 제어 시각화 시뮬레이터</li><li>8. 확인 문제와 해설</li></ul></div><div class="mini"><h3>핵심 태그</h3><ul><li>Condition Variables</li><li>Mesa Semantics</li><li>Producer/Consumer</li><li>Covering Conditions</li></ul></div></div><div class="callout ok"><b>읽는 법:</b> 왼쪽 목차의 0–9 구조를 따라 개념 → 정의/수식 → 직관 → 예제 → 함정 → 실험 → 복습 순서로 읽으면 된다.</div></section><section class="card" id="concept"><h2>1. 핵심 개념</h2><div class="mini source-section">
+<div class="callout ok">
+<strong>지난 시간 복습:</strong> 카운터, 연결 리스트, 큐, 해시 테이블 등에 적용한 <strong>락 기반 동시성 자료구조(Lock-based concurrent data structures)</strong>를 통해 상호 배제를 달성했습니다. 하지만 '단순 독점'을 넘어 <strong>"스레드가 조건이 참이 될 때까지 대기해야 하는 상황"</strong>을 어떻게 효율적으로 다룰 수 있을까요?
       </div>
-      <div class="sourcebox">스레드 모델에서 상호배제를 넘어 조건 만족 대기를 지원하는 조건 변수(Condition Variable)와 생산자-소비자 버그 패턴을 완전 정복합니다.</div>
-      <nav class="toc">
-        <a href="#ch1">1. 스핀 대기의 한계</a>
-        <a href="#ch2">2. 조건 변수와 API</a>
-        <a href="#ch3">3. 올바른 구현의 3요소</a>
-        <a href="#ch4">4. Mesa Semantics와 if 버그</a>
-        <a href="#ch5">5. While 조건 & 2개 CV 기법</a>
-        <a href="#ch6">6. Bounded Buffer & Covering</a>
-        <a href="#simulator">Interactive Lab</a>
-        <a href="#quiz">Self-check Quiz</a>
-      </nav>
-    </aside>
-
-    <main class="prose-lite">
-      <section class="hero" id="top">
-        <span class="eyebrow">Operating System · Concurrency · Concept Note</span>
-        <h1>동시성 제어의 정점: 조건 변수(Condition Variables)</h1>
-        <p style="font-size:20px;color:var(--muted);max-width:950px">이 학습 대시보드는 멀티스레드 프로그래밍 환경에서 특정 조건의 만족 여부에 따라 스레드를 효율적으로 관리하는 조건 변수(Condition Variable)의 기초 이론부터, 실제 현업에서 맞닥뜨리는 치명적인 버그 패턴 및 이를 보완하는 완벽한 동기화 기법까지 체계적으로 정리합니다.</p>
-        <div>
-          <span class="pill">Condition Variables</span>
-          <span class="pill">Mesa Semantics</span>
-          <span class="pill">Producer/Consumer</span>
-          <span class="pill">Covering Conditions</span>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-sm flex items-start space-x-3 not-prose">
-          <span class="text-xl">💡</span>
-          <div class="text-indigo-800 dark:text-indigo-300">
-            <strong>지난 시간 복습:</strong> 카운터, 연결 리스트, 큐, 해시 테이블 등에 적용한 <strong>락 기반 동시성 자료구조(Lock-based concurrent data structures)</strong>를 통해 상호 배제를 달성했습니다. 하지만 '단순 독점'을 넘어 <strong>"스레드가 조건이 참이 될 때까지 대기해야 하는 상황"</strong>을 어떻게 효율적으로 다룰 수 있을까요?
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="ch1">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 1</span>
-          <h2 style="border:none;padding:0;margin:0">특정 조건 대기: 무식한 스핀 대기(Spin-waiting)의 한계</h2>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">
-          동시성 세계에서는 스레드가 다음 단계로 가기 전, 특정 상태가 무조건 '참'이 되기를 대기해야 하는 비즈니스 논리가 수없이 많습니다. 예컨대 자식 스레드가 수행을 마쳤는지 확인하고 진행하려는 부모 스레드의 경우가 그렇습니다.
-        </p>
-
-        <div class="space-y-4">
-          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-            <p class="text-slate-800 dark:text-slate-200 font-medium">
-              <strong>스핀 대기(Spin-waiting):</strong> 조건이 만족될 때까지 공유 변수를 무한히 루프 돌며 검사하며 대기하는 방식.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mb-3">
-              스레드는 <code>volatile int done = 0;</code> 과 같은 플래그 변수를 공유하며, 대기하고자 하는 측(부모)은 <code>while (done == 0);</code> 과 같이 세미콜론 하나로 구성된 무한 루프에서 머무릅니다. 자식 스레드가 동작을 마친 뒤 <code>done = 1;</code>로 바꿔주면 루프를 탈출하게 됩니다.
-            </p>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-              이 방식은 컴파일러 최적화 방지(volatile) 등으로 겨우 동작은 할 수 있지만, CPU 스케줄러 상에서 자신에게 할당된 모든 시간 할당량(Time Slice)을 <strong>아무 일도 하지 않는 빈 조건 체크 루프</strong>를 도는 데 허비하여 CPU 이용률을 100%로 치솟게 만들어 심각한 연산 자원 낭비를 유발합니다.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 rounded mb-2">🏃 직관적 비유 &amp; 예시</span>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-              택배가 오늘 밤에 오기로 되어 있는 상황에서, 다른 일을 전혀 하지 않은 채 <strong>현관문 앞에서 1초에 한 번씩 문고리를 돌려보며 밖을 쳐다보는 행동</strong>과 같습니다. 잠을 자거나 독서를 하면서 편하게 있을 수 있는데도 말이죠!
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-              단순 루프로 대기하는 것(Spinning)은 CPU 사이클을 가차 없이 버리고 전력을 낭비하며, 스케줄링 시나리오에 따라 오동작을 일으킬 수 있는 동시성 프로그래밍 최대의 악습입니다.
-            </p>
-          </div>
-        </div>
-
-        <div class="mt-6 p-5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
-          <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center">
-            <span class="text-rose-500 mr-2">❓</span> 왜 무한 루프 대기가 논리적으로 틀릴 수도 있나요?
-          </h4>
-          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            만약 단일 코어 시스템에서 대기하는 부모 스레드가 우선순위가 높다면, 스케줄러가 부모에게 계속 CPU를 배정할 수 있습니다. 부모는 자식이 <code>done = 1</code>을 해주길 기다리며 스핀하지만, 자식은 CPU를 배정받지 못해 <code>done = 1</code>을 영원히 쓰지 못하는 기아 현상(Starvation) 또는 우선순위 역전 문제가 발생해 시스템이 그대로 정지해 버릴 수 있습니다.
-          </p>
-        </div>
-      </section>
-
-      <section class="card" id="ch2">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 2</span>
-          <h2 style="border:none;padding:0;margin:0">구원의 열쇠: 조건 변수(Condition Variable)와 핵심 API</h2>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">
-          무의미하게 바쁜 대기(Busy waiting)를 극복하기 위해 등장한 시스템 수준의 추상화 도구가 바로 <strong>조건 변수(Condition Variable)</strong>입니다.
-        </p>
-
-        <div class="space-y-4">
-          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-            <p class="text-slate-800 dark:text-slate-200 font-medium">
-              <strong>조건 변수(Condition Variable):</strong> 스레드가 원하는 상태(Condition)가 아닐 때 스스로를 휴면 상태로 집어넣을 수 있는 <strong>명시적 스레드 대기 큐(Explicit Queue)</strong>입니다.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mb-3">
-              조건 변수는 POSIX 표준에서 <code>pthread_cond_t</code>형태로 구현되며 아래 두 가지 핵심 동작을 수행합니다.
-            </p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm not-prose">
-              <div class="p-4 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <code class="text-indigo-600 dark:text-indigo-400 font-bold" style="background:transparent; border:none; padding:0">pthread_cond_wait(&amp;c, &amp;m);</code>
-                <p class="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed text-xs">
-                  스레드가 잠들고자 할 때 호출합니다. 이 함수는 <strong>인자로 넘어온 락(Mutex)을 원자적으로(Atomically) 완전히 해제하면서 해당 대기 큐에 잠이 듭니다.</strong> 이후 나중에 시그널을 받아 잠에서 깨어날 때는 <strong>함수에서 탈출하기 전 무조건 락을 다시 획득(Re-acquire)</strong>하도록 설계되어 있습니다.
-                </p>
-              </div>
-              <div class="p-4 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <code class="text-indigo-600 dark:text-indigo-400 font-bold" style="background:transparent; border:none; padding:0">pthread_cond_signal(&amp;c);</code>
-                <p class="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed text-xs">
-                  조건 변수 큐 <code>c</code>에서 잠자고 있는 대기 스레드 중 <strong>정확히 단 하나(One Thread)</strong>를 깨워 실행 준비 상태(Ready)로 전환합니다. 만약 큐에 대기 중인 스레드가 없다면 아무 동작도 하지 않고 넘어갑니다.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 rounded mb-2">🏃 직관적 비유 &amp; 예시</span>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-              은행 대기표 기계와 같습니다. 번호표를 뽑고 대기석에 편안하게 앉아서 졸거나 스마트폰을 하다가(Sleep), 은행원 창구에서 번호를 호출해 띵동 소리를 울리면(Signal) 비로소 일어나 일을 보러 가는 것입니다.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-              조건 변수는 자원을 소모하지 않고 안전하게 스레드를 재우는 <code>wait()</code>와, 외부에서 대상을 정확히 찍어 기상시키는 <code>signal()</code>을 매핑하여 바쁜 대기 문제를 완벽히 소거합니다.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="ch3">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 3</span>
-          <h2 style="border:none;padding:0;margin:0">올바른 구현의 삼위일체: 왜 상태 변수(State Var)와 뮤텍스 락(Lock)이 함께 있어야 하는가?</h2>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">
-          스레드 락과 상태 변수, 그리고 조건 변수 중 단 하나라도 누락되면 즉시 <strong>데드락</strong>이나 <strong>영원한 실종 잠장(Lost Wake-up)</strong>의 늪에 빠지게 됩니다.
-        </p>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-            <h3 class="text-lg font-bold text-red-500 mb-2 flex items-center" style="margin-top:0">
-              💥 상태 변수(done)가 없는 경우의 파국
-            </h3>
-            <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              스레드의 완료 플래그(done) 체크 없이 순수하게 <code>wait()</code>와 <code>signal()</code>만 호출하도록 짠다면:
-            </p>
-            <pre><code>// [부모 스레드]
-pthread_mutex_lock(&amp;m);
-pthread_cond_wait(&amp;c, &amp;m); // 대기
-pthread_mutex_unlock(&amp;m);
-
-// [자식 스레드]
-pthread_mutex_lock(&amp;m);
-pthread_cond_signal(&amp;c);   // 기상 시그널
-pthread_mutex_unlock(&amp;m);</code></pre>
-            <div class="mt-4 p-3 rounded bg-red-100/50 dark:bg-red-950/20 text-xs text-red-800 dark:text-red-300">
-              <strong>레이스 컨디션 시나리오:</strong> 자식이 부모가 대기 큐에 도달하기도 전에 먼저 실행되어 <code>signal()</code>을 쏘아보내 버리면, 시그널은 공중분해됩니다. 이후 부모가 뒤늦게 <code>wait()</code>에 진입하면 자기는 깨워줄 사람이 없으므로 <strong>영원히 동결(Hang)</strong> 상태에 봉착합니다.
-            </div>
-          </div>
-
-          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-            <h3 class="text-lg font-bold text-red-500 mb-2 flex items-center" style="margin-top:0">
-              💥 뮤텍스 락(Mutex Lock)이 없는 경우의 파국
-            </h3>
-            <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              동시성에 락이 배제되어 상태 변수를 안전하게 보존하지 못한 채 접근한다면:
-            </p>
-            <pre><code>// [부모 스레드]
-if (done == 0) {
-    // &lt;-- 이 찰나에 스케줄러가 자식을 끼워넣는다면?
-    pthread_cond_wait(&amp;c);
-}
-
-// [자식 스레드]
-done = 1;
-pthread_cond_signal(&amp;c);</code></pre>
-            <div class="mt-4 p-3 rounded bg-red-100/50 dark:bg-red-950/20 text-xs text-red-800 dark:text-red-300">
-              <strong>레이스 컨디션 시나리오:</strong> 부모가 <code>done == 0</code>인 것을 확인하고 잠에 빠기 바로 직전, 자식이 치고 나가 <code>done = 1; signal();</code>을 쏘고 종료됩니다. 직후 부모 스레드는 <code>wait()</code>에 빠지며 자식 스레드 종료 이후에 잠들어 버렸으므로 <strong>평생 잠에서 깨어나지 못하는 무덤</strong>에 묻힙니다.
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-            <p class="text-slate-800 dark:text-slate-200 font-medium">
-              <strong>조건 동기화의 3요소:</strong> 상호배제를 지키는 <strong>뮤텍스(Mutex)</strong>, 프로그램의 구체적 상태를 나타내는 <strong>상태 변수(done)</strong>, 신호를 관리하는 <strong>조건 변수(c)</strong>가 반드시 연동되어 동작하는 법칙.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-              스레드가 대기하기 전 락을 쥔 상태에서 반드시 <strong>상태 변수가 대기 조건에 맞는지 확인</strong>하는 구조(<code>while(done == 0) wait(&amp;c, &amp;m);</code>)가 필수적입니다. 이로써 자식이 이미 일을 다 처리했는지(done == 1)를 선제 확인하고, 아직 처리를 하지 않은 상황에서만 안전하게 락을 넘기며 큐로 들어가 대기하게 됩니다.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-              조건 변수는 독자적인 상태 저장을 하지 못하는 비상태(Stateless) 도구이므로, 락으로 래핑된 실제 코드 변수값 상태를 함께 비교하는 장치가 있어야만 잠들고 깨어나는 시그널 소실(Lost Wake-up)을 완벽 차단할 수 있습니다.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="ch4">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 4</span>
-          <h2 style="border:none;padding:0;margin:0">생산자-소비자 문제(Bounded Buffer)와 IF 문의 참사</h2>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">
-          실무의 가장 정통적인 패턴인 <strong>유한 버퍼 생산자-소비자(Producer/Consumer)</strong>의 1차 버전을 살펴봅시다. 데이터를 밀어넣는 생산자(grep, 웹 수신기)와 데이터를 빼가서 일하는 소비자(wc, 워커 스레드)가 제한된 크기의 버퍼(Buffer)를 두고 공유하는 상황입니다.
-        </p>
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">버퍼와 if문을 쓴 미완성 코드</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <pre><code>// [생산자 - IF 방식의 취약 코드]
-void *producer(void *arg) {
-    for (int i = 0; i &lt; loops; i++) {
-        pthread_mutex_lock(&amp;mutex);
-        if (count == 1) { // 버퍼가 차있으면 대기
-            pthread_cond_wait(&amp;cond, &amp;mutex);
-        }
-        put(i); // 버퍼 채우기 (count = 1)
-        pthread_cond_signal(&amp;cond); // 깨우기
-        pthread_mutex_unlock(&amp;mutex);
-    }
-}</code></pre>
-          <pre><code>// [소비자 - IF 방식의 취약 코드]
-void *consumer(void *arg) {
-    for (int i = 0; i &lt; loops; i++) {
-        pthread_mutex_lock(&amp;mutex);
-        if (count == 0) { // 버퍼가 비어있으면 대기
-            pthread_cond_wait(&amp;cond, &amp;mutex);
-        }
-        int tmp = get(); // 버퍼 비우기 (count = 0)
-        pthread_cond_signal(&amp;cond); // 깨우기
-        pthread_mutex_unlock(&amp;mutex);
-    }
-}</code></pre>
-        </div>
-        <div class="p-5 rounded-xl border border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/10 mb-6">
-          <h4 class="font-extrabold text-red-700 dark:text-red-400 text-base mb-2">왜 이 코드가 2명의 소비자 환경에서 무조건 터질까요? (Mesa Semantics)</h4>
-          <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-            스레드가 깨어났을 때, 내가 대기하던 조건이 '지금 이 순간에도 만족하고 있는지'는 보장되지 않습니다. 깨어난 순간과 락을 다시 확보하고 실행되는 순간 사이에 시간 차이가 발생하기 때문입니다.
-          </p>
-
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-xs text-slate-600 dark:text-slate-300">
-              <thead>
-                <tr class="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200">
-                  <th class="p-2 border">단계</th>
-                  <th class="p-2 border">스레드 Tc1 (소비자)</th>
-                  <th class="p-2 border">스레드 Tc2 (소비자)</th>
-                  <th class="p-2 border">스레드 Tp (생산자)</th>
-                  <th class="p-2 border">버퍼 상태 (count)</th>
-                  <th class="p-2 border">추적 상세 내역 (Mesa Semantics Bug)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="p-2 border font-bold">1</td>
-                  <td class="p-2 border bg-blue-100/30 dark:bg-blue-950/30">Running -&gt; wait() 수면</td>
-                  <td class="p-2 border">Ready</td>
-                  <td class="p-2 border">Ready</td>
-                  <td class="p-2 border font-bold">0</td>
-                  <td class="p-2 border">버퍼가 비어있으므로 소비자 Tc1이 락을 놓고 깊은 잠에 빠집니다.</td>
-                </tr>
-                <tr>
-                  <td class="p-2 border font-bold">2</td>
-                  <td class="p-2 border">Sleep</td>
-                  <td class="p-2 border">Ready</td>
-                  <td class="p-2 border bg-emerald-100/30 dark:bg-emerald-950/30">Running (put &amp; signal)</td>
-                  <td class="p-2 border font-bold">1</td>
-                  <td class="p-2 border">생산자 Tp가 버퍼를 1로 만들고 시그널을 발송해 Tc1이 깨어납니다(Ready).</td>
-                </tr>
-                <tr>
-                  <td class="p-2 border font-bold">3</td>
-                  <td class="p-2 border bg-amber-100/30 dark:bg-amber-950/30">Ready</td>
-                  <td class="p-2 border bg-emerald-100/30 dark:bg-emerald-950/30">Running (get)</td>
-                  <td class="p-2 border">Sleep / Ready</td>
-                  <td class="p-2 border font-bold">0</td>
-                  <td class="p-2 border"><strong>[새치기]</strong> 깨어난 Tc1이 락을 잡기 전, 스케줄러가 Tc2를 골라 Tc2가 버퍼의 값을 채갑니다.</td>
-                </tr>
-                <tr>
-                  <td class="p-2 border font-bold">4</td>
-                  <td class="p-2 border bg-red-100/30 dark:bg-red-950/30">Running (get)</td>
-                  <td class="p-2 border">Ready</td>
-                  <td class="p-2 border">Ready</td>
-                  <td class="p-2 border font-bold">0</td>
-                  <td class="p-2 border text-red-600 dark:text-red-400 font-bold">Tc1이 깨어나 if 대기에서 빠져나와 get()을 강행하지만 버퍼는 이미 0입니다. Assertion Fail 발생!</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="space-y-4">
-          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-            <p class="text-slate-800 dark:text-slate-200 font-medium">
-              <strong>메사 시맨틱(Mesa Semantics):</strong> 조건 변수에서 깨어난 스레드가 즉시 실행 상태로 가 자원을 선점하는 것이 아니라 단순히 '준비(Ready)' 상태로만 가기 때문에, 실제 실행될 땐 다른 스레드에 의해 조건이 깨졌을 수 있다는 성질.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-              이에 대비되는 <strong>호어 시맨틱(Hoare Semantics)</strong>은 깨어난 스레드가 락을 절대적으로 이어받아 강제 실행하도록 보장하지만, 현대 OS 대다수(pthreads 포함)는 효율성을 위해 메사 설계를 차용합니다. 따라서 <code>if</code> 조건 대기는 절대 신뢰할 수 없습니다.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 TL;DR 핵심 요약</span>
-            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-              메사 시맨틱 상에서는 깨어났을 때 누군가 이미 자원을 선점했을 가능성(State 변경)이 다분하므로, 조건 판단 구문은 절대로 <code>if</code>가 아닌 <strong><code>while</code></strong>로 설계하여 반복 재검증해야 합니다.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="ch5">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 5</span>
-          <h2 style="border:none;padding:0;margin:0">진화하는 동기화: While 도입과 '단일 조건 변수'의 한계로 인한 Total Sleep 데드락</h2>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">
-          Mesa 문제를 회피하기 위해 모든 조건을 <code>while</code>로 바꿨다고 안도하기엔 일찍입니다. 스레드가 3개 이상일 때 <strong>단일 조건 변수</strong>만 쓰면 또 다른 괴물인 <strong>전체 휴면 상태(Total Sleep Deadlock)</strong>를 유발하게 됩니다.
-        </p>
-
-        <div class="space-y-4 mb-6">
-          <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 rounded mb-2">💡 개념 정의</span>
-            <p class="text-slate-800 dark:text-slate-200 font-medium">
-              <strong>전체 휴면(Total Sleep) 데드락:</strong> 하나의 조건 변수만 쓰면서 스레드가 다른 성격의 주체를 깨워야 하는데 같은 주체를 깨워, 결국 모든 러너가 서로 자기를 깨워주기만을 기다리며 잠들게 되는 치명적 교착 상태.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded mb-2">⚙️ 상세 설명 &amp; 작동 원리</span>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-              소비자 T_{c1}, T_{c2}가 대기 중에 생산자 T_p가 버퍼를 채우고 시그널을 발송해 T_{c1}이 일어납니다. T_{c1}이 데이터를 다 소비하고 낸 <code>signal()</code>은 <strong>생산자(T_p)를 깨워 다시 채우라고 보내는 의도의 시그널</strong>이어야 합니다. 하지만 단일 변수를 쓰다 보니 대기 큐 안의 <strong>또 다른 소비자(T_{c2})</strong>가 신호를 오해해 깨어나 버립니다.
-            </p>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm mt-2">
-              깨어난 T_{c2}는 버퍼를 보니 이미 T_{c1}이 다 먹어치워 비어있으므로 도로 잠들고, 원래 신호를 받아야 했던 생산자 T_p도 잠자고 있어 누구도 동작하지 않는 <strong>"전원 Sleep 상태"</strong>가 벌어집니다.
-            </p>
-          </div>
-          <div class="p-5 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10">
-            <span class="inline-block px-2.5 py-1 text-xs font-bold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300 rounded mb-2">📌 구원의 마스터코드: 두 개의 조건 변수 (empty, fill)</span>
-            <p class="text-slate-800 dark:text-slate-200 font-semibold text-sm mb-3">
-              생산자가 기다릴 큐 <code>empty</code>와 소비자가 기다릴 큐 <code>fill</code>을 명시적으로 분리하여 시그널을 각자 정확하게 겨냥해 쏩니다.
-            </p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono not-prose">
-              <div class="p-4 rounded-lg bg-slate-950 text-slate-200">
-                <span class="text-emerald-400 font-bold">// 생산자 - 대기 큐 분리</span><br/>
-                while (count == 1)<br/>
-                &nbsp;&nbsp;&nbsp;&nbsp;pthread_cond_wait(<strong>&amp;empty</strong>, &amp;mutex);<br/>
-                put(i);<br/>
-                pthread_cond_signal(<strong>&amp;fill</strong>); <span class="text-blue-400">// 소비자만 겨냥</span>
-              </div>
-              <div class="p-4 rounded-lg bg-slate-950 text-slate-200">
-                <span class="text-emerald-400 font-bold">// 소비자 - 대기 큐 분리</span><br/>
-                while (count == 0)<br/>
-                &nbsp;&nbsp;&nbsp;&nbsp;pthread_cond_wait(<strong>&amp;fill</strong>, &amp;mutex);<br/>
-                int tmp = get();<br/>
-                pthread_cond_signal(<strong>&amp;empty</strong>); <span class="text-blue-400">// 생산자만 겨냥</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="ch6">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 6</span>
-          <h2 style="border:none;padding:0;margin:0">다중 슬롯 원형 버퍼 확장 &amp; 커버링 조건(Covering Conditions)</h2>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">
-          단일 슬롯을 넘어 다중 슬롯 원형 버퍼(Circular Buffer)로 전환하여 효율성과 병렬 연산 처리량을 대폭 늘릴 수 있습니다. 또한 어떤 스레드가 조건을 만족해 깨어나야 할지 명확하지 않은 가변 연산 환경의 최종 대안인 <strong>커버링 조건(Covering Condition)</strong>을 정리합니다.
-        </p>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 text-sm">
-          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2" style="margin-top:0">
-              🔄 다중 슬롯 원형 버퍼 (MAX 사이즈 확장)
-            </h3>
-            <p class="text-slate-500 dark:text-slate-400 mb-4">
-              나머지 연산자(%)를 활용해 버퍼 포인터를 도는 구조입니다. 꽉 차는 임계점 조건이 <code>count == MAX</code>로, 비는 조건이 <code>count == 0</code>으로 정립됩니다.
-            </p>
-            <pre><code>void put(int value) {
+</div><div class="mini source-section" id="ch6">
+<h3 class="legacy-section-title">6. 다중 슬롯 원형 버퍼 확장 &amp; 커버링 조건(Covering Conditions)</h3>
+<p>단일 슬롯을 넘어 다중 슬롯 원형 버퍼(Circular Buffer)로 전환하여 효율성과 병렬 연산 처리량을 대폭 늘릴 수 있습니다. 또한 어떤 스레드가 조건을 만족해 깨어나야 할지 명확하지 않은 가변 연산 환경의 최종 대안인 <strong>커버링 조건(Covering Condition)</strong>을 정리합니다.</p>
+<div class="grid">
+<div class="mini">
+<h3>🔄 다중 슬롯 원형 버퍼 (MAX 사이즈 확장)</h3>
+<p>나머지 연산자(%)를 활용해 버퍼 포인터를 도는 구조입니다. 꽉 차는 임계점 조건이 <code>count == MAX</code>로, 비는 조건이 <code>count == 0</code>으로 정립됩니다.</p>
+<pre><code>void put(int value) {
     buffer[fill_ptr] = value;
     fill_ptr = (fill_ptr + 1) % MAX;
     count++;
@@ -434,763 +85,929 @@ int get() {
     count--;
     return tmp;
 }</code></pre>
+</div>
+<div class="mini">
+<h3>📢 커버링 조건(Covering)과 Broadcast</h3>
+<p>스레드들 마다 요구하는 메모리 할당 크기가 각각 상이할 때(allocate 100바이트 vs allocate 10바이트) 유용합니다. 메모리가 50바이트 반환되었을 때, <code>signal()</code>만 쏘아보내면 마침 100바이트를 고집하는 대형 스레드 A가 일어나 자기가 처리할 수 없음을 보고 다시 잠듭니다. 하지만 실제로 10바이트만 있으면 잘 달릴 수 있는 소형 스레드 B는 시그널을 받지 못해 계속 깨어나지 못하게 되는 불상사가 일어납니다.</p>
+<div class="callout warn" style="margin-top: 10px; font-size: 12px; padding: 10px;">
+<strong>해결 메커니즘 (pthread_cond_broadcast):</strong> 락을 풀며 잠자고 있던 모든 스레드를 일괄 깨워(Broadcast) 자원량 조건들을 다시 맞춤 비교 평가하게 합니다. 자원 낭비는 좀 생길 수 있어도 완벽한 비즈니스 정확성을 보증하는 가장 보수적이고 안전한 "커버링 조건" 기법입니다.
           </div>
+</div>
+</div>
+</div></section><section class="card" id="math"><h2>2. 수식과 정의</h2><div class="mini source-section" id="ch2">
+<h3 class="legacy-section-title">2. 구원의 열쇠: 조건 변수(Condition Variable)와 핵심 API</h3>
+<p>무의미하게 바쁜 대기(Busy waiting)를 극복하기 위해 등장한 시스템 수준의 추상화 도구가 바로 <strong>조건 변수(Condition Variable)</strong>입니다.</p>
+<div class="grid">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p><strong>조건 변수(Condition Variable):</strong> 스레드가 원하는 상태(Condition)가 아닐 때 스스로를 휴면 상태로 집어넣을 수 있는 <strong>명시적 스레드 대기 큐(Explicit Queue)</strong>입니다.</p>
+</div>
+<div class="mini">
+<h3>⚙️ 상세 설명 &amp; 작동 원리</h3>
+<p>조건 변수는 POSIX 표준에서 <code>pthread_cond_t</code>형태로 구현되며 아래 두 가지 핵심 동작을 수행합니다.</p>
+<div class="grid" style="margin-top: 12px;">
+<div class="mini" style="background: var(--paper)">
+<code style="color: var(--accent)">pthread_cond_wait(&amp;c, &amp;m);</code>
+<p style="font-size: 12px; color: var(--muted); margin-top: 8px;">스레드가 잠들고자 할 때 호출합니다. 이 함수는 <strong>인자로 넘어온 락(Mutex)을 원자적으로(Atomically) 완전히 해제하면서 해당 대기 큐에 잠이 듭니다.</strong> 이후 나중에 시그널을 받아 잠에서 깨어날 때는 <strong>함수에서 탈출하기 전 무조건 락을 다시 획득(Re-acquire)</strong>하도록 설계되어 있습니다.</p>
+</div>
+<div class="mini" style="background: var(--paper)">
+<code style="color: var(--accent)">pthread_cond_signal(&amp;c);</code>
+<p style="font-size: 12px; color: var(--muted); margin-top: 8px;">조건 변수 큐 <code>c</code>에서 잠자고 있는 대기 스레드 중 <strong>정확히 단 하나(One Thread)</strong>를 깨워 실행 준비 상태(Ready)로 전환합니다. 만약 큐에 대기 중인 스레드가 없다면 아무 동작도 하지 않고 넘어갑니다.</p>
+</div>
+</div>
+</div>
+<div class="mini">
+<h3>🏃 직관적 비유 &amp; 예시</h3>
+<p>은행 대기표 기계와 같습니다. 번호표를 뽑고 대기석에 편안하게 앉아서 졸거나 스마트폰을 하다가(Sleep), 은행원 창구에서 번호를 호출해 띵동 소리를 울리면(Signal) 비로소 일어나 일을 보러 가는 것입니다.</p>
+</div>
+<div class="mini">
+<h3>📌 TL;DR 핵심 요약</h3>
+<p>조건 변수는 자원을 소모하지 않고 안전하게 스레드를 재우는 <code>wait()</code>와, 외부에서 대상을 정확히 찍어 기상시키는 <code>signal()</code>을 매핑하여 바쁜 대기 문제를 완벽히 소거합니다.</p>
+</div>
+</div>
+</div></section><section class="card" id="intuition"><h2>3. 직관과 그림</h2><p>그림·비유·구조적 직관은 원본 섹션 카드 안의 설명과 도식 중심으로 확인하면 된다.</p></section><section class="card" id="examples"><h2>4. 예제</h2><div class="mini source-section" id="ch3">
+<h3 class="legacy-section-title">3. 올바른 구현의 삼위일체: 왜 상태 변수(State Var)와 뮤텍스 락(Lock)이 함께 있어야 하는가?</h3>
+<p>스레드 락과 상태 변수, 그리고 조건 변수 중 단 하나라도 누락되면 즉시 <strong>데드락</strong>이나 <strong>영원한 실종 잠장(Lost Wake-up)</strong>의 늪에 빠지게 됩니다.</p>
+<div class="grid">
+<div class="mini">
+<h3 style="color: var(--accent)">💥 상태 변수(done)가 없는 경우의 파국</h3>
+<p style="font-size: 14px;">스레드의 완료 플래그(done) 체크 없이 순수하게 <code>wait()</code>와 <code>signal()</code>만 호출하도록 짠다면 부모가 영원히 동결(Hang) 상태에 봉착합니다.</p>
+<pre><code>// [부모 스레드]
+pthread_mutex_lock(&amp;m);
+pthread_cond_wait(&amp;c, &amp;m); // 대기
+pthread_mutex_unlock(&amp;m);
 
-          <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2" style="margin-top:0">
-              📢 커버링 조건(Covering)과 Broadcast
-            </h3>
-            <p class="text-slate-500 dark:text-slate-400 mb-2">
-              스레드들 마다 요구하는 메모리 할당 크기가 각각 상이할 때(allocate 100바이트 vs allocate 10바이트) 유용합니다.
-            </p>
-            <p class="text-slate-600 dark:text-slate-300 mb-4">
-              메모리가 50바이트 반환되었을 때, <code>signal()</code>만 쏘아보내면 마침 100바이트를 고집하는 대형 스레드 A가 일어나 자기가 처리할 수 없음을 보고 다시 잠듭니다. 하지만 실제로 10바이트만 있으면 잘 달릴 수 있는 소형 스레드 B는 시그널을 받지 못해 계속 깨어나지 못하게 되는 불상사가 일어납니다.
-            </p>
-            <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded border border-indigo-200 dark:border-indigo-900 text-xs text-indigo-800 dark:text-indigo-300">
-              <strong>해결 메커니즘 (pthread_cond_broadcast):</strong> 락을 풀며 잠자고 있던 모든 스레드를 일괄 깨워(Broadcast) 자원량 조건들을 다시 맞춤 비교 평가하게 합니다. 자원 낭비는 좀 생길 수 있어도 완벽한 비즈니스 정확성을 보증하는 가장 보수적이고 안전한 "커버링 조건" 기법입니다.
-            </div>
-          </div>
-        </div>
-      </section>
+// [자식 스레드]
+pthread_mutex_lock(&amp;m);
+pthread_cond_signal(&amp;c);   // 기상 시그널
+pthread_mutex_unlock(&amp;m);</code></pre>
+</div>
+<div class="mini">
+<h3 style="color: var(--accent)">💥 뮤텍스 락(Mutex Lock)이 없는 경우의 파국</h3>
+<p style="font-size: 14px;">동시성에 락이 배제되어 상태 변수를 안전하게 보존하지 못한 채 접근한다면 평생 잠에서 깨어나지 못하게 됩니다.</p>
+<pre><code>// [부모 스레드]
+if (done == 0) {
+    // &lt;-- 이 찰나에 스케줄러가 자식을 끼워넣음!
+    pthread_cond_wait(&amp;c);
+}
 
-      <section class="card" id="simulator">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div>
-            <span class="py-1 px-3 bg-indigo-500 text-white text-xs font-bold rounded-full uppercase">Simulator</span>
-            <h2 class="text-2xl font-black text-slate-900 dark:text-white mt-2" style="border:none;padding:0">동시성 오동작 &amp; 제어 시각화 시뮬레이터</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">상황별 시나리오를 선택한 뒤 "단계별 스케줄(Step)"을 클릭해 스레드가 어떻게 비정상적으로 잠들거나 깨지는지 흐름을 눈으로 파악해 보세요.</p>
-          </div>
-          <div class="mt-4 md:mt-0">
-            <select class="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" id="scenarioSelect">
-              <option value="scenario_if">시나리오 A: Buggy 'if' (Mesa Bug)</option>
-              <option value="scenario_single_cv">시나리오 B: Buggy 'while + 1 CV' (Total Sleep)</option>
-              <option value="scenario_perfect">시나리오 C: Perfect 'while + 2 CVs' (정상 작동)</option>
-            </select>
-          </div>
-        </div>
+// [자식 스레드]
+done = 1;
+pthread_cond_signal(&amp;c);</code></pre>
+</div>
+</div>
+<div class="grid" style="margin-top: 20px;">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p><strong>조건 동기화의 3요소:</strong> 상호배제를 지키는 <strong>뮤텍스(Mutex)</strong>, 프로그램의 구체적 상태를 나타내는 <strong>상태 변수(done)</strong>, 신호를 관리하는 <strong>조건 변수(c)</strong>가 반드시 연동되어 동작하는 법칙.</p>
+</div>
+<div class="mini">
+<h3>⚙️ 상세 설명 &amp; 작동 원리</h3>
+<p>스레드가 대기하기 전 락을 쥔 상태에서 반드시 <strong>상태 변수가 대기 조건에 맞는지 확인</strong>하는 구조(<code>while(done == 0) wait(&amp;c, &amp;m);</code>)가 필수적입니다. 이로써 자식이 이미 일을 다 처리했는지(done == 1)를 선제 확인하고, 아직 처리를 하지 않은 상황에서만 안전하게 락을 넘기며 큐로 들어가 대기하게 됩니다.</p>
+</div>
+</div>
+</div></section><section class="card" id="pitfalls"><h2>5. 자주 틀리는 부분</h2><div class="mini source-section" id="ch1">
+<h3 class="legacy-section-title">1. 특정 조건 대기: 무식한 스핀 대기(Spin-waiting)의 한계</h3>
+<p>동시성 세계에서는 스레드가 다음 단계로 가기 전, 특정 상태가 무조건 '참'이 되기를 대기해야 하는 비즈니스 논리가 수없이 많습니다. 예컨대 자식 스레드가 수행을 마쳤는지 확인하고 진행하려는 부모 스레드의 경우가 그렇습니다.</p>
+<div class="grid">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p><strong>스핀 대기(Spin-waiting):</strong> 조건이 만족될 때까지 공유 변수를 무한히 루프 돌며 검사하며 대기하는 방식.</p>
+</div>
+<div class="mini">
+<h3>⚙️ 상세 설명 &amp; 작동 원리</h3>
+<p>스레드는 <code>volatile int done = 0;</code> 과 같은 플래그 변수를 공유하며, 대기하고자 하는 측(부모)은 <code>while (done == 0);</code> 과 같이 세미콜론 하나로 구성된 무한 루프에서 머무릅니다. 자식 스레드가 동작을 마친 뒤 <code>done = 1;</code>로 바꿔주면 루프를 탈출하게 됩니다.</p>
+<p>이 방식은 컴파일러 최적화 방지(volatile) 등으로 겨우 동작은 할 수 있지만, CPU 스케줄러 상에서 자신에게 할당된 모든 시간 할당량(Time Slice)을 <strong>아무 일도 하지 않는 빈 조건 체크 루프</strong>를 도는 데 허비하여 CPU 이용률을 100%로 치솟게 만들어 심각한 연산 자원 낭비를 유발합니다.</p>
+</div>
+<div class="mini">
+<h3>🏃 직관적 비유 &amp; 예시</h3>
+<p>택배가 오늘 밤에 오기로 되어 있는 상황에서, 다른 일을 전혀 하지 않은 채 <strong>현관문 앞에서 1초에 한 번씩 문고리를 돌려보며 밖을 쳐다보는 행동</strong>과 같습니다. 잠을 자거나 독서를 하면서 편하게 있을 수 있는데도 말이죠!</p>
+</div>
+<div class="mini">
+<h3>📌 TL;DR 핵심 요약</h3>
+<p>단순 루프로 대기하는 것(Spinning)은 CPU 사이클을 가차 없이 버리고 전력을 낭비하며, 스케줄링 시나리오에 따라 오동작을 일으킬 수 있는 동시성 프로그래밍 최대의 악습입니다.</p>
+</div>
+</div>
+<div class="callout danger">
+<b>왜 무한 루프 대기가 논리적으로 틀릴 수도 있나요?</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">만약 단일 코어 시스템에서 대기하는 부모 스레드가 우선순위가 높다면, 스케줄러가 부모에게 계속 CPU를 배정할 수 있습니다. 부모는 자식이 <code>done = 1</code>을 해주길 기다리며 스핀하지만, 자식은 CPU를 배정받지 못해 <code>done = 1</code>을 영원히 쓰지 못하는 기아 현상(Starvation) 또는 우선순위 역전 문제가 발생해 시스템이 그대로 정지해 버릴 수 있습니다.</p>
+</div>
+</div><div class="mini source-section" id="ch4">
+<h3 class="legacy-section-title">4. 생산자-소비자 문제(Bounded Buffer)와 IF 문의 참사</h3>
+<p>실무의 가장 정통적인 패턴인 <strong>유한 버퍼 생산자-소비자(Producer/Consumer)</strong>의 1차 버전을 살펴봅시다. 데이터를 밀어넣는 생산자(grep, 웹 수신기)와 데이터를 빼가서 일하는 소비자(wc, 워커 스레드)가 제한된 크기의 버퍼(Buffer)를 두고 공유하는 상황입니다.</p>
+<h3>버퍼와 if문을 쓴 미완성 코드</h3>
+<div class="grid">
+<div class="mini">
+<strong>[생산자 - IF 방식의 취약 코드]</strong>
+<pre><code>void *producer(void *arg) {
+    for (int i = 0; i &lt; loops; i++) {
+        pthread_mutex_lock(&amp;mutex);
+        if (count == 1) { // 버퍼가 차있으면 대기
+            pthread_cond_wait(&amp;cond, &amp;mutex);
+        }
+        put(i); // 버퍼 채우기 (count = 1)
+        pthread_cond_signal(&amp;cond); // 깨우기
+        pthread_mutex_unlock(&amp;mutex);
+    }
+}</code></pre>
+</div>
+<div class="mini">
+<strong>[소비자 - IF 방식의 취약 코드]</strong>
+<pre><code>void *consumer(void *arg) {
+    for (int i = 0; i &lt; loops; i++) {
+        pthread_mutex_lock(&amp;mutex);
+        if (count == 0) { // 버퍼가 비어있으면 대기
+            pthread_cond_wait(&amp;cond, &amp;mutex);
+        }
+        int tmp = get(); // 버퍼 비우기 (count = 0)
+        pthread_cond_signal(&amp;cond); // 깨우기
+        pthread_mutex_unlock(&amp;mutex);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="callout danger" style="margin-top: 20px;">
+<b>왜 이 코드가 2명의 소비자 환경에서 무조건 터질까요? (Mesa Semantics)</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">스레드가 깨어났을 때, 내가 대기하던 조건이 '지금 이 순간에도 만족하고 있는지'는 보장되지 않습니다. 깨어난 순간과 락을 다시 확보하고 실행되는 순간 사이에 시간 차이가 발생하기 때문입니다.</p>
+<table style="margin-top: 12px; font-size: 12px;">
+<thead>
+<tr>
+<th>단계</th>
+<th>스레드 Tc1 (소비자)</th>
+<th>스레드 Tc2 (소비자)</th>
+<th>스레드 Tp (생산자)</th>
+<th>버퍼 상태 (count)</th>
+<th>추적 상세 내역 (Mesa Semantics Bug)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Running -&gt; wait() 수면</td>
+<td>Ready</td>
+<td>Ready</td>
+<td><b>0</b></td>
+<td>버퍼가 비어있으므로 소비자 Tc1이 락을 놓고 깊은 잠에 빠집니다.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sleep</td>
+<td>Ready</td>
+<td>Running (put &amp; signal)</td>
+<td><b>1</b></td>
+<td>생산자 Tp가 버퍼를 1로 만들고 시그널을 발송해 Tc1이 깨어납니다(Ready).</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Ready</td>
+<td>Running (get)</td>
+<td>Sleep / Ready</td>
+<td><b>0</b></td>
+<td><strong>[새치기]</strong> 깨어난 Tc1이 락을 잡기 전, 스케줄러가 Tc2를 골라 Tc2가 버퍼의 값을 채갑니다.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Running (get)</td>
+<td>Ready</td>
+<td>Ready</td>
+<td><b>0</b></td>
+<td><span style="color: var(--accent); font-weight: bold;">Tc1이 깨어나 if 대기에서 빠져나와 get()을 강행하지만 버퍼는 이미 0입니다. Assertion Fail 발생!</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="grid" style="margin-top: 20px;">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p><strong>메사 시맨틱(Mesa Semantics):</strong> 조건 변수에서 깨어난 스레드가 즉시 실행 상태로 가 자원을 선점하는 것이 아니라 단순히 '준비(Ready)' 상태로만 가기 때문에, 실제 실행될 땐 다른 스레드에 의해 조건이 깨졌을 수 있다는 성질.</p>
+</div>
+<div class="mini">
+<h3>📌 TL;DR 핵심 요약</h3>
+<p>메사 시맨틱 상에서는 깨어났을 때 누군가 이미 자원을 선점했을 가능성(State 변경)이 다분하므로, 조건 판단 구문은 절대로 <code>if</code>가 아닌 <strong><code>while</code></strong>로 설계하여 반복 재검증해야 합니다.</p>
+</div>
+</div>
+</div><div class="mini source-section" id="ch5">
+<h3 class="legacy-section-title">5. 진화하는 동기화: While 도입과 '단일 조건 변수'의 한계로 인한 Total Sleep 데드락</h3>
+<p>Mesa 문제를 회피하기 위해 모든 조건을 <code>while</code>로 바꿨다고 안도하기엔 일찍입니다. 스레드가 3개 이상일 때 <strong>단일 조건 변수</strong>만 쓰면 또 다른 괴물인 <strong>전체 휴면 상태(Total Sleep Deadlock)</strong>를 유발하게 됩니다.</p>
+<div class="grid">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p><strong>전체 휴면(Total Sleep) 데드락:</strong> 하나의 조건 변수만 쓰면서 스레드가 다른 성격의 주체를 깨워야 하는데 같은 주체를 깨워, 결국 모든 러너가 서로 자기를 깨워주기만을 기다리며 잠들게 되는 치명적 교착 상태.</p>
+</div>
+<div class="mini">
+<h3>⚙️ 상세 설명 &amp; 작동 원리</h3>
+<p>소비자 T_{c1}, T_{c2}가 대기 중에 생산자 T_p가 버퍼를 채우고 시그널을 발송해 T_{c1}이 일어납니다. T_{c1}이 데이터를 다 소비하고 낸 <code>signal()</code>은 생산자(T_p)를 깨우는 의도여야 하지만 단일 변수를 쓰다 보니 대기 큐 안의 또 다른 소비자(T_{c2})가 신호를 오해해 깨어나 버립니다. 깨어난 T_{c2}는 버퍼가 비어있으므로 도로 잠들고 생산자 T_p도 잠자고 있어 누구도 동작하지 않는 <strong>"전원 Sleep 상태"</strong>가 벌어집니다.</p>
+</div>
+</div>
+<div class="callout ok" style="margin-top: 20px;">
+<b>구원의 마스터코드: 두 개의 조건 변수 (empty, fill)</b>
+<p style="margin-top: 4px; font-size: 13px;">생산자가 기다릴 큐 <code>empty</code>와 소비자가 기다릴 큐 <code>fill</code>을 명시적으로 분리하여 시그널을 각자 정확하게 겨냥해 쏩니다.</p>
+<div class="grid" style="margin-top: 12px;">
+<div class="mini" style="background: var(--paper)">
+<strong>// 생산자 - 대기 큐 분리</strong>
+<pre><code>while (count == 1)
+    pthread_cond_wait(&amp;empty, &amp;mutex);
+put(i);
+pthread_cond_signal(&amp;fill); // 소비자만 겨냥</code></pre>
+</div>
+<div class="mini" style="background: var(--paper)">
+<strong>// 소비자 - 대기 큐 분리</strong>
+<pre><code>while (count == 0)
+    pthread_cond_wait(&amp;fill, &amp;mutex);
+int tmp = get();
+pthread_cond_signal(&amp;empty); // 생산자만 겨냥</code></pre>
+</div>
+</div>
+</div>
+</div></section><section class="card" id="interactive"><h2>6. 인터랙티브 실험</h2><div class="mini source-section" id="simulator">
+<div class="grid" style="grid-template-columns: 1fr 200px; align-items: center; margin-bottom: 20px;">
+<div>
+<span class="eyebrow">Interactive Simulator</span>
+<h3 class="legacy-section-title">동시성 오동작 &amp; 제어 시각화 시뮬레이터</h3>
+<p style="font-size: 13px; color: var(--muted); margin-top: 4px;">상황별 시나리오를 선택한 뒤 "단계별 스케줄(Step)"을 클릭해 스레드가 어떻게 비정상적으로 잠들거나 깨지는지 흐름을 눈으로 파악해 보세요.</p>
+</div>
+<div style="text-align: right;">
+<select class="btn" id="scenarioSelect" style="padding: 8px 16px; font-size: 13px;">
+<option value="scenario_if">시나리오 A: Buggy 'if' (Mesa Bug)</option>
+<option value="scenario_single_cv">시나리오 B: Buggy 'while + 1 CV' (Total Sleep)</option>
+<option value="scenario_perfect">시나리오 C: Perfect 'while + 2 CVs' (정상 작동)</option>
+</select>
+</div>
+</div>
+<div class="grid" style="grid-template-columns: 280px 1fr; gap: 24px;">
+<div style="display: flex; flex-direction: column; gap: 14px;">
+<div>
+<button class="btn" id="simStepBtn" style="width: 100%; padding: 14px; background: var(--accent); color: white; border: none; font-size: 14px;">⚡ 단계별 실행 (Next Step)</button>
+<button class="btn" id="simResetBtn" style="width: 100%; margin-top: 8px; padding: 10px; font-size: 12px;">🔄 시뮬레이션 초기화</button>
+</div>
+<div class="mini">
+<span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 8px;">실시간 상태 수동 주입</span>
+<div class="grid" style="gap: 8px;">
+<button class="btn" disabled="" id="manualProduceBtn" style="font-size: 12px;">Produce</button>
+<button class="btn" disabled="" id="manualConsumeBtn" style="font-size: 12px;">Consume</button>
+</div>
+<span style="font-size: 10px; color: var(--muted); display: block; margin-top: 8px;">* 시나리오 C(정상 작동) 모드에서만 수동 테스트가 활성화됩니다.</span>
+</div>
+<div class="mini" style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+<span style="font-size: 12px;">현재 실행 단계</span>
+<b class="pill" id="simStepIndicator" style="margin: 0; background: var(--soft);">Step: 0</b>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px;">
+<canvas id="simCanvas" style="height: 360px; width: 100%;"></canvas>
+<pre id="simConsole" style="height: 120px; font-size: 11px; line-height: 1.5; margin: 0;"></pre>
+</div>
+</div>
+</div></section><section class="card" id="exam"><h2>7. 시험/복습용 핵심 정리</h2><p>위 내용을 구두로 설명할 수 있는지 점검하라: 핵심 정의, 작동 순서, 대표 함정, 해결 기준을 한 문장씩 말할 수 있어야 한다.</p></section><section class="card quiz" id="quiz"><h2>8. 확인 문제와 해설</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<h2>8. 확인 문제와 해설</h2>
+<b class="pill" id="quizScore" style="font-size: 16px; padding: 6px 16px; background: var(--soft); color: var(--accent);">0 / 5</b>
+</div>
+<div class="bar" style="height: 6px; margin-bottom: 24px;">
+<span id="quizProgressBar" style="width: 0%; transition: width 0.4s ease;"></span>
+</div>
+<div id="quizContainer">
+<!-- Radio questions loaded dynamically -->
+</div>
+<div style="text-align: right; margin-top: 24px;">
+<button class="btn" id="quizSubmitBtn" style="padding: 12px 30px; background: var(--accent2); color: white; border: none;">정답 및 상세 해설 검증하기</button>
+</div>
+</section><section class="card" id="sources"><h2>9. 사용 자료와 출처</h2><ul><li>Course lecture notes and self-contained study note content.</li></ul></section></main>
+</div><script>
+const STORAGE_KEY='masterclass-study-note-theme';
+function toggleTheme(){
+  document.documentElement.classList.toggle('dark');
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem(STORAGE_KEY,document.documentElement.classList.contains('dark')?'dark':'light');
+}
+(function(){
+  const t=localStorage.getItem(STORAGE_KEY);
+  if(t==='dark'){
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }else{
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }
+})();
+function updateDemo(){
+  const slider=document.getElementById('demoSlider');
+  const value=document.getElementById('demoValue');
+  const bar=document.getElementById('demoBar');
+  const out=document.getElementById('demoOut');
+  if(!slider||!value||!bar||!out) return;
+  const v=parseFloat(slider.value);
+  value.textContent=v.toFixed(0);
+  bar.style.width=v+'%';
+  out.textContent=`현재 값: ${v}\n여기에 개념별 계산 결과나 해석을 연결하면 된다.`;
+}
+window.addEventListener('DOMContentLoaded', updateDemo);
+</script><script>
+// --- 1. 전역 DOM 객체 및 상태 정의 (GLOBAL DOM ELEMENTS & STATE) ---
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 not-prose">
-          <div class="lg:col-span-1 flex flex-col justify-between space-y-4">
-            <div class="space-y-2">
-              <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition transform hover:-translate-y-0.5 active:translate-y-0 text-sm" id="simStepBtn">
-                ⚡ 단계별 실행 (Next Step)
-              </button>
-              <button class="w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold py-2 px-4 rounded-xl text-xs transition" id="simResetBtn">
-                🔄 시뮬레이션 초기화
-              </button>
-            </div>
-            
-            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
-              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">실시간 상태 수동 주입</span>
-              <div class="grid grid-cols-2 gap-2">
-                <button class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold py-1.5 px-3 rounded text-xs transition disabled:opacity-30" disabled="" id="manualProduceBtn">Produce</button>
-                <button class="bg-blue-500/20 hover:bg-blue-500/30 text-blue-700 dark:text-blue-400 font-bold py-1.5 px-3 rounded text-xs transition disabled:opacity-30" disabled="" id="manualConsumeBtn">Consume</button>
+  // MathJax 동적 렌더러 헬퍼
+  function triggerMathJax() {
+      if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+          MathJax.typesetPromise().catch((err) => console.log('MathJax typeset error:', err));
+      } else if (typeof MathJax !== 'undefined' && MathJax.typeset) {
+          MathJax.typeset();
+      }
+  }
+// 시뮬레이터 HTML5 Canvas 및 제어 요소들
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+  const consoleEl = document.getElementById('simConsole');
+  const scenarioSelect = document.getElementById('scenarioSelect');
+  const stepBtn = document.getElementById('simStepBtn');
+  const resetBtn = document.getElementById('simResetBtn');
+  const simStepIndicator = document.getElementById('simStepIndicator');
+  const manualProduceBtn = document.getElementById('manualProduceBtn');
+  const manualConsumeBtn = document.getElementById('manualConsumeBtn');
+
+  // 시뮬레이터 전역 상태 변수들
+  let scenario = "scenario_if";
+  let stepIndex = 0;
+  let mutexLockOwner = null; // null, "Tc1", "Tc2", "Tp"
+  let bufferSlots = []; // 제한 버퍼 원형 큐 내부 요소들
+  const bufferMax = 3;
+
+  // 스레드 상태 구조체
+  const threads = {
+      Tp: { name: "Tp (생산자)", state: "Ready", role: "producer" },
+      Tc1: { name: "Tc1 (소비자1)", state: "Ready", role: "consumer" },
+      Tc2: { name: "Tc2 (소비자2)", state: "Ready", role: "consumer" }
+  };
+
+  // 대기용 조건 변수 큐
+  let emptyQueue = []; // 생산 대기 큐
+  let fillQueue = [];  // 소비 대기 큐
+
+  // 퀴즈 요소들
+  const quizContainer = document.getElementById('quizContainer');
+  const scoreEl = document.getElementById('quizScore');
+  const progressBar = document.getElementById('quizProgressBar');
+  const submitBtn = document.getElementById('quizSubmitBtn');
+
+  // --- 3. 시뮬레이터 로직 및 연산 함수 (SIMULATOR FUNCTIONS) ---
+
+  function logTrace(message) {
+      const date = new Date();
+      const timeStr = date.toTimeString().split(' ')[0];
+      consoleEl.innerHTML += `[${timeStr}] ${message}\n`;
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  function clearTrace() {
+      consoleEl.innerHTML = "";
+  }
+
+  // 시뮬레이션 단계별 시나리오 정의들 (producer-consumer bug scenarios)
+  const scenarios = {
+      scenario_if: [
+          {
+              text: "초기 상태: 버퍼는 비어있으며(count=0), 소비 스레드 Tc1이 먼저 실행 준비 중입니다.",
+              action: () => {
+                  threads.Tc1.state = "Running";
+                  mutexLockOwner = "Tc1";
+                  logTrace("소비자 Tc1이 CPU를 얻어 실행(Running)되고, Mutex Lock을 소유합니다.");
+              }
+          },
+          {
+              text: "소비자 Tc1이 버퍼를 검사합니다. count == 0 이므로 wait(&cond, &mutex)에 돌입합니다.",
+              action: () => {
+                  threads.Tc1.state = "Sleep";
+                  fillQueue.push("Tc1");
+                  mutexLockOwner = null; // 원자적으로 락 해제
+                  logTrace("Tc1: '버퍼 비어있네?'. Mutex 락을 풀면서 조건 변수 대기 큐로 들어가 잠듭니다.");
+              }
+          },
+          {
+              text: "생산자 Tp가 스케줄되어 Mutex Lock을 잡고 데이터를 버퍼에 put()합니다.",
+              action: () => {
+                  threads.Tp.state = "Running";
+                  mutexLockOwner = "Tp";
+                  bufferSlots.push("Data 🌟");
+                  logTrace("생산자 Tp: Mutex 락 획득 후 데이터 수급 완료(count=1).");
+              }
+          },
+          {
+              text: "생산자 Tp가 signal()을 호출하여 대기 중이던 Tc1을 깨웁니다. Tp는 Mutex Lock을 풀고 퇴장합니다.",
+              action: () => {
+                  threads.Tp.state = "Ready";
+                  mutexLockOwner = null;
+                  // Tc1 깨우기
+                  const idx = fillQueue.indexOf("Tc1");
+                  if (idx > -1) fillQueue.splice(idx, 1);
+                  threads.Tc1.state = "Ready";
+                  logTrace("Tp가 signal() 송출! 잠자던 Tc1이 기상하여 'Ready' 상태가 되었습니다.");
+              }
+          },
+          {
+              text: "🚨 [레이스 컨디션 유발] 스케줄러가 방금 깨어난 Tc1 대신, 새치기한 소비자 Tc2를 먼저 스케줄링합니다!",
+              action: () => {
+                  threads.Tc2.state = "Running";
+                  mutexLockOwner = "Tc2";
+                  logTrace("Tc2가 락을 채가며 Running 상태 돌입! (Tc1은 락 획득을 대기하며 Ready 유지)");
+              }
+          },
+          {
+              text: "소비자 Tc2가 버퍼에서 데이터를 무사히 get()하여 소비하고, Mutex Lock을 풉니다.",
+              action: () => {
+                  bufferSlots.pop(); // 소비 완료
+                  threads.Tc2.state = "Ready";
+                  mutexLockOwner = null;
+                  logTrace("소비자 Tc2: '아싸 신선한 데이터!' 먹어 치움 (count=0).");
+              }
+          },
+          {
+              text: "💥 [Assertion Fail 파국] 드디어 깨어난 Tc1이 락을 잡고 실행됩니다. 하지만 조건 검사가 if문이었기에 다시 검사하지 않고 get()을 바로 불러 에러가 터집니다!",
+              action: () => {
+                  threads.Tc1.state = "Running";
+                  mutexLockOwner = "Tc1";
+                  logTrace("💥 [크래시] Tc1: '어라? 나 분명 신호 받고 깨어났는데 왜 데이터가 없지...?' get() 에러 / Assertion Fail!");
+              }
+          }
+      ],
+      scenario_single_cv: [
+          {
+              text: "초기 상태: 두 명의 소비자 Tc1, Tc2가 락을 얻으려 하지만 버퍼가 비어 결국 두 명 다 잠듭니다.",
+              action: () => {
+                  threads.Tc1.state = "Sleep";
+                  threads.Tc2.state = "Sleep";
+                  fillQueue.push("Tc1");
+                  fillQueue.push("Tc2");
+                  logTrace("소비자 Tc1, Tc2 모두 버퍼가 비어 단일 조건변수 큐에 잠에 빠집니다.");
+              }
+          },
+          {
+              text: "생산자 Tp가 스케줄되어 버퍼를 하나 채우고(count=1), signal()을 날립니다.",
+              action: () => {
+                  threads.Tp.state = "Running";
+                  mutexLockOwner = "Tp";
+                  bufferSlots.push("Data 🎁");
+                  logTrace("Tp가 데이터를 채워 넣었습니다(count=1). signal()을 호출합니다.");
+              }
+          },
+          {
+              text: "Tp의 시그널을 받고 잠자던 Tc1이 기상하여 Ready 상태가 됩니다. 생산자 Tp는 락을 해제하고 잠에 듭니다(버퍼가 차있으므로).",
+              action: () => {
+                  threads.Tp.state = "Sleep";
+                  emptyQueue.push("Tp"); // 단일 조건변수 연출용 큐 결합
+                  mutexLockOwner = null;
+                  // Tc1 깨움
+                  const idx = fillQueue.indexOf("Tc1");
+                  if (idx > -1) fillQueue.splice(idx, 1);
+                  threads.Tc1.state = "Ready";
+                  logTrace("시그널로 인해 Tc1이 깨어남. 생산자 Tp는 버퍼 꽉 참(MAX=1) 판정으로 잠듭니다.");
+              }
+          },
+          {
+              text: "깨어난 소비자 Tc1이 다행히도 스케줄되어 데이터를 무사히 소비(get)하고 시그널을 날립니다.",
+              action: () => {
+                  threads.Tc1.state = "Running";
+                  mutexLockOwner = "Tc1";
+                  bufferSlots.pop(); // 비움
+                  logTrace("소비자 Tc1이 성공적으로 데이터를 빼가서 버퍼를 0으로 비웠습니다.");
+              }
+          },
+          {
+              text: "🚨 [단일 CV의 데드락 재앙] Tc1이 쏜 signal()은 생산자 Tp를 깨워야 하지만, 대기 큐의 '동료 소비자 Tc2'를 깨우는 대참사가 일어납니다!",
+              action: () => {
+                  threads.Tc1.state = "Ready";
+                  mutexLockOwner = null;
+                  // Tp가 아닌 Tc2를 깨우는 버그 재현
+                  const idx = fillQueue.indexOf("Tc2");
+                  if (idx > -1) fillQueue.splice(idx, 1);
+                  threads.Tc2.state = "Ready";
+                  logTrace("🚨 [시그널 오발사] 생산자가 아닌 동료 소비자 Tc2가 깨어났습니다!");
+              }
+          },
+          {
+              text: "깨어난 소비자 Tc2는 while 루프 검사에서 버퍼가 비었음을 확인하고 다시 대기 큐로 침전합니다.",
+              action: () => {
+                  threads.Tc2.state = "Sleep";
+                  fillQueue.push("Tc2");
+                  logTrace("Tc2: '어휴 낚였다... 버퍼가 비어있잖아.' 다시 잠에 듭니다.");
+              }
+          },
+          {
+              text: "💥 [모든 스레드 잠잠 교착] 소비자 둘 다 잠들고, 생산자마저 깨지 못해 셋 다 깊은 잠에 빠지는 교착 상태(Total Sleep Deadlock) 완성!",
+              action: () => {
+                  logTrace("💥 [데드락] 모든 스레드가 수면 상태에 진입했습니다. 시스템 영구 정지!");
+              }
+          }
+      ],
+      scenario_perfect: [
+          {
+              text: "정상 모드: 2개의 독립 대기 큐(empty, fill)를 가동하여 타겟 대상을 정확히 격발합니다. (수동 Produce/Consume 제어 가능)",
+              action: () => {
+                  logTrace("독립 조건 대기 큐 empty, fill 작동 개시!");
+              }
+          }
+      ]
+  };
+
+  function initSimulator() {
+      clearTrace();
+      stepIndex = 0;
+      mutexLockOwner = null;
+      bufferSlots = [];
+      emptyQueue = [];
+      fillQueue = [];
+
+      // 스레드 초기 상태 설정
+      threads.Tp.state = "Ready";
+      threads.Tc1.state = "Ready";
+      threads.Tc2.state = "Ready";
+
+      scenario = scenarioSelect.value;
+      simStepIndicator.innerText = `Step: ${stepIndex}`;
+
+      if (scenario === 'scenario_perfect') {
+          stepBtn.disabled = true;
+          stepBtn.style.opacity = '0.5';
+          manualProduceBtn.disabled = false;
+          manualConsumeBtn.disabled = false;
+          logTrace("수동 생산/소비가 가능합니다. 아래 버튼을 눌러보세요.");
+      } else {
+          stepBtn.disabled = false;
+          stepBtn.style.opacity = '1';
+          manualProduceBtn.disabled = true;
+          manualConsumeBtn.disabled = true;
+          logTrace("단계별 시나리오를 시작할 수 있습니다. [단계별 실행] 버튼을 클릭하세요.");
+      }
+      draw();
+  }
+
+  // 반응형 및 고해상도 처리를 고려한 캔버스 리사이즈
+  function resizeCanvas() {
+      if (!canvas || !canvas.parentNode) return;
+      const rect = canvas.parentNode.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = 360 * window.devicePixelRatio;
+      canvas.style.width = '105%';
+      canvas.style.height = '360px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      draw();
+  }
+
+  // 캔버스 드로잉 엔진 (스레드 상태와 큐 모니터 가시화)
+  function draw() {
+      if (!canvas || !ctx) return;
+
+      const width = canvas.width / window.devicePixelRatio;
+      const height = canvas.height / window.devicePixelRatio;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const colorText = isDark ? "#f8fafc" : "#0f172a";
+      const colorBoxBg = isDark ? "#1e293b" : "#f0e7dc";
+      const colorBorder = isDark ? "#3d3731" : "#e4d9cc";
+
+      // 타이틀 및 버퍼 정보 표시
+      ctx.fillStyle = colorText;
+      ctx.font = "bold 14px sans-serif";
+      ctx.fillText("📦 Bounded Buffer (MAX = 3)", 20, 30);
+
+      // 뮤텍스 락 상태창 렌더링
+      ctx.fillStyle = mutexLockOwner ? "#b95145" : "#2f6f68";
+      ctx.fillRect(width - 200, 15, 180, 35);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(mutexLockOwner ? `🔒 Lock Owner: ${mutexLockOwner}` : "🔓 Lock: FREE", width - 110, 37);
+      ctx.textAlign = "left"; // 재배치
+
+      // 버퍼 3개 슬롯 시각화
+      for (let i = 0; i < bufferMax; i++) {
+          const x = 20 + i * 110;
+          const y = 50;
+
+          ctx.fillStyle = colorBoxBg;
+          ctx.strokeStyle = colorBorder;
+          ctx.lineWidth = 2;
+          ctx.fillRect(x, y, 95, 60);
+          ctx.strokeRect(x, y, 95, 60);
+
+          ctx.fillStyle = isDark ? "#c6b9aa" : "#70675d";
+          ctx.font = "10px monospace";
+          ctx.fillText(`[Slot ${i}]`, x + 8, y + 16);
+
+          if (i < bufferSlots.length) {
+              ctx.fillStyle = "#9a4f32";
+              ctx.fillRect(x + 10, y + 25, 75, 25);
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 11px sans-serif";
+              ctx.fillText(bufferSlots[i], x + 18, y + 41);
+          }
+      }
+
+      // 스레드 풀 카드 레이아웃 그리기
+      ctx.fillStyle = colorText;
+      ctx.font = "bold 14px sans-serif";
+      ctx.fillText("👥 스레드 실행 정보", 20, 150);
+
+      const tKeys = Object.keys(threads);
+      tKeys.forEach((key, index) => {
+          const t = threads[key];
+          const x = 20 + index * 140;
+          const y = 170;
+
+          let borderCol = "#70675d";
+          let bgCol = isDark ? "#2b2723" : "#f0e7dc";
+
+          if (t.state === "Running") {
+              borderCol = "#9a4f32";
+              bgCol = isDark ? "rgba(154,79,50,.15)" : "rgba(154,79,50,.11)";
+          } else if (t.state === "Ready") {
+              borderCol = "#2f6f68";
+              bgCol = isDark ? "rgba(47,111,104,.15)" : "rgba(47,111,104,.11)";
+          } else if (t.state === "Sleep") {
+              borderCol = "#b95145";
+              bgCol = isDark ? "rgba(185,81,69,.15)" : "rgba(185,81,69,.11)";
+          }
+
+          ctx.strokeStyle = borderCol;
+          ctx.fillStyle = bgCol;
+          ctx.lineWidth = 2;
+          ctx.fillRect(x, y, 120, 50);
+          ctx.strokeRect(x, y, 120, 50);
+
+          ctx.fillStyle = colorText;
+          ctx.font = "bold 11px sans-serif";
+          ctx.fillText(t.name, x + 10, y + 22);
+
+          ctx.fillStyle = borderCol;
+          ctx.fillRect(x + 10, y + 28, 55, 16);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 9px sans-serif";
+          ctx.fillText(t.state, x + 14, y + 40);
+      });
+
+      // 조건 변수 대기 큐 가시화 영역
+      ctx.fillStyle = colorText;
+      ctx.font = "bold 14px sans-serif";
+      ctx.fillText("⏳ 조건 변수 대기 큐 (Sleep Wait Queues)", 20, 260);
+
+      if (scenario !== 'scenario_perfect') {
+          // 단일 조건 변수 큐 박스 렌더링
+          ctx.strokeStyle = colorBorder;
+          ctx.fillStyle = isDark ? "#171514" : "#fffdfa";
+          ctx.fillRect(20, 280, 420, 50);
+          ctx.strokeRect(20, 280, 420, 50);
+
+          ctx.fillStyle = isDark ? "#c6b9aa" : "#70675d";
+          ctx.font = "10px monospace";
+          ctx.fillText("Single cond queue", 30, 296);
+
+          let currentPos = 140;
+          const waiters = [...emptyQueue, ...fillQueue];
+          waiters.forEach(waiter => {
+              ctx.fillStyle = "#b95145";
+              ctx.fillRect(currentPos, 290, 55, 30);
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 11px sans-serif";
+              ctx.fillText(waiter, currentPos + 10, 308);
+              currentPos += 65;
+          });
+      } else {
+          // 이중 조건 변수 큐 (empty / fill 격리 구조)
+          // empty 큐
+          ctx.strokeStyle = colorBorder;
+          ctx.fillStyle = isDark ? "#171514" : "#fffdfa";
+          ctx.fillRect(20, 280, 200, 50);
+          ctx.strokeRect(20, 280, 200, 50);
+
+          ctx.fillStyle = isDark ? "#c6b9aa" : "#70675d";
+          ctx.font = "10px monospace";
+          ctx.fillText("empty Queue (생산대기)", 30, 296);
+
+          let epX = 140;
+          emptyQueue.forEach(waiter => {
+              ctx.fillStyle = "#b95145";
+              ctx.fillRect(epX, 290, 40, 30);
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 10px sans-serif";
+              ctx.fillText(waiter, epX + 10, 308);
+              epX += 45;
+          });
+
+          // fill 큐
+          ctx.fillRect(240, 280, 200, 50);
+          ctx.strokeRect(240, 280, 200, 50);
+          ctx.fillStyle = isDark ? "#c6b9aa" : "#70675d";
+          ctx.fillText("fill Queue (소비대기)", 250, 296);
+
+          let fpX = 350;
+          fillQueue.forEach(waiter => {
+              ctx.fillStyle = "#2f6f68";
+              ctx.fillRect(fpX, 290, 40, 30);
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 10px sans-serif";
+              ctx.fillText(waiter, fpX + 10, 308);
+              fpX += 45;
+          });
+      }
+  }
+
+
+  // --- 4. 퀴즈 설계 및 검증 엔진 (QUIZ ENGINE) ---
+
+  const quizData = [
+      {
+          q: "1. 스레드가 특정 조건을 기다릴 때 플래그 변수 하나만으로 무한 루프를 도는 '스핀 대기(Spin-waiting)' 방식의 핵심 문제점으로 올바르지 않은 것은 무엇인가요?",
+          a: [
+              "무조건적인 CPU 타임 슬라이스 소모 및 막대한 전력 낭비 발생",
+              "단일 코어 등 스케줄러 환경에서 우선순위 역전과 기아 상태 유발 가능",
+              "조건 검사 시 무조건 동적 메모리 잠금이 발생하여 데이터 버스 전체를 먹통으로 만듦",
+              "자식이 done = 1을 기록하기 전 부모가 무의미하게 코어를 점유해 기회를 박탈함"
+          ],
+          correct: 2,
+          explain: "스핀 대기 시 CPU 점유율이 폭증하고 기아 현상이 발생하는 단점은 확실히 존재하지만, 일반 조건 체크 루프 자체가 물리적 데이터 버스를 강제로 차단하는 하드웨어 락을 상시 거는 것은 아닙니다. 따라서 3번은 과장 및 부적절한 해설입니다."
+      },
+      {
+          q: "2. pthread_cond_wait()를 호출할 때 일어나는 내부 원자적(Atomic) 연산에 대한 설명으로 가장 정확한 것은 무엇인가요?",
+          a: [
+              "락을 쥔 상태에서 시그널을 받을 때까지 스레드를 먼저 재우고, 깨어난 후에 락을 즉각 풉니다.",
+              "인자로 전달된 뮤텍스 락을 '해제하는 것'과 '대기 큐에 진입하는 것'이 레이스 컨디션 없이 완전하게 단 한 번에(Atomically) 처리됩니다.",
+              "대기 큐에 스레드를 밀어 넣고, 시그널을 보낼 수 있는 상대 스레드의 Mutex를 강탈합니다.",
+              "오직 상태 변수의 동적 복사본만 생성한 뒤, OS 커널의 세마포어 레지스터를 직접 초기화합니다."
+          ],
+          correct: 1,
+          explain: "pthread_cond_wait()의 심장은 바로 락 해제와 대기 큐 휴면 진입의 원자성(Atomicity)입니다. 이 부분이 쪼개져서 실행되면(Non-atomic), 락을 푼 순간과 잠들기 직전 찰나에 시그널이 발송되어 영원히 무덤에 빠지는 Lost Wake-up Bug를 유발하게 됩니다."
+      },
+      {
+          q: "3. 'Mesa Semantics'(메사 의미론) 환경에서 조건 변수를 사용할 때, if 대신 while 루프를 의무화해야 하는 근본적 원인은 무엇입니까?",
+          a: [
+              "커널이 스레드를 임의로 깨우지 못하도록 강제하는 스펙상의 제약이기 때문입니다.",
+              "조건 대기에서 깨어난 스레드가 실행(Running)되기 전 '대기(Ready)' 상태를 거치면서, 그사이 다른 새치기 스레드가 조건을 다시 원점으로 뒤엎을 수 있기 때문입니다.",
+              "while 구문을 써야만 컴파일러가 volatile 레지스터를 효율적으로 최적화할 수 있기 때문입니다.",
+              "호어 시맨틱(Hoare Semantics)과의 크로스 컴파일 호환성을 위한 하방 제약 조건입니다."
+          ],
+          correct: 1,
+          explain: "Mesa Semantics에서는 시그널이 대기자에게 '조건이 완벽히 해결되었음'을 물리적으로 보장하지 않고 단지 '이 스레드를 깨운다(Ready)'는 사실만 전파합니다. 따라서 깨어난 직후 락을 쥐었을 때, while을 통해 조건 변수를 다시 한번 필사적으로 재점검해야 오류를 차단할 수 있습니다."
+      },
+      {
+          q: "4. 다음 중 단일 조건 변수(Single Condition Variable) 하에서 while문을 사용함에도 불구하고 생산자-소비자가 3개 이상일 때 발생하는 교착 상태(Total Sleep Deadlock)의 메커니즘을 가장 잘 설명한 것은?",
+          a: [
+              "생산자가 무한 루프를 도는 도중 CPU 인터럽트 벡터가 소실되어 커널 패닉을 일으킨다.",
+              "소비자가 데이터를 다 먹고 signal()을 보냈을 때, 대기 큐의 '생산자'가 깨어나는 대신 '다른 동료 소비자'가 깨어나 버려 결국 모두가 대기 상태로 빠져든다.",
+              "CPU 캐시 코헤런시(일관성) 붕괴로 인해 count 변수가 물리적으로 0과 1을 동시에 지니기 때문이다.",
+              "비정상 스케줄링으로 인해 생산자와 소비자가 서로의 Mutex 주소 테이블을 교차 오염시키기 때문이다."
+          ],
+          correct: 1,
+          explain: "단일 조건 변수를 공유할 경우, 소비자가 데이터를 비우고 낸 '다음 생산자를 유치하기 위한' 기상 시그널이 엉뚱하게 대기 중이던 '다른 소비자'에게 라우팅될 수 있습니다. 깨어난 소비자는 당연히 버퍼가 빈 것을 보고 곧바로 다시 대기 큐에 잠들게 되고, 생산자는 일어날 기회를 빼앗겨 전체 스레드가 대기 상태(All threads sleep)로 빠져서 굳어버립니다."
+      },
+      {
+          q: "5. 다중 스레드 메모리 할당 라이브러리와 같이 요청하는 리소스의 양이 각각 상이할 때, pthread_cond_signal() 대신 pthread_cond_broadcast()를 써야 하는 이유('Covering Conditions')는?",
+          a: [
+              "단 하나의 스레드만 깨워서는 가용 자원에 만족하는 스레드가 누락된 채 영구 수면할 수 있으므로, 전부 깨워 각자 요구량과 비교 평가하게 하는 것이 완벽한 안전책이기 때문이다.",
+              "broadcast API가 커널 메모리를 덜 소모하여 동적 오버헤드가 극히 적기 때문이다.",
+              "멀티 코어 병렬 시스템에서는 시그널 한 번에 단 하나의 코어만 레지스터 세트가 정상 동기화되기 때문이다.",
+              "조건 변수 큐가 꽉 찼을 때 큐의 크기를 동적으로 배가시키기 위한 특수 제어 프로토콜이다."
+          ],
+          correct: 0,
+          explain: "메모리가 50바이트 반환된 상황에서 10바이트만 있으면 갈 수 있는 스레드 B와 100바이트가 필요한 스레드 A가 대기 중일 때, 단순 signal()은 어설프게 A를 깨울 수 있습니다. A는 50바이트로 작업할 수 없음을 깨닫고 다시 큐에 잠들게 되어 스레드 B도 깨어나지 못한 채 낭패를 봅니다. 이럴 때는 broadcast()를 통해 잠자던 전부를 소환해서 각자 재검사하게 만드는 '커버링 조건' 전략이 논리적 구원의 키가 됩니다."
+      }
+  ];
+
+  function buildQuiz() {
+      quizContainer.innerHTML = "";
+      quizData.forEach((qObj, qIdx) => {
+          let optionsHtml = "";
+          qObj.a.forEach((opt, optIdx) => {
+              optionsHtml += `
+                  <label class="quiz-option" style="display: flex; gap: 8px; align-items: start;">
+                      <input type="radio" name="q_${qIdx}" value="${optIdx}" style="margin-top: 4px; accent-color: var(--accent);">
+                      <span>${opt}</span>
+                  </label>
+              `;
+          });
+
+          quizContainer.innerHTML += `
+              <div class="mini" id="card_q_${qIdx}" style="margin: 16px 0; background: var(--paper); border: 1px solid var(--line);">
+                  <h3 style="margin-top: 0; font-size: 16px;">${qObj.q}</h3>
+                  <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                      ${optionsHtml}
+                  </div>
+                  <div id="feedback_q_${qIdx}" style="display: none; margin-top: 14px;">
+                      <!-- Feedback and explanation injected here -->
+                  </div>
               </div>
-              <span class="text-[10px] text-slate-400 block mt-2">* 시나리오 C(정상 작동) 모드에서만 수동 테스트가 활성화됩니다.</span>
-            </div>
-
-            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex justify-between items-center text-xs">
-              <span>현재 실행 단계</span>
-              <b class="px-2 py-1 bg-slate-800 text-indigo-400 rounded" id="simStepIndicator">Step: 0</b>
-            </div>
-          </div>
-
-          <div class="lg:col-span-3 flex flex-col space-y-4">
-            <canvas id="simCanvas" width="760" height="360"></canvas>
-            <div class="p-4 rounded-xl bg-slate-950 text-slate-200 border border-slate-900 h-32 overflow-y-auto font-mono text-xs" id="simConsole">
-              <!-- Trace log output -->
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="quiz">
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center space-x-3">
-            <span class="py-1 px-3 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full">Quiz Time</span>
-            <h2 style="border:none;padding:0;margin:0">학습 완성 자가진단 퀴즈</h2>
-          </div>
-          <span class="font-black text-emerald-500 text-lg" id="quizScore">0 / 5</span>
-        </div>
-
-        <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden mb-8">
-          <div class="bg-emerald-500 h-2 w-0 transition-all duration-500" id="quizProgressBar"></div>
-        </div>
-        <div class="space-y-8 not-prose" id="quizContainer">
-          <!-- Radio questions loaded dynamically -->
-        </div>
-        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end not-prose">
-          <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/20 transition transform hover:-translate-y-0.5 active:translate-y-0 text-sm" id="quizSubmitBtn">
-            정답 및 상세 해설 검증하기
-          </button>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- Hidden placeholders for legacy script theme synchronization -->
-  <div style="display:none" id="themeToggle">
-    <div id="sunIcon"></div>
-    <div id="moonIcon"></div>
-  </div>
-
-  <footer class="relative z-10 border-t border-slate-200 dark:border-white/[.05] py-8 mt-10">
-    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p class="text-xs text-slate-500 dark:text-white/35">Study Notes · Operating System · Condition Variables</p>
-      <a class="text-xs font-mono text-violet-600 dark:text-violet-300 hover:underline" href="../../">Back to OS notes</a>
-    </div>
-  </footer>
-
-  <script>
-        // --- 1. 전역 DOM 객체 및 상태 정의 (GLOBAL DOM ELEMENTS & STATE) ---
-        
-        // MathJax 동적 렌더러 헬퍼
-        function triggerMathJax() {
-            if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
-                MathJax.typesetPromise().catch((err) => console.log('MathJax typeset error:', err));
-            } else if (typeof MathJax !== 'undefined' && MathJax.typeset) {
-                MathJax.typeset();
-            }
-        }
-
-        // 테마 토글 버튼 요소들
-        const themeToggle = document.getElementById('themeToggle');
-        const sunIcon = document.getElementById('sunIcon');
-        const moonIcon = document.getElementById('moonIcon');
-
-        // 시뮬레이터 HTML5 Canvas 및 제어 요소들
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
-        const consoleEl = document.getElementById('simConsole');
-        const scenarioSelect = document.getElementById('scenarioSelect');
-        const stepBtn = document.getElementById('simStepBtn');
-        const resetBtn = document.getElementById('simResetBtn');
-        const simStepIndicator = document.getElementById('simStepIndicator');
-        const manualProduceBtn = document.getElementById('manualProduceBtn');
-        const manualConsumeBtn = document.getElementById('manualConsumeBtn');
-
-        // 시뮬레이터 전역 상태 변수들
-        let scenario = "scenario_if"; 
-        let stepIndex = 0;
-        let mutexLockOwner = null; // null, "Tc1", "Tc2", "Tp"
-        let bufferSlots = []; // 제한 버퍼 원형 큐 내부 요소들
-        const bufferMax = 3; 
-
-        // 스레드 상태 구조체
-        const threads = {
-            Tp: { name: "Tp (생산자)", state: "Ready", role: "producer" },
-            Tc1: { name: "Tc1 (소비자1)", state: "Ready", role: "consumer" },
-            Tc2: { name: "Tc2 (소비자2)", state: "Ready", role: "consumer" }
-        };
-
-        // 대기용 조건 변수 큐
-        let emptyQueue = []; // 생산 대기 큐
-        let fillQueue = [];  // 소비 대기 큐
-
-        // 퀴즈 요소들
-        const quizContainer = document.getElementById('quizContainer');
-        const scoreEl = document.getElementById('quizScore');
-        const progressBar = document.getElementById('quizProgressBar');
-        const submitBtn = document.getElementById('quizSubmitBtn');
-
-
-        // --- 2. 테마 관리 로직 (THEME MANAGEMENT) ---
-
-        function setTheme(isDark) {
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-                if (sunIcon) sunIcon.classList.remove('hidden');
-                if (moonIcon) moonIcon.classList.add('hidden');
-                localStorage.setItem('study-notes-theme', 'dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-                if (sunIcon) sunIcon.classList.add('hidden');
-                if (moonIcon) moonIcon.classList.remove('hidden');
-                localStorage.setItem('study-notes-theme', 'light');
-            }
-            // 테마 변경 시 시뮬레이터 다시 그리기 (캔버스가 선언되었고 그리기 함수가 활성화된 경우만 실행)
-            if (typeof draw === 'function' && canvas) {
-                draw();
-            }
-        }
-
-
-        // --- 3. 시뮬레이터 로직 및 연산 함수 (SIMULATOR FUNCTIONS) ---
-
-        function logTrace(message) {
-            const date = new Date();
-            const timeStr = date.toTimeString().split(' ')[0];
-            consoleEl.innerHTML += `<div class="py-0.5"><span class="text-slate-500">[${timeStr}]</span> ${message}</div>`;
-            consoleEl.scrollTop = consoleEl.scrollHeight;
-        }
-
-        function clearTrace() {
-            consoleEl.innerHTML = "";
-        }
-
-        // 시뮬레이션 단계별 시나리오 정의들 (producer-consumer bug scenarios)
-        const scenarios = {
-            scenario_if: [
-                {
-                    text: "초기 상태: 버퍼는 비어있으며(count=0), 소비 스레드 Tc1이 먼저 실행 준비 중입니다.",
-                    action: () => {
-                        threads.Tc1.state = "Running";
-                        mutexLockOwner = "Tc1";
-                        logTrace("소비자 Tc1이 CPU를 얻어 실행(Running)되고, Mutex Lock을 소유합니다.");
-                    }
-                },
-                {
-                    text: "소비자 Tc1이 버퍼를 검사합니다. count == 0 이므로 wait(&cond, &mutex)에 돌입합니다.",
-                    action: () => {
-                        threads.Tc1.state = "Sleep";
-                        fillQueue.push("Tc1");
-                        mutexLockOwner = null; // 원자적으로 락 해제
-                        logTrace("Tc1: '버퍼 비어있네?'. Mutex 락을 풀면서 조건 변수 대기 큐로 들어가 잠듭니다.");
-                    }
-                },
-                {
-                    text: "생산자 Tp가 스케줄되어 Mutex Lock을 잡고 데이터를 버퍼에 put()합니다.",
-                    action: () => {
-                        threads.Tp.state = "Running";
-                        mutexLockOwner = "Tp";
-                        bufferSlots.push("Data 🌟");
-                        logTrace("생산자 Tp: Mutex 락 획득 후 데이터 수급 완료(count=1).");
-                    }
-                },
-                {
-                    text: "생산자 Tp가 signal()을 호출하여 대기 중이던 Tc1을 깨웁니다. Tp는 Mutex Lock을 풀고 퇴장합니다.",
-                    action: () => {
-                        threads.Tp.state = "Ready";
-                        mutexLockOwner = null;
-                        // Tc1 깨우기
-                        const idx = fillQueue.indexOf("Tc1");
-                        if (idx > -1) fillQueue.splice(idx, 1);
-                        threads.Tc1.state = "Ready";
-                        logTrace("Tp가 signal() 송출! 잠자던 Tc1이 기상하여 'Ready' 상태가 되었습니다.");
-                    }
-                },
-                {
-                    text: "🚨 [레이스 컨디션 유발] 스케줄러가 방금 깨어난 Tc1 대신, 새치기한 소비자 Tc2를 먼저 스케줄링합니다!",
-                    action: () => {
-                        threads.Tc2.state = "Running";
-                        mutexLockOwner = "Tc2";
-                        logTrace("Tc2가 락을 채가며 Running 상태 돌입! (Tc1은 락 획득을 대기하며 Ready 유지)");
-                    }
-                },
-                {
-                    text: "소비자 Tc2가 버퍼에서 데이터를 무사히 get()하여 소비하고, Mutex Lock을 풉니다.",
-                    action: () => {
-                        bufferSlots.pop(); // 소비 완료
-                        threads.Tc2.state = "Ready";
-                        mutexLockOwner = null;
-                        logTrace("소비자 Tc2: '아싸 신선한 데이터!' 먹어 치움 (count=0).");
-                    }
-                },
-                {
-                    text: "💥 [Assertion Fail 파국] 드디어 깨어난 Tc1이 락을 잡고 실행됩니다. 하지만 조건 검사가 if문이었기에 다시 검사하지 않고 get()을 바로 불러 에러가 터집니다!",
-                    action: () => {
-                        threads.Tc1.state = "Running";
-                        mutexLockOwner = "Tc1";
-                        logTrace("💥 [크래시] Tc1: '어라? 나 분명 신호 받고 깨어났는데 왜 데이터가 없지...?' get() 에러 / Assertion Fail!");
-                    }
-                }
-            ],
-            scenario_single_cv: [
-                {
-                    text: "초기 상태: 두 명의 소비자 Tc1, Tc2가 락을 얻으려 하지만 버퍼가 비어 결국 두 명 다 잠듭니다.",
-                    action: () => {
-                        threads.Tc1.state = "Sleep";
-                        threads.Tc2.state = "Sleep";
-                        fillQueue.push("Tc1");
-                        fillQueue.push("Tc2");
-                        logTrace("소비자 Tc1, Tc2 모두 버퍼가 비어 단일 조건변수 큐에 잠에 빠집니다.");
-                    }
-                },
-                {
-                    text: "생산자 Tp가 스케줄되어 버퍼를 하나 채우고(count=1), signal()을 날립니다.",
-                    action: () => {
-                        threads.Tp.state = "Running";
-                        mutexLockOwner = "Tp";
-                        bufferSlots.push("Data 🎁");
-                        logTrace("Tp가 데이터를 채워 넣었습니다(count=1). signal()을 호출합니다.");
-                    }
-                },
-                {
-                    text: "Tp의 시그널을 받고 잠자던 Tc1이 기상하여 Ready 상태가 됩니다. 생산자 Tp는 락을 해제하고 잠에 듭니다(버퍼가 차있으므로).",
-                    action: () => {
-                        threads.Tp.state = "Sleep";
-                        emptyQueue.push("Tp"); // 단일 조건변수 연출용 큐 결합
-                        mutexLockOwner = null;
-                        // Tc1 깨움
-                        const idx = fillQueue.indexOf("Tc1");
-                        if (idx > -1) fillQueue.splice(idx, 1);
-                        threads.Tc1.state = "Ready";
-                        logTrace("시그널로 인해 Tc1이 깨어남. 생산자 Tp는 버퍼 꽉 참(MAX=1) 판정으로 잠듭니다.");
-                    }
-                },
-                {
-                    text: "깨어난 소비자 Tc1이 다행히도 스케줄되어 데이터를 무사히 소비(get)하고 시그널을 날립니다.",
-                    action: () => {
-                        threads.Tc1.state = "Running";
-                        mutexLockOwner = "Tc1";
-                        bufferSlots.pop(); // 비움
-                        logTrace("소비자 Tc1이 성공적으로 데이터를 빼가서 버퍼를 0으로 비웠습니다.");
-                    }
-                },
-                {
-                    text: "🚨 [단일 CV의 데드락 재앙] Tc1이 쏜 signal()은 생산자 Tp를 깨워야 하지만, 대기 큐의 '동료 소비자 Tc2'를 깨우는 대참사가 일어납니다!",
-                    action: () => {
-                        threads.Tc1.state = "Ready";
-                        mutexLockOwner = null;
-                        // Tp가 아닌 Tc2를 깨우는 버그 재현
-                        const idx = fillQueue.indexOf("Tc2");
-                        if (idx > -1) fillQueue.splice(idx, 1);
-                        threads.Tc2.state = "Ready";
-                        logTrace("🚨 [시그널 오발사] 생산자가 아닌 동료 소비자 Tc2가 깨어났습니다!");
-                    }
-                },
-                {
-                    text: "깨어난 소비자 Tc2는 while 루프 검사에서 버퍼가 비었음을 확인하고 다시 대기 큐로 침전합니다.",
-                    action: () => {
-                        threads.Tc2.state = "Sleep";
-                        fillQueue.push("Tc2");
-                        logTrace("Tc2: '어휴 낚였다... 버퍼가 비어있잖아.' 다시 잠에 듭니다.");
-                    }
-                },
-                {
-                    text: "💥 [모든 스레드 잠잠 교착] 소비자 둘 다 잠들고, 생산자마저 깨지 못해 셋 다 깊은 잠에 빠지는 교착 상태(Total Sleep Deadlock) 완성!",
-                    action: () => {
-                        logTrace("💥 [데드락] 모든 스레드가 수면 상태에 진입했습니다. 시스템 영구 정지!");
-                    }
-                }
-            ],
-            scenario_perfect: [
-                {
-                    text: "정상 모드: 2개의 독립 대기 큐(empty, fill)를 가동하여 타겟 대상을 정확히 격발합니다. (수동 Produce/Consume 제어 가능)",
-                    action: () => {
-                        logTrace("독립 조건 대기 큐 empty, fill 작동 개시!");
-                    }
-                }
-            ]
-        };
-
-        function initSimulator() {
-            clearTrace();
-            stepIndex = 0;
-            mutexLockOwner = null;
-            bufferSlots = [];
-            emptyQueue = [];
-            fillQueue = [];
-            
-            // 스레드 초기 상태 설정
-            threads.Tp.state = "Ready";
-            threads.Tc1.state = "Ready";
-            threads.Tc2.state = "Ready";
-
-            scenario = scenarioSelect.value;
-            simStepIndicator.innerText = `Step: ${stepIndex}`;
-
-            if (scenario === 'scenario_perfect') {
-                stepBtn.disabled = true;
-                stepBtn.classList.add('opacity-50');
-                manualProduceBtn.disabled = false;
-                manualConsumeBtn.disabled = false;
-                logTrace("수동 생산/소비가 가능합니다. 아래 버튼을 눌러보세요.");
-            } else {
-                stepBtn.disabled = false;
-                stepBtn.classList.remove('opacity-50');
-                manualProduceBtn.disabled = true;
-                manualConsumeBtn.disabled = true;
-                logTrace("단계별 시나리오를 시작할 수 있습니다. [단계별 실행] 버튼을 클릭하세요.");
-            }
-            draw();
-        }
-
-        // 반응형 및 고해상도 처리를 고려한 캔버스 리사이즈
-        function resizeCanvas() {
-            if (!canvas || !canvas.parentNode) return;
-            const rect = canvas.parentNode.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = 360 * window.devicePixelRatio;
-            canvas.style.width = '100%';
-            canvas.style.height = '360px';
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            draw();
-        }
-
-        // 캔버스 드로잉 엔진 (스레드 상태와 큐 모니터 가시화)
-        function draw() {
-            if (!canvas || !ctx) return;
-            
-            const width = canvas.width / window.devicePixelRatio;
-            const height = canvas.height / window.devicePixelRatio;
-            
-            ctx.clearRect(0, 0, width, height);
-
-            const isDark = document.documentElement.classList.contains('dark');
-            const colorText = isDark ? "#f8fafc" : "#0f172a";
-            const colorBoxBg = isDark ? "#1e293b" : "#f1f5f9";
-            const colorBorder = isDark ? "#334155" : "#cbd5e1";
-
-            // 타이틀 및 버퍼 정보 표시
-            ctx.fillStyle = colorText;
-            ctx.font = "bold 14px Pretendard";
-            ctx.fillText("📦 유한 공유 버퍼 (Bounded Buffer, MAX=3)", 20, 30);
-
-            // 뮤텍스 락 상태창 렌더링
-            ctx.fillStyle = mutexLockOwner ? "#ef4444" : "#10b981";
-            ctx.fillRect(width - 200, 15, 180, 35);
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 12px Pretendard";
-            ctx.textAlign = "center";
-            ctx.fillText(mutexLockOwner ? `🔒 Lock 획득자: ${mutexLockOwner}` : "🔓 Lock 상태: FREE", width - 110, 37);
-            ctx.textAlign = "left"; // 재배치
-
-            // 버퍼 3개 슬롯 시각화
-            for (let i = 0; i < bufferMax; i++) {
-                const x = 20 + i * 110;
-                const y = 50;
-                
-                ctx.fillStyle = colorBoxBg;
-                ctx.strokeStyle = colorBorder;
-                ctx.lineWidth = 2;
-                ctx.fillRect(x, y, 95, 60);
-                ctx.strokeRect(x, y, 95, 60);
-
-                ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
-                ctx.font = "10px JetBrains Mono";
-                ctx.fillText(`[Slot ${i}]`, x + 8, y + 16);
-
-                if (i < bufferSlots.length) {
-                    ctx.fillStyle = "#4f46e5";
-                    ctx.fillRect(x + 10, y + 25, 75, 25);
-                    ctx.fillStyle = "#ffffff";
-                    ctx.font = "bold 11px Pretendard";
-                    ctx.fillText(bufferSlots[i], x + 18, y + 41);
-                }
-            }
-
-            // 스레드 풀 카드 레이아웃 그리기
-            ctx.fillStyle = colorText;
-            ctx.font = "bold 14px Pretendard";
-            ctx.fillText("👥 스레드 실행 정보", 20, 150);
-
-            const tKeys = Object.keys(threads);
-            tKeys.forEach((key, index) => {
-                const t = threads[key];
-                const x = 20 + index * 140;
-                const y = 170;
-
-                let borderCol = "#64748b";
-                let bgCol = isDark ? "#0f172a" : "#e2e8f0";
-                
-                if (t.state === "Running") {
-                    borderCol = "#f59e0b";
-                    bgCol = "#f59e0b20";
-                } else if (t.state === "Ready") {
-                    borderCol = "#3b82f6";
-                    bgCol = "#3b82f620";
-                } else if (t.state === "Sleep") {
-                    borderCol = "#ef4444";
-                    bgCol = "#ef444410";
-                }
-
-                ctx.strokeStyle = borderCol;
-                ctx.fillStyle = bgCol;
-                ctx.lineWidth = 2.5;
-                ctx.fillRect(x, y, 120, 50);
-                ctx.strokeRect(x, y, 120, 50);
-
-                ctx.fillStyle = colorText;
-                ctx.font = "bold 12px Pretendard";
-                ctx.fillText(t.name, x + 10, y + 22);
-
-                ctx.fillStyle = borderCol;
-                ctx.fillRect(x + 10, y + 28, 65, 16);
-                ctx.fillStyle = "#ffffff";
-                ctx.font = "bold 10px Pretendard";
-                ctx.fillText(t.state, x + 16, y + 40);
-            });
-
-            // 조건 변수 대기 큐 가시화 영역
-            ctx.fillStyle = colorText;
-            ctx.font = "bold 14px Pretendard";
-            ctx.fillText("⏳ 조건 변수 대기 큐 (Sleep Wait Queues)", 20, 260);
-
-            if (scenario !== 'scenario_perfect') {
-                // 단일 조건 변수 큐 박스 렌더링
-                ctx.strokeStyle = colorBorder;
-                ctx.fillStyle = isDark ? "#020617" : "#f8fafc";
-                ctx.fillRect(20, 280, 420, 50);
-                ctx.strokeRect(20, 280, 420, 50);
-
-                ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
-                ctx.font = "10px JetBrains Mono";
-                ctx.fillText("Single cond queue", 30, 296);
-
-                let currentPos = 140;
-                const waiters = [...emptyQueue, ...fillQueue];
-                waiters.forEach(waiter => {
-                    ctx.fillStyle = "#ef4444";
-                    ctx.fillRect(currentPos, 290, 55, 30);
-                    ctx.fillStyle = "#ffffff";
-                    ctx.font = "bold 11px Pretendard";
-                    ctx.fillText(waiter, currentPos + 10, 308);
-                    currentPos += 65;
-                });
-            } else {
-                // 이중 조건 변수 큐 (empty / fill 격리 구조)
-                // empty 큐
-                ctx.strokeStyle = colorBorder;
-                ctx.fillStyle = isDark ? "#020617" : "#f8fafc";
-                ctx.fillRect(20, 280, 200, 50);
-                ctx.strokeRect(20, 280, 200, 50);
-
-                ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
-                ctx.font = "10px JetBrains Mono";
-                ctx.fillText("empty Queue (생산대기)", 30, 296);
-
-                let epX = 140;
-                emptyQueue.forEach(waiter => {
-                    ctx.fillStyle = "#ef4444";
-                    ctx.fillRect(epX, 290, 40, 30);
-                    ctx.fillStyle = "#ffffff";
-                    ctx.font = "bold 10px Pretendard";
-                    ctx.fillText(waiter, epX + 10, 308);
-                    epX += 45;
-                });
-
-                // fill 큐
-                ctx.fillRect(240, 280, 200, 50);
-                ctx.strokeRect(240, 280, 200, 50);
-                ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
-                ctx.fillText("fill Queue (소비대기)", 250, 296);
-
-                let fpX = 350;
-                fillQueue.forEach(waiter => {
-                    ctx.fillStyle = "#3b82f6";
-                    ctx.fillRect(fpX, 290, 40, 30);
-                    ctx.fillStyle = "#ffffff";
-                    ctx.font = "bold 10px Pretendard";
-                    ctx.fillText(waiter, fpX + 10, 308);
-                    fpX += 45;
-                });
-            }
-        }
-
-
-        // --- 4. 퀴즈 설계 및 검증 엔진 (QUIZ ENGINE) ---
-
-        const quizData = [
-            {
-                q: "1. 스레드가 특정 조건을 기다릴 때 플래그 변수 하나만으로 무한 루프를 도는 '스핀 대기(Spin-waiting)' 방식의 핵심 문제점으로 올바르지 않은 것은 무엇인가요?",
-                a: [
-                    "무조건적인 CPU 타임 슬라이스 소모 및 막대한 전력 낭비 발생",
-                    "단일 코어 등 스케줄러 환경에서 우선순위 역전과 기아 상태 유발 가능",
-                    "조건 검사 시 무조건 동적 메모리 잠금이 발생하여 데이터 버스 전체를 먹통으로 만듦",
-                    "자식이 done = 1을 기록하기 전 부모가 무의미하게 코어를 점유해 기회를 박탈함"
-                ],
-                correct: 2,
-                explain: "스핀 대기 시 CPU 점유율이 폭증하고 기아 현상이 발생하는 단점은 확실히 존재하지만, 일반 조건 체크 루프 자체가 물리적 데이터 버스를 강제로 차단하는 하드웨어 락을 상시 거는 것은 아닙니다. 따라서 3번은 과장 및 부적절한 해설입니다."
-            },
-            {
-                q: "2. pthread_cond_wait()를 호출할 때 일어나는 내부 원자적(Atomic) 연산에 대한 설명으로 가장 정확한 것은 무엇인가요?",
-                a: [
-                    "락을 쥔 상태에서 시그널을 받을 때까지 스레드를 먼저 재우고, 깨어난 후에 락을 즉각 풉니다.",
-                    "인자로 전달된 뮤텍스 락을 '해제하는 것'과 '대기 큐에 진입하는 것'이 레이스 컨디션 없이 완전하게 단 한 번에(Atomically) 처리됩니다.",
-                    "대기 큐에 스레드를 밀어 넣고, 시그널을 보낼 수 있는 상대 스레드의 Mutex를 강탈합니다.",
-                    "오직 상태 변수의 동적 복사본만 생성한 뒤, OS 커널의 세마포어 레지스터를 직접 초기화합니다."
-                ],
-                correct: 1,
-                explain: "<code>pthread_cond_wait()</code>의 심장은 바로 <strong>락 해제와 대기 큐 휴면 진입의 원자성(Atomicity)</strong>입니다. 이 부분이 쪼개져서 실행되면(Non-atomic), 락을 푼 순간과 잠들기 직전 찰나에 시그널이 발송되어 영원히 무덤에 빠지는 <strong>Lost Wake-up Bug</strong>를 유발하게 됩니다."
-            },
-            {
-                q: "3. 'Mesa Semantics'(메사 의미론) 환경에서 조건 변수를 사용할 때, if 대신 while 루프를 의무화해야 하는 근본적 원인은 무엇입니까?",
-                a: [
-                    "커널이 스레드를 임의로 깨우지 못하도록 강제하는 스펙상의 제약이기 때문입니다.",
-                    "조건 대기에서 깨어난 스레드가 실행(Running)되기 전 '대기(Ready)' 상태를 거치면서, 그사이 다른 새치기 스레드가 조건을 다시 원점으로 뒤엎을 수 있기 때문입니다.",
-                    "while 구문을 써야만 컴파일러가 volatile 레지스터를 효율적으로 최적화할 수 있기 때문입니다.",
-                    "호어 시맨틱(Hoare Semantics)과의 크로스 컴파일 호환성을 위한 하방 제약 조건입니다."
-                ],
-                correct: 1,
-                explain: "Mesa Semantics에서는 시그널이 대기자에게 '조건이 완벽히 해결되었음'을 물리적으로 보장하지 않고 단지 '이 스레드를 깨운다(Ready)'는 사실만 전파합니다. 따라서 깨어난 직후 락을 쥐었을 때, <code>while</code>을 통해 <strong>조건 변수를 다시 한번 필사적으로 재점검</strong>해야 오류를 차단할 수 있습니다."
-            },
-            {
-                q: "4. 다음 중 단일 조건 변수(Single Condition Variable) 하에서 while문을 사용함에도 불구하고 생산자-소비자가 3개 이상일 때 발생하는 교착 상태(Total Sleep Deadlock)의 메커니즘을 가장 잘 설명한 것은?",
-                a: [
-                    "생산자가 무한 루프를 도는 도중 CPU 인터럽트 벡터가 소실되어 커널 패닉을 일으킨다.",
-                    "소비자가 데이터를 다 먹고 signal()을 보냈을 때, 대기 큐의 '생산자'가 깨어나는 대신 '다른 동료 소비자'가 깨어나 버려 결국 모두가 대기 상태로 빠져든다.",
-                    "CPU 캐시 코헤런시(일관성) 붕괴로 인해 count 변수가 물리적으로 0과 1을 동시에 지니기 때문이다.",
-                    "비정상 스케줄링으로 인해 생산자와 소비자가 서로의 Mutex 주소 테이블을 교차 오염시키기 때문이다."
-                ],
-                correct: 1,
-                explain: "단일 조건 변수를 공유할 경우, 소비자가 데이터를 비우고 낸 '다음 생산자를 유치하기 위한' 기상 시그널이 엉뚱하게 대기 중이던 '다른 소비자'에게 라우팅될 수 있습니다. 깨어난 소비자는 당연히 버퍼가 빈 것을 보고 곧바로 다시 대기 큐에 잠들게 되고, 생산자는 일어날 기회를 빼앗겨 <strong>전체 스레드가 대기 상태(All threads sleep)</strong>로 빠져서 굳어버립니다."
-            },
-            {
-                q: "5. 다중 스레드 메모리 할당 라이브러리와 같이 요청하는 리소스의 양이 각각 상이할 때, pthread_cond_signal() 대신 pthread_cond_broadcast()를 써야 하는 이유('Covering Conditions')는?",
-                a: [
-                    "단 하나의 스레드만 깨워서는 가용 자원에 만족하는 스레드가 누락된 채 영구 수면할 수 있으므로, 전부 깨워 각자 요구량과 비교 평가하게 하는 것이 완벽한 안전책이기 때문이다.",
-                    "broadcast API가 커널 메모리를 덜 소모하여 동적 오버헤드가 극히 적기 때문이다.",
-                    "멀티 코어 병렬 시스템에서는 시그널 한 번에 단 하나의 코어만 레지스터 세트가 정상 동기화되기 때문이다.",
-                    "조건 변수 큐가 꽉 찼을 때 큐의 크기를 동적으로 배가시키기 위한 특수 제어 프로토콜이다."
-                ],
-                correct: 0,
-                explain: "메모리가 50바이트 반환된 상황에서 10바이트만 있으면 갈 수 있는 스레드 B와 100바이트가 필요한 스레드 A가 대기 중일 때, 단순 <code>signal()</code>은 어설프게 A를 깨울 수 있습니다. A는 50바이트로 작업할 수 없음을 깨닫고 다시 큐에 잠들게 되어 스레드 B도 깨어나지 못한 채 낭패를 봅니다. 이럴 때는 <code>broadcast()</code>를 통해 잠자던 전부를 소환해서 각자 재검사하게 만드는 <strong>'커버링 조건'</strong> 전략이 논리적 구원의 키가 됩니다."
-            }
-        ];
-
-        function buildQuiz() {
-            quizContainer.innerHTML = "";
-            quizData.forEach((qObj, qIdx) => {
-                let optionsHtml = "";
-                qObj.a.forEach((opt, optIdx) => {
-                    optionsHtml += `
-                        <label class="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition text-sm">
-                            <input type="radio" name="q_${qIdx}" value="${optIdx}" class="mt-1 text-emerald-500 focus:ring-emerald-400">
-                            <span class="text-slate-700 dark:text-slate-300">${opt}</span>
-                        </label>
-                    `;
-                });
-
-                quizContainer.innerHTML += `
-                    <div class="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20 shadow-sm" id="card_q_${qIdx}">
-                        <h3 class="font-bold text-slate-900 dark:text-white mb-4 text-base leading-relaxed">${qObj.q}</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                            ${optionsHtml}
-                        </div>
-                        <div id="feedback_q_${qIdx}" class="hidden p-4 rounded-lg text-xs leading-relaxed transition-all duration-300">
-                            <!-- Feedback and explanation injected here -->
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-
-        // --- 5. 이벤트 리스너 등록 및 초기 실행 코드 (EVENT LISTENERS & BINDING) ---
-
-        // 라이트/다크 테마 토글 핸들러
-        if (themeToggle) themeToggle.addEventListener('click', () => {
-            const isDark = document.documentElement.classList.contains('dark');
-            setTheme(!isDark);
-        });
-
-        // 단계 실행 이벤트
-        stepBtn.addEventListener('click', () => {
-            const list = scenarios[scenario];
-            if (stepIndex < list.length) {
-                const currentStep = list[stepIndex];
-                logTrace(`<strong>[Step ${stepIndex + 1}]</strong> ${currentStep.text}`);
-                currentStep.action();
-                stepIndex++;
-                simStepIndicator.innerText = `Step: ${stepIndex}`;
-                draw();
-            } else {
-                logTrace("시나리오가 종료되었습니다. 다시 확인하려면 초기화를 누르세요.");
-            }
-        });
-
-        resetBtn.addEventListener('click', initSimulator);
-        scenarioSelect.addEventListener('change', initSimulator);
-
-        // 시나리오 C 전용 수동 제어 리스너
-        manualProduceBtn.addEventListener('click', () => {
-            logTrace("🛠️ 생산 시그널 주입");
-            if (bufferSlots.length >= bufferMax) {
-                logTrace("생산자 Tp: 버퍼가 꽉 찼습니다(MAX). empty 대기 큐로 들어갑니다.");
-                threads.Tp.state = "Sleep";
-                emptyQueue.push("Tp");
-            } else {
-                bufferSlots.push("Data 🌟");
-                logTrace("생산자 Tp가 버퍼를 1개 생산했습니다.");
-                // fill 큐 대기 스레드 기상
-                if (fillQueue.length > 0) {
-                    const woken = fillQueue.shift();
-                    threads[woken].state = "Ready";
-                    logTrace(`🔔 [시그널 전달] empty 큐를 통해 잠자던 소비자 ${woken}를 깨웁니다.`);
-                }
-            }
-            draw();
-        });
-
-        manualConsumeBtn.addEventListener('click', () => {
-            logTrace("🛠️ 소비 시그널 주입");
-            if (bufferSlots.length === 0) {
-                logTrace("소비자: 가져갈 데이터가 없습니다. fill 대기 큐로 들어가 잠듭니다.");
-                const sleeper = Math.random() > 0.5 ? "Tc1" : "Tc2";
-                threads[sleeper].state = "Sleep";
-                fillQueue.push(sleeper);
-            } else {
-                bufferSlots.pop();
-                logTrace("소비자가 데이터를 1개 소비하였습니다.");
-                // empty 큐 대기 스레드 기상
-                if (emptyQueue.length > 0) {
-                    const woken = emptyQueue.shift();
-                    threads[woken].state = "Ready";
-                    logTrace(`🔔 [시그널 전달] fill 큐를 통해 잠자던 생산자 ${woken}를 깨웁니다.`);
-                }
-            }
-            draw();
-        });
-
-        // 퀴즈 제출 핸들러
-        submitBtn.addEventListener('click', () => {
-            let correctCount = 0;
-
-            quizData.forEach((qObj, qIdx) => {
-                const checkedRadio = document.querySelector(`input[name="q_${qIdx}"]:checked`);
-                const feedbackBox = document.getElementById(`feedback_q_${qIdx}`);
-
-                feedbackBox.classList.remove('hidden');
-
-                if (checkedRadio) {
-                    const userVal = parseInt(checkedRadio.value);
-                    if (userVal === qObj.correct) {
-                        correctCount++;
-                        feedbackBox.className = "p-4 rounded-lg text-xs leading-relaxed bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 mt-4";
-                        feedbackBox.innerHTML = `
-                            <p class="font-bold text-sm mb-1">🎉 정답입니다!</p>
-                            <p>${qObj.explain}</p>
-                        `;
-                    } else {
-                        feedbackBox.className = "p-4 rounded-lg text-xs leading-relaxed bg-rose-50 text-rose-800 dark:bg-rose-950/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800 mt-4";
-                        feedbackBox.innerHTML = `
-                            <p class="font-bold text-sm mb-1">❌ 오답입니다. (내가 고른 답: ${parseInt(checkedRadio.value) + 1}번 / 실제 정답: ${qObj.correct + 1}번)</p>
-                            <p>${qObj.explain}</p>
-                        `;
-                    }
-                } else {
-                    feedbackBox.className = "p-4 rounded-lg text-xs leading-relaxed bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800 mt-4";
-                    feedbackBox.innerHTML = `
-                        <p class="font-bold text-sm mb-1">⚠️ 답안을 제출하지 않았습니다. (정답: ${qObj.correct + 1}번)</p>
-                        <p>${qObj.explain}</p>
-                    `;
-                }
-            });
-
-            scoreEl.innerText = `${correctCount} / 5`;
-            const percentage = (correctCount / 5) * 100;
-            progressBar.style.width = `${percentage}%`;
-
-            triggerMathJax();
-        });
-
-        // 윈도우 로드(Load) 시점에 통합 초기화 진행 (Temporal Dead Zone 에러 완전 방지)
-        window.addEventListener('load', () => {
-            // 퀴즈 빌드
-            buildQuiz();
-
-            // Study Notes 공통 테마와 동기화: 기본값은 기존 노트처럼 light
-            const savedTheme = localStorage.getItem('study-notes-theme') || 'light';
-            setTheme(savedTheme === 'dark');
-
-            // 시뮬레이터 구동 및 드로잉
-            initSimulator();
-            resizeCanvas();
-        });
-
-        window.addEventListener('resize', resizeCanvas);
-    
-  </script>
-</body>
-</html>
+          `;
+      });
+  }
+
+
+  // --- 5. 이벤트 리스너 등록 및 초기 실행 코드 (EVENT LISTENERS & BINDING) ---
+
+  // 단계 실행 이벤트
+  stepBtn.addEventListener('click', () => {
+      const list = scenarios[scenario];
+      if (stepIndex < list.length) {
+          const currentStep = list[stepIndex];
+          logTrace(`<strong>[Step ${stepIndex + 1}]</strong> ${currentStep.text}`);
+          currentStep.action();
+          stepIndex++;
+          simStepIndicator.innerText = `Step: ${stepIndex}`;
+          draw();
+      } else {
+          logTrace("시나리오가 종료되었습니다. 다시 확인하려면 초기화를 누르세요.");
+      }
+  });
+
+  resetBtn.addEventListener('click', initSimulator);
+  scenarioSelect.addEventListener('change', initSimulator);
+
+  // 시나리오 C 전용 수동 제어 리스너
+  manualProduceBtn.addEventListener('click', () => {
+      logTrace("🛠️ 생산 시그널 주입");
+      if (bufferSlots.length >= bufferMax) {
+          logTrace("생산자 Tp: 버퍼가 꽉 찼습니다(MAX). empty 대기 큐로 들어갑니다.");
+          threads.Tp.state = "Sleep";
+          emptyQueue.push("Tp");
+      } else {
+          bufferSlots.push("Data 🌟");
+          logTrace("생산자 Tp가 버퍼를 1개 생산했습니다.");
+          // fill 큐 대기 스레드 기상
+          if (fillQueue.length > 0) {
+              const woken = fillQueue.shift();
+              threads[woken].state = "Ready";
+              logTrace(`🔔 [시그널 전달] empty 큐를 통해 잠자던 소비자 ${woken}를 깨웁니다.`);
+          }
+      }
+      draw();
+  });
+
+  manualConsumeBtn.addEventListener('click', () => {
+      logTrace("🛠️ 소비 시그널 주입");
+      if (bufferSlots.length === 0) {
+          logTrace("소비자: 가져갈 데이터가 없습니다. fill 대기 큐로 들어가 잠듭니다.");
+          const sleeper = Math.random() > 0.5 ? "Tc1" : "Tc2";
+          threads[sleeper].state = "Sleep";
+          fillQueue.push(sleeper);
+      } else {
+          bufferSlots.pop();
+          logTrace("소비자가 데이터를 1개 소비하였습니다.");
+          // empty 큐 대기 스레드 기상
+          if (emptyQueue.length > 0) {
+              const woken = emptyQueue.shift();
+              threads[woken].state = "Ready";
+              logTrace(`🔔 [시그널 전달] fill 큐를 통해 잠자던 생산자 ${woken}를 깨웁니다.`);
+          }
+      }
+      draw();
+  });
+
+  // 퀴즈 제출 핸들러
+  submitBtn.addEventListener('click', () => {
+      let correctCount = 0;
+
+      quizData.forEach((qObj, qIdx) => {
+          const checkedRadio = document.querySelector(`input[name="q_${qIdx}"]:checked`);
+          const feedbackBox = document.getElementById(`feedback_q_${qIdx}`);
+
+          feedbackBox.style.display = 'block';
+
+          if (checkedRadio) {
+              const userVal = parseInt(checkedRadio.value);
+              if (userVal === qObj.correct) {
+                  correctCount++;
+                  feedbackBox.className = "callout ok";
+                  feedbackBox.innerHTML = `
+                      <p style="font-weight: bold; font-size: 13px; margin: 0 0 4px 0;">🎉 정답입니다!</p>
+                      <p style="margin: 0; font-size: 12px;">${qObj.explain}</p>
+                  `;
+              } else {
+                  feedbackBox.className = "callout danger";
+                  feedbackBox.innerHTML = `
+                      <p style="font-weight: bold; font-size: 13px; margin: 0 0 4px 0;">❌ 오답입니다. (내가 고른 답: ${parseInt(checkedRadio.value) + 1}번 / 실제 정답: ${qObj.correct + 1}번)</p>
+                      <p style="margin: 0; font-size: 12px;">${qObj.explain}</p>
+                  `;
+              }
+          } else {
+              feedbackBox.className = "callout warn";
+              feedbackBox.innerHTML = `
+                  <p style="font-weight: bold; font-size: 13px; margin: 0 0 4px 0;">⚠️ 답안을 제출하지 않았습니다. (정답: ${qObj.correct + 1}번)</p>
+                  <p style="margin: 0; font-size: 12px;">${qObj.explain}</p>
+              `;
+          }
+      });
+
+      scoreEl.innerText = `${correctCount} / 5`;
+      const percentage = (correctCount / 5) * 100;
+      progressBar.style.width = `${percentage}%`;
+
+      triggerMathJax();
+  });
+
+  // 윈도우 로드(Load) 시점에 통합 초기화 진행
+  window.addEventListener('load', () => {
+      buildQuiz();
+      initSimulator();
+      resizeCanvas();
+  });
+
+  window.addEventListener('resize', resizeCanvas);
+</script></body></html>

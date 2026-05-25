@@ -1,1008 +1,905 @@
+<!doctype html>
 <!DOCTYPE html>
-<html class="scroll-smooth" lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>I/O Devices and HDD · Operating System</title>
-  <meta name="description" content="Interactive Korean study note for I/O devices, interrupts, DMA, HDD geometry, I/O time, and disk scheduling." />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    window.tailwind=window.tailwind||{};
-    tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Geist','Inter','Noto Sans KR','system-ui','sans-serif'],mono:['Geist Mono','JetBrains Mono','ui-monospace','monospace']}}}};
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>I/O Devices and HDD · Operating System</title>
+<meta content="Interactive Korean study note for I/O devices, interrupts, DMA, HDD geometry, I/O time, and disk scheduling." name="description"/>
+<script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-  <script>
-    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
-  </script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
-  <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-  <style>
-    :root{color-scheme:dark}html:not(.dark){color-scheme:light}body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    .code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
-    .step.active{border-color:rgba(139,92,246,.7);background:rgba(139,92,246,.14)}
-    .step.complete{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.09)}
-    .quiz-option.correct{border-color:rgba(16,185,129,.75);background:rgba(16,185,129,.14)}
-    .quiz-option.wrong{border-color:rgba(248,113,113,.75);background:rgba(248,113,113,.13)}
-    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
-    .canvas-container{position:relative;background:#0f172a;border-radius:18px;overflow:hidden;border:1px solid var(--sop-line)}
-    .active-tab{background-color:#9a4f32!important;color:white!important}
-  </style>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-  <div class="wrap">
-    <aside class="sop-note-toc">
-      <div class="brand">🦞 OS Concurrency</div>
-      <div class="sticky-actions">
-        <button class="btn" type="button" data-sop-theme>테마 전환</button>
-        <button class="btn" type="button" data-sop-print>PDF 저장</button>
-      </div>
-      <div class="sourcebox">CPU와 I/O 장치 사이의 통신 프로토콜, 기계식 HDD의 물리적 한계, 그리고 디스크 접근 속도를 극대화하는 디스크 스케줄링을 심층 학습합니다.</div>
-      <nav class="toc">
-        <a href="#sec-architecture">1. 시스템 아키텍처와 버스</a>
-        <a href="#sec-protocol">2. I/O 프로토콜 분석</a>
-        <a href="#sec-hdd">3. HDD 지연 및 I/O 계산</a>
-        <a href="#sec-scheduling">4. 디스크 스케줄링 연구소</a>
-      </nav>
-    </aside>
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+    :root{--bg:#f7f4ee;--paper:#fffdfa;--ink:#28231d;--muted:#70675d;--line:#e4d9cc;--accent:#9a4f32;--accent2:#2f6f68;--accent3:#7a5aa6;--soft:#f0e7dc;--code:#24211f;--codefg:#f7efe4;--shadow:0 20px 60px rgba(64,42,22,.12)}
+    html.dark{--bg:#171514;--paper:#211f1d;--ink:#f4eee6;--muted:#c6b9aa;--line:#3d3731;--accent:#e19a73;--accent2:#7fd0c7;--accent3:#c4a5ff;--soft:#2b2723;--code:#111;--codefg:#f8efe3;--shadow:0 22px 70px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(154,79,50,.11),transparent 36%),linear-gradient(180deg,var(--bg),#efe7dc);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;line-height:1.75;letter-spacing:-.01em}
+    html.dark body{background:radial-gradient(circle at 20% 0%,rgba(225,154,115,.12),transparent 36%),linear-gradient(180deg,var(--bg),#111)}
+    .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:28px}
+    aside{position:sticky;top:24px;height:calc(100vh - 48px);overflow:auto;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    html.dark aside{background:rgba(30,28,26,.6)}
+    main{min-width:0}.hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+    .hero{padding:44px;margin-bottom:24px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(47,111,104,.18),transparent 70%);border-radius:50%}
+    .card{padding:34px;margin:20px 0}.mini{padding:18px;border-radius:18px;background:var(--soft);border:1px solid var(--line)}
+    h1{font-size:clamp(34px,5vw,64px);line-height:1.05;margin:0 0 16px}h2{font-size:clamp(26px,3vw,40px);line-height:1.15;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}h3{font-size:24px;margin:28px 0 12px}h4{font-size:19px;margin:22px 0 8px}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--accent);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.08em}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:6px 11px;border-radius:999px;margin:4px;font-size:13px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .brand{font-size:20px;font-weight:900;margin-bottom:14px}.sourcebox{font-size:13px;color:var(--muted);background:var(--soft);border:1px solid var(--line);padding:12px;border-radius:16px;margin:12px 0 16px}
+    .toc a{display:block;color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:12px;font-size:14px}.toc a:hover{background:var(--soft);color:var(--ink)}
+    .sticky-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.btn:hover{transform:translateY(-1px)}
+    .callout{border-left:5px solid var(--accent2);background:var(--soft);padding:16px 18px;border-radius:18px;margin:18px 0}.callout.ok{border-left-color:var(--accent2)}.callout.warn{border-left-color:#c58a2d}.callout.danger{border-left-color:#b95145}
+    .term{font-weight:900;color:var(--accent)}.formula{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:16px;overflow:auto;margin:14px 0}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--soft);text-align:left}tr:last-child td{border-bottom:0}
+    pre{background:var(--code);color:var(--codefg);border-radius:18px;padding:16px;overflow:auto}code{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px}.figure{margin:20px 0;text-align:center}.figure img{max-width:100%;border-radius:18px;border:1px solid var(--line);background:white}.caption{font-size:13px;color:var(--muted);margin-top:8px}.svgbox{overflow:auto;background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:10px}.svgbox svg{max-width:100%;height:auto}.timeline{display:grid;gap:12px}.step{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}.num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:900}.quiz details{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0}.quiz summary{cursor:pointer}
+    .simrow{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center;margin:10px 0}.bar{height:16px;background:var(--line);border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%}
+    @media(max-width:900px){.wrap{display:block;padding:14px}aside{position:relative;height:auto;margin-bottom:18px}.grid,.grid3{grid-template-columns:1fr}.hero,.card{padding:24px}.simrow{grid-template-columns:1fr}}
+    @media print{aside,.sticky-actions{display:none}.wrap{display:block;max-width:none}.card,.hero{box-shadow:none;break-inside:avoid}body{background:white}}
 
-    <main class="prose-lite">
-      <section class="hero" id="top">
-        <span class="eyebrow">Operating System · I/O Subsystem · Concept Note</span>
-        <h1>I/O Devices &amp; HDD</h1>
-        <p style="font-size:20px;color:var(--muted);max-width:950px">CPU와 I/O 장치가 만나는 interface, polling·interrupt·DMA의 차이, HDD의 물리적 지연, 그리고 FCFS/SSTF/SCAN/C-SCAN 디스크 스케줄링을 시뮬레이터로 이해하는 학습 노트.</p>
-        <div>
-          <span class="pill">Interrupts</span>
-          <span class="pill">DMA</span>
-          <span class="pill">HDD Geometry</span>
-          <span class="pill">Disk Scheduling</span>
-        </div>
-      </section>
 
-      <section class="card" id="sec-architecture">
-        <div class="flex items-center space-x-2 mb-6">
-          <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">Chapter 1</span>
-          <h2 style="border:none;padding:0;margin:0">시스템 아키텍처와 계층적 버스 구조</h2>
-        </div>
-        
-        <div class="bg-slate-50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 mb-6 space-y-6">
-          <div>
-            <span class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350 text-xs uppercase font-extrabold px-2 py-1 rounded">개념 정의</span>
-            <p class="text-xl font-bold text-slate-800 dark:text-white mt-2">
-              "컴퓨터 내부 장치들을 서로 연결하는 통로인 '버스(Bus)'는 속도와 비용의 균형을 맞추기 위해 계층형 구조로 설계된다."
-            </p>
+    /* Masterclass compatibility layer for pre-existing interactive note content */
+    .source-section{margin:16px 0}.source-section>h3:first-child{margin-top:0}.source-section .card{box-shadow:none}.legacy-section-title{margin-top:0;color:var(--accent)}
+    .hidden{display:none!important}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.items-center{align-items:center}.items-start{align-items:flex-start}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.flex-wrap{flex-wrap:wrap}.flex-col{flex-direction:column}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.space-y-2>*+*{margin-top:.5rem}.space-y-3>*+*{margin-top:.75rem}.space-y-4>*+*{margin-top:1rem}.space-x-2>*+*{margin-left:.5rem}.space-x-3>*+*{margin-left:.75rem}
+    .w-full{width:100%}.max-w-none{max-width:none}.overflow-auto{overflow:auto}.overflow-x-auto{overflow-x:auto}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.align-top{vertical-align:top}.font-semibold{font-weight:600}.font-bold{font-weight:800}.font-black{font-weight:900}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:.04em}
+    .text-xs{font-size:12px}.text-sm{font-size:14px}.text-base{font-size:16px}.text-lg{font-size:18px}.text-xl{font-size:20px}.text-2xl{font-size:24px}.leading-relaxed{line-height:1.75}.leading-tight{line-height:1.2}
+    .p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}
+    .m-0{margin:0}.mt-0{margin-top:0}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mb-0{margin-bottom:0}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mx-auto{margin-left:auto;margin-right:auto}
+    .rounded-lg{border-radius:12px}.rounded-xl{border-radius:16px}.rounded-2xl{border-radius:20px}.rounded-full{border-radius:999px}.border{border:1px solid var(--line)}.border-2{border:2px solid var(--line)}.shadow,.shadow-lg{box-shadow:var(--shadow)}
+    .bg-slate-50,.bg-white,.bg-rose-50,.bg-blue-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-purple-50,.bg-gray-50{background:var(--soft)}.bg-slate-900,.bg-slate-950,.bg-black{background:var(--code);color:var(--codefg)}.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600{color:var(--muted)}.text-slate-800,.text-slate-900,.text-white{color:var(--ink)}.text-blue-400,.text-blue-500,.text-indigo-500,.text-indigo-600,.text-rose-500,.text-rose-600,.text-emerald-500,.text-emerald-600,.text-amber-500,.text-amber-600{color:var(--accent)}
+    button,.quiz-btn,input[type="button"],input[type="submit"]{font-family:inherit}.quiz-btn,.quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;transition:all .2s}.quiz-btn:hover,.quiz-option:hover{transform:translateY(-1px);border-color:var(--accent)}.quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}.quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}
+    input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px}input[type="range"]{padding:0;accent-color:var(--accent)}label{font-weight:700}canvas{max-width:100%;background:var(--paper);border:1px solid var(--line);border-radius:18px}.math-scroll{overflow-x:auto;overflow-y:hidden}
+    @media(min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.md\:flex{display:flex}.md\:block{display:block}}
+
+
+/* Page Specific simulator styles */
+    .canvas-container{position:relative;background:#111;border-radius:18px;overflow:hidden;border:1px solid var(--line)}
+    .btn.active {
+      background: var(--accent) !important;
+      color: #fff !important;
+      border-color: var(--accent) !important;
+    }</style></head>
+<body><div class="wrap"><aside><div class="brand">🦞 I/O &amp; HDD</div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">CPU와 I/O 장치 사이의 통신 프로토콜, 기계식 HDD의 물리적 한계, 그리고 디스크 접근 속도를 극대화하는 디스크 스케줄링을 심층 학습합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<main><section class="hero" id="top"><span class="eyebrow">Operating System · I/O Subsystem · Concept Note · Masterclass Note</span><h1>I/O Devices &amp; HDD</h1><p style="font-size:20px;color:var(--muted);max-width:950px">CPU와 I/O 장치가 만나는 interface, polling·interrupt·DMA의 차이, HDD의 물리적 지연, 그리고 FCFS/SSTF/SCAN/C-SCAN 디스크 스케줄링을 시뮬레이터로 이해하는 학습 노트.</p><div><span class="pill">Interrupts</span><span class="pill">DMA</span><span class="pill">HDD Geometry</span><span class="pill">Disk Scheduling</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2><p>CPU와 I/O 장치가 만나는 interface, polling·interrupt·DMA의 차이, HDD의 물리적 지연, 그리고 FCFS/SSTF/SCAN/C-SCAN 디스크 스케줄링을 시뮬레이터로 이해하는 학습 노트.</p><div class="grid"><div class="mini"><h3>학습 흐름</h3><ul><li>1. 시스템 아키텍처와 계층적 버스 구조</li><li>2. I/O 프로토콜: Polling vs Interrupt vs DMA</li><li>3. 하드디스크(HDD) 내부 구조와 입출력 소요 시간</li><li>4. 디스크 스케줄링 알고리즘 (Disk Scheduling Visualizer)</li><li>💡 핵심 고난도 면접 대비 Q&amp;A</li></ul></div><div class="mini"><h3>핵심 태그</h3><ul><li>Interrupts</li><li>DMA</li><li>HDD Geometry</li><li>Disk Scheduling</li></ul></div></div><div class="callout ok"><b>읽는 법:</b> 왼쪽 목차의 0–9 구조를 따라 개념 → 정의/수식 → 직관 → 예제 → 함정 → 실험 → 복습 순서로 읽으면 된다.</div></section><section class="card" id="concept"><h2>1. 핵심 개념</h2><div class="mini source-section">
+<h3 style="margin-top: 0; color: var(--accent)">💡 핵심 고난도 면접 대비 Q&amp;A</h3>
+<div class="mini">
+<h4 style="color: var(--accent2); margin-top: 0;">Q1. 하드웨어 드라이브가 물리 스케줄링을 자체적으로 처리할 수 있는데, 왜 OS 레벨에서 디스크 스케줄러가 또 필요한가요?</h4>
+<p style="font-size: 13px; line-height: 1.6;">최근의 현대적인 물리 드라이브(HDD/SSD)는 복수 개의 요청을 동시에 받아두고 내부 컨트롤러 펌웨어단(NCQ 등)에서 정밀한 내부 스케줄링을 직접 수행할 수 있습니다. 하지만 여전히 OS 레벨 스케줄러가 필요한 이유는 <strong>'보안과 공정성'</strong> 및 <strong>'우선순위 관리'</strong> 때문입니다. OS는 특정 고신뢰 작업(예: 데이터베이스 로그 쓰기, 커널 가상 메모리 스왑)을 일반 사용자 백그라운드 파일 읽기보다 훨씬 긴급하게 처리해야 합니다. 드라이브 하드웨어는 이런 상위 계층의 문맥(Context)을 모릅니다. 따라서 OS 레벨에서 1차적인 스레드 우선순위에 입각하여 요청의 완급을 조율해 보내야 합니다.</p>
+<hr style="border: 0; border-top: 1px solid var(--line); margin: 16px 0;"/>
+<h4 style="color: var(--accent2);">Q2. 최신 저장 장치인 SSD(Solid State Drive)에서도 이 디스크 스케줄링 알고리즘들이 그대로 유용하게 동작하나요?</h4>
+<p style="font-size: 13px; line-height: 1.6;"><strong>매우 중요한 날카로운 지적입니다! 유용하지 않습니다.</strong> SSD는 기계식 회전 물리 암과 바늘 헤드가 없는 순수 반도체 셀 플래시 메모리 기반 장치입니다. 물리 암이 목표 트랙까지 물리적으로 왕복 이동할 필요가 없기 때문에 <strong>탐색 시간($T_{seek}$)과 회전 지연 시간($T_{rotation}$)이 아예 0입니다!</strong> 따라서 SSD에 무리하게 SCAN이나 SSTF 스케줄러를 적용하는 것은 불필요한 계산 오버헤드만 늘리는 비효율적 행위입니다. 그래서 Linux 등 현대 OS는 SSD 같은 장치에는 복잡한 정렬 연산을 생략하고 요청 순서대로 곧바로 쏘아 보내는 단순 무스케줄러인 <strong>NOOP (No-Operation / None)</strong> 또는 단순 FIFO 방식을 적용해 처리합니다.</p>
+</div>
+</div></section><section class="card" id="math"><h2>2. 수식과 정의</h2><div class="mini source-section" id="sec-hdd">
+<h3 class="legacy-section-title">3. 하드디스크(HDD) 내부 구조와 입출력 소요 시간</h3>
+<div class="grid">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p class="font-bold">"하드디스크(HDD)는 동심원을 따라 회전하는 물리적인 원판(Platter)과 움직이는 디스크 암(Arm)을 이용해 데이터를 기계식으로 쓰고 읽는 장치이다."</p>
+</div>
+<div class="mini">
+<h3>HDD의 대표적인 물리 용어 알아보기</h3>
+<ul style="font-size: 13px; line-height: 1.6;">
+<li><strong>원판 (Platter)</strong>: 자성을 띈 미디어가 입혀진 얇은 원판입니다. 데이터를 실제로 영구히 보관하는 공간입니다. 앞/뒤 양면을 모두 데이터 보관 공간으로 사용합니다.</li>
+<li><strong>트랙 (Track)</strong>: 원판 위에 자성 물질로 조각된 일련의 동심원을 말합니다.</li>
+<li><strong>섹터 (Sector)</strong>: 각 트랙을 피자 조각처럼 나눈 최소 데이터 단위(주로 512바이트 또는 4KB)입니다.</li>
+<li><strong>실린더 (Cylinder)</strong>: 여러 장의 플래터가 같은 중심축으로 겹쳐 있을 때 동일 트랙 반지름을 가진 수직 집합입니다.</li>
+<li><strong>디스크 헤드와 암 (Head &amp; Arm)</strong>: 원판 표면 위를 나노미터 크기 격차로 미끄러지며 자성 정보를 읽고 쓰는 극미세 바늘입니다.</li>
+</ul>
+</div>
+</div>
+<div class="grid">
+<div class="mini">
+<h3>💡 입출력 시간 계산법 (I/O Time Formulation)</h3>
+<p>디스크에서 하나의 블록을 완전히 읽는 데 걸리는 전반적인 총 시간은 물리 부품들의 물리적 작동 움직임 시간의 합입니다:</p>
+<div class="formula">
+            $$T_{I/O} = T_{seek} + T_{rotation} + T_{transfer}$$
           </div>
-          <div class="text-slate-600 dark:text-slate-300 space-y-3">
-            <h4 class="font-bold text-slate-800 dark:text-white">왜 버스를 속도별로 분리해서 설계해야 할까요?</h4>
-            <p>
-              모든 하드웨어 장치를 단 하나의 전선(버스)에 연결하면 편하겠지만, 성능상 치명적인 문제가 발생합니다. CPU와 메인 메모리 같은 초고속 장치가 키보드나 HDD 같은 저속 장치 때문에 대기하게 되는 병목 현상이 발생하기 때문입니다. 또한 고성능 물리 버스는 설계 비용이 극도로 비쌉니다.
-            </p>
-            <p>
-              이를 해결하기 위해 운영체제와 하드웨어 아키텍처는 버스를 <strong>계층화</strong>하여 물리적으로 나눕니다:
-            </p>
-            <ul class="list-disc list-inside pl-4 space-y-2">
-              <li><strong>메모리 버스 (Memory Bus):</strong> CPU와 메인 메모리를 다이렉트로 연결하는 가장 빠른 고성능 버스입니다.</li>
-              <li><strong>일반 I/O 버스 (General I/O Bus):</strong> 그래픽 카드 등 상대적으로 고속인 I/O 장치를 연결합니다. 대표적으로 <strong>PCIe (PCI)</strong>가 있습니다.</li>
-              <li><strong>주변장치 I/O 버스 (Peripheral I/O Bus):</strong> HDD, 키보드, 마우스 등 느린 장치들을 연결하는 범용 버스입니다. <strong>SATA, SCSI, USB</strong> 등이 여기에 속합니다.</li>
-            </ul>
+<ul style="font-size: 13px; line-height: 1.6;">
+<li><strong>$T_{seek}$ (탐색 시간)</strong>: 디스크 헤드가 있는 암이 데이터가 있는 올바른 트랙(반경)까지 가는 데 걸리는 시간. (기계적 이동이 가장 오래 걸림!)</li>
+<li><strong>$T_{rotation}$ (회전 지연 시간)</strong>: 원판이 빙글빙글 돌아 요청한 섹터가 헤드 바로 밑 위치에 안착할 때까지 기다리는 평균 대기 시간.</li>
+<li><strong>$T_{transfer}$ (전송 시간)</strong>: 원하는 섹터가 헤드 밑을 통과하면서 실제로 데이터를 자성 변조로 읽거나 쓰는 순수 전기 신호 변환 시간.</li>
+</ul>
+</div>
+<div class="mini">
+<h3>[시뮬레이터] HDD 물리 동작 애니메이션</h3>
+<div style="background: #111; padding: 14px; border-radius: 18px;">
+<div class="canvas-container" style="min-height: 250px;">
+<canvas id="canvas-hdd" style="width: 100%; height: 100%;"></canvas>
+</div>
+<div class="grid" style="margin-top: 10px; gap: 8px;">
+<div class="mini" style="background: #222; padding: 8px; border: none; color: #fff;">
+<span style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px;">헤드 반경 조정 (Seek)</span>
+<input id="seek-slider" max="3" min="1" style="width: 100%; accent-color: var(--accent);" type="range" value="2"/>
+<div style="display: flex; justify-content: space-between; font-size: 9px; color: #888; margin-top: 4px;">
+<span>외곽 트랙 1</span>
+<span>내부 트랙 3</span>
+</div>
+</div>
+<div class="mini" style="background: #222; padding: 8px; border: none; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff;">
+<button class="btn" id="btn-read-sec" onclick="triggerReadSector()" style="font-size: 11px; padding: 6px 12px;">임의 섹터 읽기 테스트</button>
+<p id="hdd-read-status" style="font-size: 9px; color: #888; margin: 4px 0 0 0;">헤드가 정지 상태입니다.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="callout ok">
+<b>직관적 비유: 타겟 과녁 레코드 플레이어</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">디스크는 일종의 고속 회전하는 축음기 판입니다. 원하는 트랙을 찾기 위해 바늘 암을 들고 수평으로 조심스럽게 타겟 원 지점으로 위치시키는 것($T_{seek}$)이 총 동작 시간의 대부분을 점유합니다. 그 후 판이 휙휙 돌면서 정확한 재생 시작 지점이 바늘 위치 밑을 딱 스치고 지나가는 타이밍($T_{rotation}$)을 한 박자 쉬면서 기다리게 됩니다.</p>
+</div>
+</div></section><section class="card" id="intuition"><h2>3. 직관과 그림</h2><div class="mini source-section" id="sec-architecture">
+<h3 class="legacy-section-title">1. 시스템 아키텍처와 계층적 버스 구조</h3>
+<div class="grid">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p class="font-bold">"컴퓨터 내부 장치들을 서로 연결하는 통로인 '버스(Bus)'는 속도와 비용의 균형을 맞추기 위해 계층형 구조로 설계된다."</p>
+</div>
+<div class="mini">
+<h3>왜 버스를 속도별로 분리해서 설계해야 할까요?</h3>
+<p>모든 하드웨어 장치를 단 하나의 전선(버스)에 연결하면 편하겠지만, 성능상 치명적인 문제가 발생합니다. CPU와 메인 메모리 같은 초고속 장치가 키보드나 HDD 같은 저속 장치 때문에 대기하게 되는 병목 현상이 발생하기 때문입니다. 또한 고성능 물리 버스는 설계 비용이 극도로 비쌉니다.</p>
+<p>이를 해결하기 위해 운영체제와 하드웨어 아키텍처는 버스를 <strong>계층화</strong>하여 물리적으로 나눕니다:</p>
+<ul>
+<li><strong>메모리 버스 (Memory Bus):</strong> CPU와 메인 메모리를 다이렉트로 연결하는 가장 빠른 고성능 버스입니다.</li>
+<li><strong>일반 I/O 버스 (General I/O Bus):</strong> 그래픽 카드 등 상대적으로 고속인 I/O 장치를 연결합니다. 대표적으로 <strong>PCIe (PCI)</strong>가 있습니다.</li>
+<li><strong>주변장치 I/O 버스 (Peripheral I/O Bus):</strong> HDD, 키보드, 마우스 등 느린 장치들을 연결하는 범용 버스입니다. <strong>SATA, SCSI, USB</strong> 등이 여기에 속합니다.</li>
+</ul>
+</div>
+</div>
+<div class="callout ok">
+<b>직관적 비유: 도시의 도로망</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">메모리 버스는 <strong>'시속 150km 무제한 아우토반 고속도로'</strong>입니다. 고속으로 달릴 수 있는 스포츠카(CPU, RAM) 전용 도로죠. 반면 주변장치 I/O 버스는 동네 골목길이나 국도입니다. 만약 경운기(마우스, 키보드)를 아우토반에 진입시킨다면 도로 전체의 속도가 경운기 속도로 떨어지겠죠? 그래서 고속도로와 국도를 연결해 주는 <strong>나들목(Bridge/Controller)</strong>을 두어 구분하는 것입니다.</p>
+</div>
+<div class="mini" style="margin-top: 18px;">
+<h3 style="margin-top: 0;">Q. CPU와 장치 인터페이스는 물리적으로 어떻게 통신하나요?</h3>
+<p style="font-size: 14px;">모든 I/O 장치 내부에는 OS가 장치를 제어할 수 있도록 <strong>인터페이스(Registers)</strong>를 가지고 있습니다. 주로 3가지 레지스터가 쓰입니다:</p>
+<div class="grid3" style="margin-top: 12px;">
+<div class="mini" style="background: var(--paper)">
+<strong style="color: var(--accent);">1. 상태 레지스터 (Status)</strong><br/>
+            장치가 현재 바쁜지(BUSY), 데이터를 읽을 준비가 되었는지(READY) 상태를 나타냅니다.
           </div>
-          <div class="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-xl border border-amber-200 dark:border-amber-900/30 text-amber-950 dark:text-amber-200 flex items-start space-x-3">
-            <span class="text-2xl">🚗</span>
-            <div>
-              <h4 class="font-bold mb-1">직관적 비유: 도시의 도로망</h4>
-              <p class="text-sm">
-                메모리 버스는 <strong>'시속 150km 무제한 아우토반 고속도로'</strong>입니다. 고속으로 달릴 수 있는 스포츠카(CPU, RAM) 전용 도로죠. 반면 주변장치 I/O 버스는 동네 골목길이나 국도입니다. 만약 경운기(마우스, 키보드)를 아우토반에 진입시킨다면 도로 전체의 속도가 경운기 속도로 떨어지겠죠? 그래서 고속도로와 국도를 연결해 주는 <strong>나들목(Bridge/Controller)</strong>을 두어 구분하는 것입니다.
-              </p>
+<div class="mini" style="background: var(--paper)">
+<strong style="color: var(--accent);">2. 명령 레지스터 (Command)</strong><br/>
+            CPU가 장치에게 내릴 명령(예: READ, WRITE)을 쓰는 곳입니다.
+          </div>
+<div class="mini" style="background: var(--paper)">
+<strong style="color: var(--accent);">3. 데이터 레지스터 (Data)</strong><br/>
+            실제 주고받을 데이터를 담아두는 버퍼 역할을 하는 공간입니다.
+          </div>
+</div>
+</div>
+</div><div class="mini source-section" id="sec-protocol">
+<h3 class="legacy-section-title">2. I/O 프로토콜: Polling vs Interrupt vs DMA</h3>
+<div class="grid">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p class="font-bold">"I/O 장치에 작업을 요청하고 데이터를 전송받는 과정에서 발생하는 CPU의 낭비를 막기 위한 통신 흐름 제어 방식들이다."</p>
+</div>
+<div class="mini">
+<h3>동작 메커니즘의 차이</h3>
+<p>초창기 방식인 <strong>폴링(Polling)</strong>과 <strong>PIO(Programmed I/O)</strong>는 데이터 전송의 매 순간마다 CPU가 개입하여 장치의 상태 레지스터를 끊임없이 확인하고, 메모리와 장치 버퍼 간에 데이터를 한 땀 한 땀 직접 옮겼습니다. 이로 인해 CPU가 쓸데없는 대기 시간에 과도하게 소모되는 문제가 생겼습니다.</p>
+<div class="grid3" style="margin-top: 12px; gap: 8px;">
+<div class="mini" style="background: var(--paper); padding: 12px;">
+<strong style="color: var(--accent)">1. Polling (폴링)</strong><br/>
+              장치가 준비될 때까지 CPU가 무한 루프를 돌며 상태 레지스터만 체크하는 단순하지만 매우 비효율적인 방식.
             </div>
-          </div>
-          <div class="bg-indigo-50 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-slate-800 dark:text-slate-200 text-sm">
-            <strong class="text-indigo-700 dark:text-indigo-400">📌 한 줄 요약:</strong> 빠른 놈은 빠른 도로(Memory Bus)에, 느린 놈은 느린 도로(Peripheral Bus)에 따로 태워서 간섭을 최소화하는 계층적 구조를 사용한다.
-          </div>
-        </div>
-
-        <div class="bg-slate-800 text-slate-100 p-6 rounded-2xl shadow-md border-l-4 border-indigo-500">
-          <span class="bg-indigo-500 text-white text-xs font-bold px-2.5 py-1 rounded">여기서 잠깐! 초보자 Q&amp;A</span>
-          <h4 class="text-lg font-bold mt-2">Q. CPU와 장치 인터페이스는 물리적으로 어떻게 통신하나요?</h4>
-          <p class="text-slate-300 text-sm mt-1 leading-relaxed">
-            모든 I/O 장치 내부에는 OS가 장치를 제어할 수 있도록 <strong>인터페이스(Registers)</strong>를 가지고 있습니다. 주로 3가지 레지스터가 쓰입니다:
-          </p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-xs">
-            <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-              <strong class="text-indigo-400 block mb-1">1. 상태 레지스터 (Status Register)</strong>
-              장치가 현재 바쁜지(BUSY), 데이터를 읽을 준비가 되었는지(READY) 상태를 나타냅니다.
+<div class="mini" style="background: var(--paper); padding: 12px;">
+<strong style="color: var(--accent)">2. Interrupt (인터럽트)</strong><br/>
+              요청 후 CPU는 다른 프로세스를 처리하고, 장치가 준비되면 하드웨어 신호(Interrupt)를 보내 CPU가 작업을 이어서 받도록 하는 비동기 방식.
             </div>
-            <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-              <strong class="text-indigo-400 block mb-1">2. 명령 레지스터 (Command Register)</strong>
-              CPU가 장치에게 내릴 명령(예: READ, WRITE)을 쓰는 곳입니다.
+<div class="mini" style="background: var(--paper); padding: 12px;">
+<strong style="color: var(--accent)">3. DMA (직접 메모리 접근)</strong><br/>
+              대용량 데이터를 보낼 때, CPU 개입 없이 메모리와 I/O 장치가 직접 데이터를 주고받을 수 있도록 독립된 하드웨어 엔진(DMA controller)을 사용하는 기술.
             </div>
-            <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-              <strong class="text-indigo-400 block mb-1">3. 데이터 레지스터 (Data Register)</strong>
-              실제 주고받을 데이터를 담아두는 버퍼 역할을 하는 공간입니다.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="sec-protocol">
-        <div class="flex items-center space-x-2 mb-6">
-          <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">Chapter 2</span>
-          <h2 style="border:none;padding:0;margin:0">I/O 프로토콜: Polling vs Interrupt vs DMA</h2>
-        </div>
-        
-        <div class="bg-slate-50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 mb-6 space-y-6">
-          <div>
-            <span class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350 text-xs uppercase font-extrabold px-2 py-1 rounded">개념 정의</span>
-            <p class="text-xl font-bold text-slate-800 dark:text-white mt-2">
-              "I/O 장치에 작업을 요청하고 데이터를 전송받는 과정에서 발생하는 CPU의 낭비를 막기 위한 통신 흐름 제어 방식들이다."
-            </p>
-          </div>
-          <div class="text-slate-600 dark:text-slate-300 space-y-3">
-            <p>
-              초창기 방식인 <strong>폴링(Polling)</strong>과 <strong>PIO(Programmed I/O)</strong>는 데이터 전송의 매 순간마다 CPU가 개입하여 장치의 상태 레지스터를 끊임없이 확인하고, 메모리와 장치 버퍼 간에 데이터를 한 땀 한 땀 직접 옮겼습니다. 이로 인해 CPU가 쓸데없는 대기 시간에 과도하게 소모되는 문제가 생겼습니다.
-            </p>
-            <p>
-              이 비효율을 해결하기 위한 점진적 발전 단계가 존재합니다:
-            </p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-4 not-prose">
-              <div class="border border-slate-200 dark:border-slate-800 p-5 rounded-xl bg-slate-50 dark:bg-slate-900/30">
-                <h5 class="font-bold text-slate-800 dark:text-white flex items-center mb-2">
-                  <span class="bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">1</span>
-                  Polling (폴링)
-                </h5>
-                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  장치가 준비될 때까지 CPU가 무한 루프를 돌며 상태 레지스터만 체크하는 단순하지만 매우 비효율적인 방식.
-                </p>
-              </div>
-              <div class="border border-slate-200 dark:border-slate-800 p-5 rounded-xl bg-slate-50 dark:bg-slate-900/30">
-                <h5 class="font-bold text-slate-800 dark:text-white flex items-center mb-2">
-                  <span class="bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">2</span>
-                  Interrupt (인터럽트)
-                </h5>
-                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  요청 후 CPU는 다른 프로세스를 처리하고, 장치가 준비되면 하드웨어 신호(Interrupt)를 보내 CPU가 작업을 이어서 받도록 하는 비동기 방식.
-                </p>
-              </div>
-              <div class="border border-slate-200 dark:border-slate-800 p-5 rounded-xl bg-slate-50 dark:bg-slate-900/30">
-                <h5 class="font-bold text-slate-800 dark:text-white flex items-center mb-2">
-                  <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">3</span>
-                  DMA (직접 메모리 접근)
-                </h5>
-                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  대용량 데이터를 보낼 때, CPU 개입 없이 메모리와 I/O 장치가 직접 데이터를 주고받을 수 있도록 독립된 하드웨어 엔진(DMA controller)을 사용하는 기술.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-emerald-50 dark:bg-emerald-950/20 p-5 rounded-xl border border-emerald-200 dark:border-emerald-900/30 text-emerald-950 dark:text-emerald-200 flex items-start space-x-3">
-            <span class="text-2xl">📦</span>
-            <div>
-              <h4 class="font-bold mb-1">직관적 비유: 피자 주문과 택배 수령</h4>
-              <p class="text-sm">
-                - <strong>폴링(Polling)</strong>: 피자를 주문해 두고, 인터폰 앞에 서서 10초에 한 번씩 "피자 왔나요?"라고 계속 확인하며 아무 일도 못 하는 상태.<br/>
-                - <strong>인터럽트(Interrupt)</strong>: 피자를 주문해 두고 방에서 밀린 공부를 하다가 초인종이 울리면 문을 열어주는 방식.<br/>
-                - <strong>DMA</strong>: 100박스의 대형 이삿짐이 올 때, 내가 현관문 앞에 서서 짐을 하나하나 직접 받아서 정리하지 않고, <strong>이삿짐 센터 직원(DMA Controller)</strong>에게 "안방에 전부 놓아주시고 완료되면 사인만 해주세요"하고 자리를 비우는 방식.
-              </p>
-            </div>
-          </div>
-          
-          <div class="mt-8 not-prose">
-            <h4 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center text-sm">
-              <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v10m9-.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
-              [시뮬레이터] Polling vs Interrupt vs DMA 작동 흐름 시각화
-            </h4>
-            <p class="text-xs text-slate-500 mb-4">
-              아래 버튼들을 클릭하여 세 가지 통신 프로토콜 실행 방식을 비교해 보세요. CPU가 언제 유휴 상태(Idle)가 되는지, 혹은 다른 프로세스를 원활하게 중첩 실행할 수 있는지 확인해 보세요.
-            </p>
-            <div class="bg-slate-900 p-6 rounded-2xl">
-              <div class="flex flex-wrap gap-2 mb-4">
-                <button class="px-4 py-2 rounded-lg text-sm font-bold bg-slate-700 text-slate-300 hover:bg-slate-600 transition-all active-tab" id="btn-polling" onclick="selectProtocol('polling')">1. Polling &amp; PIO</button>
-                <button class="px-4 py-2 rounded-lg text-sm font-bold bg-slate-700 text-slate-300 hover:bg-slate-600 transition-all" id="btn-interrupt" onclick="selectProtocol('interrupt')">2. Interrupt</button>
-                <button class="px-4 py-2 rounded-lg text-sm font-bold bg-slate-700 text-slate-300 hover:bg-slate-600 transition-all" id="btn-dma" onclick="selectProtocol('dma')">3. DMA Controller</button>
-                <button class="ml-auto px-4 py-2 rounded-lg text-sm font-bold bg-rose-600/80 text-white hover:bg-rose-600 transition-all" id="btn-reset-proto" onclick="resetProtocolSim()">재생 / 리셋</button>
-              </div>
-              <div class="canvas-container" style="height: 220px;">
-                <canvas class="w-full h-full block" id="canvas-proto"></canvas>
-              </div>
-              <div class="mt-3 p-3 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700 flex justify-between items-center">
-                <span><strong>상태 설명:</strong> <span id="proto-status-text">프로토콜을 선택하고 리셋을 눌러 애니메이션을 시작하세요.</span></span>
-                <span class="text-indigo-400 font-bold" id="proto-cpu-efficiency">CPU 효율성: - %</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-indigo-50 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-slate-800 dark:text-slate-200 text-sm">
-            <strong class="text-indigo-700 dark:text-indigo-400">📌 한 줄 요약:</strong> 폴링은 무한 대기로 CPU가 고생하고, 인터럽트는 끝났을 때만 벨을 눌러주며, DMA는 대용량 복사까지 전담 직원이 대신 처리해 주어 CPU를 거의 쓰지 않는다.
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="sec-hdd">
-        <div class="flex items-center space-x-2 mb-6">
-          <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">Chapter 3</span>
-          <h2 style="border:none;padding:0;margin:0">하드디스크(HDD) 내부 구조와 입출력 소요 시간</h2>
-        </div>
-        
-        <div class="bg-slate-50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 mb-6 space-y-6">
-          <div>
-            <span class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350 text-xs uppercase font-extrabold px-2 py-1 rounded">개념 정의</span>
-            <p class="text-xl font-bold text-slate-800 dark:text-white mt-2">
-              "하드디스크(HDD)는 동심원을 따라 회전하는 물리적인 원판(Platter)과 움직이는 디스크 암(Arm)을 이용해 데이터를 기계식으로 쓰고 읽는 장치이다."
-            </p>
-          </div>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 my-4">
-            <div class="text-slate-600 dark:text-slate-300 space-y-4">
-              <h4 class="font-bold text-slate-800 dark:text-white">HDD의 대표적인 물리 용어 알아보기</h4>
-              <ul class="space-y-3 text-sm">
-                <li><strong>원판 (Platter)</strong>: 자성을 띈 미디어가 입혀진 얇은 원판입니다. 데이터를 실제로 영구히 보관하는 공간입니다. 앞/뒤 양면을 모두 데이터 보관 공간으로 사용합니다.</li>
-                <li><strong>트랙 (Track)</strong>: 원판 위에 자성 물질로 조각된 일련의 동심원을 말합니다.</li>
-                <li><strong>섹터 (Sector)</strong>: 각 트랙을 피자 조각처럼 나눈 최소 데이터 단위(주로 512바이트 또는 4KB)입니다.</li>
-                <li><strong>실린더 (Cylinder)</strong>: 여러 장의 플래터가 같은 중심축으로 겹쳐 있을 때 동일 트랙 반지름을 가진 수직 집합입니다.</li>
-                <li><strong>디스크 헤드와 암 (Head &amp; Arm)</strong>: 원판 표면 위를 나노미터 크기 격차로 미끄러지며 자성 정보를 읽고 쓰는 극미세 바늘입니다.</li>
-              </ul>
-              <div class="bg-indigo-50 dark:bg-indigo-950/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30 mt-4">
-                <h4 class="font-bold text-indigo-900 dark:text-indigo-300 text-sm mb-2">💡 입출력 시간 계산법 (I/O Time Formulation)</h4>
-                <p class="text-xs text-slate-700 dark:text-slate-350">
-                  디스크에서 하나의 블록을 완전히 읽는 데 걸리는 전반적인 총 시간은 물리 부품들의 물리적 작동 움직임 시간의 합입니다:
-                </p>
-                <p class="my-3 text-center text-sm font-bold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-900">
-                  $$T_{I/O} = T_{seek} + T_{rotation} + T_{transfer}$$
-                </p>
-                <ul class="list-disc list-inside text-xs text-slate-600 dark:text-slate-455 space-y-1">
-                  <li><strong>$T_{seek}$ (탐색 시간)</strong>: 디스크 헤드가 있는 암이 데이터가 있는 올바른 트랙(반경)까지 가는 데 걸리는 시간. (기계적 이동이 가장 오래 걸림!)</li>
-                  <li><strong>$T_{rotation}$ (회전 지연 시간)</strong>: 원판이 빙글빙글 돌아 요청한 섹터가 헤드 바로 밑 위치에 안착할 때까지 기다리는 평균 대기 시간.</li>
-                  <li><strong>$T_{transfer}$ (전송 시간)</strong>: 원하는 섹터가 헤드 밑을 통과하면서 실제로 데이터를 자성 변조로 읽거나 쓰는 순수 전기 신호 변환 시간.</li>
-                </ul>
-              </div>
-            </div>
-            
-            <div class="flex flex-col not-prose">
-              <h4 class="font-bold text-slate-850 dark:text-slate-200 mb-2 flex items-center text-sm">
-                <span class="inline-block w-2 h-2 bg-indigo-600 rounded-full mr-2"></span>
-                [시뮬레이터] HDD 물리 동작 애니메이션
-              </h4>
-              <div class="bg-slate-950 p-4 rounded-2xl flex-1 flex flex-col justify-between">
-                <div class="canvas-container flex-1" style="min-height: 280px;">
-                  <canvas class="w-full h-full block" id="canvas-hdd"></canvas>
-                </div>
-                <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-                  <div class="bg-slate-900 p-2.5 rounded-lg text-slate-300 border border-slate-800">
-                    <p class="font-bold mb-1">헤드 반경 조정 (Seek)</p>
-                    <input class="w-full accent-indigo-500" id="seek-slider" max="3" min="1" type="range" value="2"/>
-                    <div class="flex justify-between text-[10px] mt-1 text-slate-500">
-                      <span>외곽 트랙 1</span>
-                      <span>내부 트랙 3</span>
-                    </div>
-                  </div>
-                  <div class="bg-slate-900 p-2.5 rounded-lg text-slate-300 border border-slate-800">
-                    <p class="font-bold mb-1">동작 파라미터 제어</p>
-                    <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-2 rounded mb-1" id="btn-read-sec" onclick="triggerReadSector()">임의 섹터 읽기 테스트</button>
-                    <p class="text-[10px] text-slate-400 text-center" id="hdd-read-status">헤드가 정지 상태입니다.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-xl border border-amber-200 dark:border-amber-900/30 text-amber-950 dark:text-amber-200 flex items-start space-x-3">
-            <span class="text-2xl">📀</span>
-            <div>
-              <h4 class="font-bold mb-1">직관적 비유: 타겟 과녁 레코드 플레이어</h4>
-              <p class="text-sm">
-                디스크는 일종의 고속 회전하는 축음기 판입니다. 원하는 트랙을 찾기 위해 바늘 암을 들고 수평으로 조심스럽게 타겟 원 지점으로 위치시키는 것($T_{seek}$)이 총 동작 시간의 대부분을 점유합니다. 그 후 판이 휙휙 돌면서 정확한 재생 시작 지점이 바늘 위치 밑을 딱 스치고 지나가는 타이밍($T_{rotation}$)을 한 박자 쉬면서 기다리게 됩니다.
-              </p>
-            </div>
-          </div>
-          <div class="bg-indigo-50 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-slate-800 dark:text-slate-200 text-sm">
-            <strong class="text-indigo-700 dark:text-indigo-400">📌 한 줄 요약:</strong> HDD는 헤드가 이동하는 시간(탐색), 원판이 돌아가는 시간(회전), 실제로 읽는 시간(전송)의 세 가지 물리적 대기 시간이 모여 입출력 시간이 완성되며, 탐색 시간이 가장 압도적으로 길고 느리다.
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="sec-scheduling">
-        <div class="flex items-center space-x-2 mb-6">
-          <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">Chapter 4</span>
-          <h2 style="border:none;padding:0;margin:0">디스크 스케줄링 알고리즘 (Disk Scheduling Visualizer)</h2>
-        </div>
-        
-        <div class="bg-slate-50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 mb-6 space-y-6">
-          <div>
-            <span class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350 text-xs uppercase font-extrabold px-2 py-1 rounded">개념 정의</span>
-            <p class="text-xl font-bold text-slate-800 dark:text-white mt-2">
-              "하드웨어 기계적 움직임을 최소화하고 데이터 처리 처리량을 높이기 위해, 들어온 요청들을 재배치하여 효율적인 순서대로 디스크 트랙을 방문하게 제어하는 기법이다."
-            </p>
-          </div>
-          <div class="text-slate-600 dark:text-slate-300">
-            <p>
-              탐색 시간($T_{seek}$)을 극도로 줄이기 위해, 무조건 먼저 들어온 요청 순서대로 헤드를 가차 없이 왔다 갔다 하는 비효율을 고쳐야 합니다. 이 장의 강의자료 슬라이드에 명시된 대표적인 4대 알고리즘과 고급 1개 알고리즘을 분석합니다:
-            </p>
-            <div class="overflow-x-auto my-6 border border-slate-200 dark:border-slate-800 rounded-xl">
-              <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm text-left">
-                <thead class="bg-slate-50 dark:bg-slate-900 font-bold text-slate-700 dark:text-white">
-                  <tr>
-                    <th class="p-4">알고리즘</th>
-                    <th class="p-4">원리 및 장점</th>
-                    <th class="p-4">단점 / 한계</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-600 dark:text-slate-400">
-                  <tr>
-                    <td class="p-4 font-bold text-slate-800 dark:text-slate-200">FCFS (First-Come, First-Served)</td>
-                    <td class="p-4">선착순 처리. 극도로 직관적이며 기아 상태(Starvation)가 일어나지 않음.</td>
-                    <td class="p-4">요청이 꼬여있을 때 헤드가 지그재그로 디스크 전체를 계속 왕복하여 탐색 성능이 매우 처참함.</td>
-                  </tr>
-                  <tr>
-                    <td class="p-4 font-bold text-indigo-600 dark:text-indigo-400">SSTF (Shortest Seek Time First)</td>
-                    <td class="p-4">현재 헤드 위치에서 가장 가까운 트랙 거리를 지닌 요청부터 찾아가서 즉각 해결함.</td>
-                    <td class="p-4"><strong>기아 상태(Starvation)</strong> 유발 가능. 외곽 트랙의 요청들은 헤드가 가운데 트랙을 맴도는 과정에서 평생 굶을 수 있음.</td>
-                  </tr>
-                  <tr>
-                    <td class="p-4 font-bold text-emerald-600 dark:text-emerald-400">SCAN (엘리베이터)</td>
-                    <td class="p-4">엘리베이터처럼 한 방향으로 끝까지 쭉 움직이면서 싹 쓸고 해결한 뒤, 반대로 틀어서 다시 복귀하며 해결함.</td>
-                    <td class="p-4">가장자리 트랙은 평균 대기 시간이 증가하는 불균형 발생. 또한 회전 방향 전환 지연 무시.</td>
-                  </tr>
-                  <tr>
-                    <td class="p-4 font-bold text-amber-600 dark:text-amber-400">C-SCAN (Circular SCAN)</td>
-                    <td class="p-4">한 방향(예: 내측 -&gt; 외측)으로만 가며 스위핑한 뒤, 끝에 닿으면 데이터를 훑지 않고 시작 지점으로 빠르게 무부하 고속 복구 후 다시 한 방향으로만 일방 처리.</td>
-                    <td class="p-4">평균적인 응답 속도가 SCAN보다 더 고르고 안정적이지만 복귀 시 일시적 지연 발생.</td>
-                  </tr>
-                  <tr>
-                    <td class="p-4 font-bold text-purple-600 dark:text-purple-400">SPTF (Shortest Positioning Time First)</td>
-                    <td class="p-4">트랙 거리만 고려하지 않고, <strong>회전 시간 지연까지 복합 계산</strong>하여 가장 빠르게 도착할 수 있는 트랙과 섹터 선택.</td>
-                    <td class="p-4">운영체제가 하드웨어 드라이브의 미세한 기하학적 특성을 모두 실시간 예측하기 매우 어렵고 구현이 무거움.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="mt-8 bg-slate-900 p-6 rounded-2xl not-prose">
-            <h4 class="font-bold text-slate-100 mb-2 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
-              디스크 스케줄링 시뮬레이션 연구소 (Scheduler Visualizer)
-            </h4>
-            <p class="text-xs text-slate-400 mb-6">
-              슬라이드 기본 예제 큐: <span class="text-amber-400">98, 183, 37, 122, 14, 124, 65, 67</span> (헤드 시작 위치: <span class="text-indigo-400">53</span>) <br/>
-              원하는 알고리즘 탭을 눌러 스케줄러가 헤드를 움직여 나가는 이동 경로와 헤드의 총 누적 물리적 탐색 거리(Seek Distance)의 대격차를 체감하세요.
-            </p>
-            <div class="flex flex-wrap gap-2 mb-4">
-              <button class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all" id="tab-FCFS" onclick="runScheduling('FCFS')">FCFS</button>
-              <button class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all" id="tab-SSTF" onclick="runScheduling('SSTF')">SSTF</button>
-              <button class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all" id="tab-SCAN" onclick="runScheduling('SCAN')">SCAN (감소 방향 우선)</button>
-              <button class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all" id="tab-CSCAN" onclick="runScheduling('CSCAN')">C-SCAN (증가 방향 일방)</button>
-            </div>
-            <div class="canvas-container" style="height: 380px;">
-              <canvas class="w-full h-full block" id="canvas-schedule"></canvas>
-            </div>
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-300">
-              <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                <span class="text-slate-400 block mb-1">헤드 방문 및 추적 처리 시퀀스</span>
-                <span class="font-extrabold text-amber-400 text-sm" id="sched-path-text">시작 버튼 클릭 대기 중...</span>
-              </div>
-              <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center">
-                <div>
-                  <span class="text-slate-400 block mb-1">총 이동 디스크 트랙 실거리 (Seek Distance)</span>
-                  <span class="font-extrabold text-emerald-400 text-lg" id="sched-distance-text">계산 중...</span>
-                </div>
-                <div class="bg-slate-700 px-3 py-1.5 rounded-lg text-center">
-                  <span class="text-[10px] text-slate-400 block">평가 수치</span>
-                  <span class="font-bold text-white text-xs" id="sched-perf-badge">보통</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-xl border border-amber-200 dark:border-amber-900/30 text-amber-950 dark:text-amber-200 flex items-start space-x-3">
-            <span class="text-2xl">🪜</span>
-            <div>
-              <h4 class="font-bold mb-1">직관적 비유: 피자가게 배달원의 동선 최적화</h4>
-              <p class="text-sm">
-                - <strong>FCFS</strong>: 1번가 배달 후 바로 100번가로 가고 다시 2번가로 돌아가는 배달원으로, 주유비가 엄청 깨집니다.<br/>
-                - <strong>SSTF</strong>: 지금 서있는 가게 바로 옆집 배달을 계속 반복하다가 멀리 숲속 오두막 주문은 퇴근 전까지 평생 배달하지 못해 기아를 유발하는 경우입니다.<br/>
-                - <strong>SCAN</strong>: 1번가에서 100번가 방향으로 순차적으로 배달을 클리어한 뒤 역으로 틀어서 돌아오는, 가장 효율적이고 합리적인 배달원의 동선입니다.
-              </p>
-            </div>
-          </div>
-          <div class="bg-indigo-50 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-slate-800 dark:text-slate-200 text-sm">
-            <strong class="text-indigo-700 dark:text-indigo-400">📌 한 줄 요약:</strong> 디스크 헤드의 탐색 거리를 획기적으로 낮추기 위해 현 주소 기준 스케줄 최적화를 가하며, 일반적으로 기아 문제를 극복하고 공평하게 싹 훑어가는 SCAN 및 C-SCAN 방식이 OS에서 많이 선호된다.
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="bg-slate-800 text-slate-100 p-8 rounded-2xl shadow-xl border-l-4 border-emerald-500">
-          <span class="bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded">핵심 고난도 면접 대비 Q&amp;A</span>
-          <div class="mt-6 space-y-6">
-            <div>
-              <h4 class="text-base font-bold text-emerald-400" style="margin-top:0">Q1. 하드웨어 드라이브가 물리 스케줄링을 자체적으로 처리할 수 있는데, 왜 OS 레벨에서 디스크 스케줄러가 또 필요한가요?</h4>
-              <p class="text-slate-300 text-sm mt-2 leading-relaxed">
-                맞습니다! 최근의 현대적인 물리 드라이브(HDD/SSD)는 복수 개의 요청을 동시에 받아두고 <strong>내부 컨트롤러 펌웨어단(NCQ 등)</strong>에서 정밀한 내부 스케줄링을 직접 수행할 수 있습니다. <br/>
-                하지만 여전히 OS 레벨 스케줄러가 필요한 이유는 <strong>'보안과 공정성'</strong> 및 <strong>'우선순위 관리'</strong> 때문입니다. OS는 특정 고신뢰 작업(예: 데이터베이스 로그 쓰기, 커널 가상 메모리 스왑)을 일반 사용자 백그라운드 파일 읽기보다 훨씬 긴급하게 처리해야 합니다. 드라이브 하드웨어는 이런 상위 계층의 문맥(Context)을 모릅니다. 따라서 OS 레벨에서 1차적인 스레드 우선순위에 입각하여 요청의 완급을 조율해 보내야 합니다.
-              </p>
-            </div>
-            <hr class="border-slate-700"/>
-            <div>
-              <h4 class="text-base font-bold text-emerald-400">Q2. 최신 저장 장치인 SSD(Solid State Drive)에서도 이 디스크 스케줄링 알고리즘들이 그대로 유용하게 동작하나요?</h4>
-              <p class="text-slate-300 text-sm mt-2 leading-relaxed">
-                <strong>매우 중요한 날카로운 지적입니다! 유용하지 않습니다.</strong> <br/>
-                SSD는 기계식 회전 물리 암과 바늘 헤드가 없는 순수 반도체 셀 플래시 메모리 기반 장치입니다. 물리 암이 목표 트랙까지 물리적으로 왕복 이동할 필요가 없기 때문에 <strong>탐색 시간($T_{seek}$)과 회전 지연 시간($T_{rotation}$)이 아예 0입니다!</strong> <br/>
-                따라서 SSD에 무리하게 SCAN이나 SSTF 스케줄러를 적용하는 것은 불필요한 계산 오버헤드만 늘리는 비효율적 행위입니다. 그래서 Linux 등 현대 OS는 SSD 같은 장치에는 복잡한 정렬 연산을 생략하고 요청 순서대로 곧바로 쏘아 보내는 단순 무스케줄러인 <strong>NOOP (No-Operation / None)</strong> 또는 단순 FIFO 방식을 적용해 처리합니다.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <footer class="relative z-10 border-t border-slate-200 dark:border-white/[.05] py-8 mt-10">
-    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p class="text-xs text-slate-500 dark:text-white/35">Study Notes · Operating System · I/O Devices and HDD</p>
-      <a class="text-xs font-mono text-violet-600 dark:text-violet-300 hover:underline" href="../../">Back to OS notes</a>
-    </div>
-  </footer>
-
-  <script>
-        // 전역 상태 관리 변수들
-        let curProtocol = 'polling';
-        let protoAnimationId = null;
-        let protoProgress = 0;
-
-        let hddAnimationId = null;
-        let hddRotationAngle = 0;
-        let targetHddRatio = 0.7; // 외곽: 0.9, 중간: 0.7, 안쪽: 0.5 (화면 크기 비례 동적 배율)
-        let currentHddRatio = 0.7;
-        let sectorFlashTimer = 0;
-        let flashingSector = -1;
-
-        let schedAnimationId = null;
-        const requestsQueue = [98, 183, 37, 122, 14, 124, 65, 67];
-        const startHead = 53;
-        let selectedAlgo = 'FCFS';
-        let calculatedPath = [];
-        let totalSeekDistance = 0;
-        let pathDrawProgress = 0;
-
-        // 윈도우 로드 및 리사이즈 대응 초기화
-        window.onload = function() {
-            resizeAndInitCanvases();
-            window.addEventListener('resize', resizeAndInitCanvases);
-        };
-
-        // 완벽 반응형 캔버스 리사이즈 앤 리셋 함수
-        function resizeAndInitCanvases() {
-            const canvasProto = document.getElementById('canvas-proto');
-            const canvasHdd = document.getElementById('canvas-hdd');
-            const canvasSched = document.getElementById('canvas-schedule');
-
-            if (!canvasProto || !canvasHdd || !canvasSched) return;
-
-            // 디바이스 및 부모 영역 크기 구한 뒤, 캔버스 물리 크기 설정
-            [canvasProto, canvasHdd, canvasSched].forEach(canvas => {
-                const parent = canvas.parentElement;
-                canvas.width = parent.clientWidth || parent.offsetWidth || 500;
-                canvas.height = parent.clientHeight || parent.offsetHeight || 250;
-            });
-
-            // 1. 프로토콜 시뮬레이션 재가동
-            resetProtocolSim();
-
-            // 2. HDD 기하학 시뮬레이션 중복 방지 가동
-            if (hddAnimationId) cancelAnimationFrame(hddAnimationId);
-            drawHdd();
-
-            // 3. 디스크 스케줄러 시뮬레이션 가동
-            runScheduling(selectedAlgo);
-        }
-
-        // --- CANVAS 1: I/O PROTOCOLS TIMELINE ---
-        const canvasProto = document.getElementById('canvas-proto');
-        const ctxProto = canvasProto.getContext('2d');
-
-        function selectProtocol(proto) {
-            document.getElementById('btn-polling').classList.remove('active-tab');
-            document.getElementById('btn-interrupt').classList.remove('active-tab');
-            document.getElementById('btn-dma').classList.remove('active-tab');
-            
-            document.getElementById(`btn-${proto}`).classList.add('active-tab');
-            curProtocol = proto;
-            resetProtocolSim();
-        }
-
-        function resetProtocolSim() {
-            if (protoAnimationId) cancelAnimationFrame(protoAnimationId);
-            protoProgress = 0;
-            runProtocolSimulation();
-        }
-
-        function runProtocolSimulation() {
-            const statusText = document.getElementById('proto-status-text');
-            const efficiencyText = document.getElementById('proto-cpu-efficiency');
-
-            function animate() {
-                const width = canvasProto.width;
-                const height = canvasProto.height;
-                ctxProto.clearRect(0, 0, width, height);
-
-                const labelWidth = 60;
-                const startX = labelWidth + 20;
-                const timelineWidth = width - startX - 20;
-
-                // 타임라인 슬라이더 증가 속도 제어
-                protoProgress += 1.5;
-                if (protoProgress > timelineWidth) {
-                    protoProgress = 0; // 무한 반복 루프
-                }
-
-                // 배경 가이드 실선 렌더링
-                ctxProto.strokeStyle = '#334155';
-                ctxProto.lineWidth = 1;
-                
-                // CPU 라인
-                ctxProto.beginPath();
-                ctxProto.moveTo(startX, 60); ctxProto.lineTo(width - 20, 60);
-                ctxProto.stroke();
-
-                // Disk 라인
-                ctxProto.beginPath();
-                ctxProto.moveTo(startX, 130); ctxProto.lineTo(width - 20, 130);
-                ctxProto.stroke();
-
-                if (curProtocol === 'dma') {
-                    // DMA 전용 라인 추가
-                    ctxProto.beginPath();
-                    ctxProto.moveTo(startX, 180); ctxProto.lineTo(width - 20, 180);
-                    ctxProto.stroke();
-                }
-
-                // 텍스트 타이틀
-                ctxProto.fillStyle = '#94a3b8';
-                ctxProto.font = 'bold 12px Pretendard';
-                ctxProto.textAlign = 'left';
-                ctxProto.fillText('CPU', 20, 64);
-                ctxProto.fillText('Disk', 20, 134);
-                if (curProtocol === 'dma') {
-                    ctxProto.fillText('DMA', 20, 184);
-                }
-
-                const blockY_cpu = 45;
-                const blockY_disk = 115;
-                const blockHeight = 30;
-
-                // 타임축 루프 그리기
-                for (let x = startX; x < width - 20; x += 1) {
-                    const timePoint = x - startX;
-                    const cycle = 240; 
-                    const phase = timePoint % cycle;
-
-                    if (x > protoProgress + startX) continue;
-
-                    if (curProtocol === 'polling') {
-                        if (phase < 60) {
-                            ctxProto.fillStyle = '#10b981'; // 초록: 연산 중
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-                        } else if (phase >= 60 && phase < 180) {
-                            ctxProto.fillStyle = '#ef4444'; // 빨강: 폴링 루프 낭비 중
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-
-                            ctxProto.fillStyle = '#3b82f6'; // 파랑: 디스크 구동 중
-                            ctxProto.fillRect(x, blockY_disk, 1, blockHeight);
-                        } else {
-                            ctxProto.fillStyle = '#10b981'; 
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-                        }
-                        if (x === Math.floor(protoProgress + startX)) {
-                            statusText.innerText = phase >= 60 && phase < 180 ? 
-                                '폴링 중... CPU가 다른 작업을 못하고 디스크 완료 여부만 무한히 감시하며 낭비 중!' : '프로세스 순수 연산 수행 중';
-                            efficiencyText.innerText = 'CPU 효율성: 극악 (약 15%)';
-                        }
-
-                    } else if (curProtocol === 'interrupt') {
-                        if (phase < 60) {
-                            ctxProto.fillStyle = '#10b981'; // 프로세스 1 연산
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-                        } else if (phase >= 60 && phase < 180) {
-                            ctxProto.fillStyle = '#6366f1'; // 보라: 다른 프로세스 2 연산 (병렬 처리!)
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-
-                            ctxProto.fillStyle = '#3b82f6'; // 디스크 구동
-                            ctxProto.fillRect(x, blockY_disk, 1, blockHeight);
-                        } else {
-                            ctxProto.fillStyle = '#10b981'; // 인터럽트 후 복귀
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-                        }
-                        
-                        // 하드웨어 인터럽트 전기 펄스 발생점
-                        if (Math.abs(phase - 180) < 3) {
-                            ctxProto.strokeStyle = '#f59e0b';
-                            ctxProto.lineWidth = 2;
-                            ctxProto.beginPath();
-                            ctxProto.moveTo(x, 130);
-                            ctxProto.lineTo(x, 60);
-                            ctxProto.stroke();
-                        }
-
-                        if (x === Math.floor(protoProgress + startX)) {
-                            statusText.innerText = phase >= 60 && phase < 180 ? 
-                                '비동기 동작 중: CPU가 다른 프로그램(프로세스 2)으로 교체되어 연산 진행 중!' : '프로세스 1 계산 동작 중';
-                            efficiencyText.innerText = 'CPU 효율성: 우수 (약 85%)';
-                        }
-
-                    } else if (curProtocol === 'dma') {
-                        const blockY_dma = 165;
-                        if (phase < 40) {
-                            ctxProto.fillStyle = '#10b981';
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-                        } else if (phase >= 40 && phase < 60) {
-                            ctxProto.fillStyle = '#ef4444'; // CPU가 DMA를 프로그래밍(세팅)하는 짧은 병목 시간
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-                        } else if (phase >= 60 && phase < 180) {
-                            ctxProto.fillStyle = '#6366f1'; // CPU는 완전 자유롭게 연산 진행
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-
-                            ctxProto.fillStyle = '#3b82f6'; // 디스크 처리
-                            ctxProto.fillRect(x, blockY_disk, 1, blockHeight);
-
-                            ctxProto.fillStyle = '#10b981'; // DMA가 메모리로 정보 고속 복사 중재
-                            ctxProto.fillRect(x, blockY_dma, 1, blockHeight);
-                        } else {
-                            ctxProto.fillStyle = '#10b981';
-                            ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
-                        }
-
-                        // DMA 완료 수신 보고 인터럽트 선
-                        if (Math.abs(phase - 180) < 3) {
-                            ctxProto.strokeStyle = '#f59e0b';
-                            ctxProto.lineWidth = 2;
-                            ctxProto.beginPath();
-                            ctxProto.moveTo(x, 180);
-                            ctxProto.lineTo(x, 60);
-                            ctxProto.stroke();
-                        }
-
-                        if (x === Math.floor(protoProgress + startX)) {
-                            statusText.innerText = phase >= 60 && phase < 180 ? 
-                                'DMA 전송 동작: CPU 간섭 0%로 대용량 패킷 데이터 고속 이관 자동 동작 중' : 'CPU 고유 연산 수행 중';
-                            efficiencyText.innerText = 'CPU 효율성: 최상 (약 98%)';
-                        }
-                    }
-                }
-
-                // 수직 실시간 바늘 핀
-                ctxProto.strokeStyle = '#f59e0b';
-                ctxProto.lineWidth = 2;
-                ctxProto.beginPath();
-                ctxProto.moveTo(protoProgress + startX, 20);
-                ctxProto.lineTo(protoProgress + startX, height - 10);
-                ctxProto.stroke();
-
-                protoAnimationId = requestAnimationFrame(animate);
-            }
-            animate();
-        }
-
-        // --- CANVAS 2: HDD GEOMETRY ANIMATOR ---
-        const canvasHdd = document.getElementById('canvas-hdd');
-        const ctxHdd = canvasHdd.getContext('2d');
-
-        const seekSlider = document.getElementById('seek-slider');
-        seekSlider.addEventListener('input', function(e) {
-            const val = parseInt(e.target.value);
-            if (val === 1) targetHddRatio = 0.9; // 바깥
-            if (val === 2) targetHddRatio = 0.7; // 중간
-            if (val === 3) targetHddRatio = 0.5; // 안쪽
-        });
-
-        function triggerReadSector() {
-            const statusText = document.getElementById('hdd-read-status');
-            flashingSector = Math.floor(Math.random() * 8); 
-            sectorFlashTimer = 50; 
-            statusText.innerText = `섹터 #${flashingSector} 읽기 스캔 명령 하달!`;
-            statusText.classList.add('text-indigo-400');
-        }
-
-        function drawHdd() {
-            const width = canvasHdd.width;
-            const height = canvasHdd.height;
-            const centerX = width / 2 - 20;
-            const centerY = height / 2;
-
-            ctxHdd.clearRect(0, 0, width, height);
-
-            // 1. 회전각 갱신
-            hddRotationAngle += 0.025;
-
-            // 2. 화면 폭과 높이에 맞게 플래터 크기 비율 자동 산출 (동적 배율)
-            const maxRadius = Math.min(width - 80, height - 40) / 2;
-
-            // 3. 디스크 플래터 (원판)
-            ctxHdd.fillStyle = '#1e293b';
-            ctxHdd.beginPath();
-            ctxHdd.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
-            ctxHdd.fill();
-            ctxHdd.strokeStyle = '#475569';
-            ctxHdd.lineWidth = 3;
-            ctxHdd.stroke();
-
-            // 4. 트랙 가이드 라인 (동심원 3줄) - 원판 대비 동적 비례 계산
-            const trackRatios = [0.9, 0.7, 0.5];
-            ctxHdd.lineWidth = 1;
-            trackRatios.forEach((ratio, idx) => {
-                const r = maxRadius * ratio;
-                ctxHdd.strokeStyle = '#334155';
-                ctxHdd.beginPath();
-                ctxHdd.arc(centerX, centerY, r, 0, Math.PI * 2);
-                ctxHdd.stroke();
-
-                ctxHdd.fillStyle = '#64748b';
-                ctxHdd.font = '10px Pretendard';
-                ctxHdd.textAlign = 'center';
-                ctxHdd.fillText(`Track ${idx+1}`, centerX - r, centerY - 5);
-            });
-
-            // 5. 섹터 슬라이스 가이드 및 타겟 섹터 깜빡임
-            const sectorCount = 8;
-            for (let i = 0; i < sectorCount; i++) {
-                const angle = hddRotationAngle + (i * Math.PI * 2) / sectorCount;
-                const endX = centerX + Math.cos(angle) * maxRadius;
-                const endY = centerY + Math.sin(angle) * maxRadius;
-
-                ctxHdd.strokeStyle = '#1e293b';
-                ctxHdd.lineWidth = 2;
-                ctxHdd.beginPath();
-                ctxHdd.moveTo(centerX, centerY);
-                ctxHdd.lineTo(endX, endY);
-                ctxHdd.stroke();
-
-                // 타겟 섹터 영역 깜빡임 채우기
-                if (flashingSector === i && sectorFlashTimer > 0) {
-                    ctxHdd.fillStyle = sectorFlashTimer % 10 < 5 ? 'rgba(99, 102, 241, 0.4)' : 'rgba(16, 185, 129, 0.5)';
-                    ctxHdd.beginPath();
-                    ctxHdd.moveTo(centerX, centerY);
-                    const currentRadiusValue = maxRadius * currentHddRatio;
-                    ctxHdd.arc(centerX, centerY, currentRadiusValue, angle, angle + (Math.PI * 2) / sectorCount);
-                    ctxHdd.closePath();
-                    ctxHdd.fill();
-                }
-            }
-
-            // 6. 스핀들 모터 (중앙 축)
-            ctxHdd.fillStyle = '#64748b';
-            ctxHdd.beginPath();
-            ctxHdd.arc(centerX, centerY, Math.max(12, maxRadius * 0.15), 0, Math.PI * 2);
-            ctxHdd.fill();
-            ctxHdd.strokeStyle = '#f1f5f9';
-            ctxHdd.lineWidth = 2;
-            ctxHdd.stroke();
-
-            // 7. 액추에이터 암 (Actuator Arm) 및 디스크 헤드 바늘
-            const armPivotX = width - 40;
-            const armPivotY = centerY - 50;
-
-            // 부드러운 헤드 이동 감속 물리 보간 (Smoothing LERP)
-            currentHddRatio += (targetHddRatio - currentHddRatio) * 0.1;
-            const finalRadius = maxRadius * currentHddRatio;
-
-            // 30도 기하 각도로 헤드 타겟 좌표 산출
-            const headX = centerX + Math.cos(Math.PI / 6) * finalRadius;
-            const headY = centerY - Math.sin(Math.PI / 6) * finalRadius;
-
-            // 회전축 지지대
-            ctxHdd.fillStyle = '#475569';
-            ctxHdd.beginPath();
-            ctxHdd.arc(armPivotX, armPivotY, 12, 0, Math.PI * 2);
-            ctxHdd.fill();
-
-            // 단단한 물리 암(Arm) 바 렌더링
-            ctxHdd.strokeStyle = '#94a3b8';
-            ctxHdd.lineWidth = 6;
-            ctxHdd.lineCap = 'round';
-            ctxHdd.beginPath();
-            ctxHdd.moveTo(armPivotX, armPivotY);
-            ctxHdd.lineTo(headX, headY);
-            ctxHdd.stroke();
-
-            // 바늘 끝단 판독 헤드 칩
-            ctxHdd.fillStyle = '#ef4444';
-            ctxHdd.fillRect(headX - 6, headY - 6, 12, 12);
-            ctxHdd.strokeStyle = '#ffffff';
-            ctxHdd.lineWidth = 1;
-            ctxHdd.strokeRect(headX - 6, headY - 6, 12, 12);
-
-            // 타이머 업데이트
-            if (sectorFlashTimer > 0) {
-                sectorFlashTimer--;
-                if (sectorFlashTimer === 0) {
-                    flashingSector = -1;
-                    document.getElementById('hdd-read-status').innerText = "데이터 블록 읽기 완료!";
-                    document.getElementById('hdd-read-status').classList.remove('text-indigo-400');
-                }
-            }
-
-            hddAnimationId = requestAnimationFrame(drawHdd);
-        }
-
-        // --- CANVAS 3: DISK SCHEDULING VISUALIZER ---
-        const canvasSched = document.getElementById('canvas-schedule');
-        const ctxSched = canvasSched.getContext('2d');
-
-        function runScheduling(algo) {
-            selectedAlgo = algo;
-            
-            const tabs = ['FCFS', 'SSTF', 'SCAN', 'CSCAN'];
-            tabs.forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
-                if (btn) btn.className = "px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all";
-            });
-            const activeBtn = document.getElementById(`tab-${algo}`);
-            if (activeBtn) activeBtn.className = "px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white transition-all active-tab";
-
-            calculateSchedule(algo);
-            pathDrawProgress = 0; 
-            
-            // 기존 가동 중이던 스케줄러 애니메이션 루프 종료 후 청결히 재가동
-            if (schedAnimationId) cancelAnimationFrame(schedAnimationId);
-            animateScheduling();
-        }
-
-        function calculateSchedule(algo) {
-            let queue = [...requestsQueue];
-            let head = startHead;
-            calculatedPath = [head];
-            totalSeekDistance = 0;
-
-            if (algo === 'FCFS') {
-                calculatedPath = [head, ...queue];
-            } else if (algo === 'SSTF') {
-                while (queue.length > 0) {
-                    let closestIdx = 0;
-                    let minDiff = Math.abs(queue[0] - head);
-                    for (let i = 1; i < queue.length; i++) {
-                        let diff = Math.abs(queue[i] - head);
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            closestIdx = i;
-                        }
-                    }
-                    head = queue[closestIdx];
-                    calculatedPath.push(head);
-                    queue.splice(closestIdx, 1);
-                }
-            } else if (algo === 'SCAN') {
-                let left = queue.filter(r => r < head).sort((a,b) => b-a); 
-                let right = queue.filter(r => r >= head).sort((a,b) => a-b); 
-                calculatedPath = [head, ...left, ...right];
-            } else if (algo === 'CSCAN') {
-                let right = queue.filter(r => r >= head).sort((a,b) => a-b);
-                let left = queue.filter(r => r < head).sort((a,b) => a-b);
-                calculatedPath = [head, ...right, ...left];
-            }
-
-            for (let i = 0; i < calculatedPath.length - 1; i++) {
-                totalSeekDistance += Math.abs(calculatedPath[i+1] - calculatedPath[i]);
-            }
-
-            const pathText = document.getElementById('sched-path-text');
-            const distText = document.getElementById('sched-distance-text');
-            const badge = document.getElementById('sched-perf-badge');
-
-            if (pathText) pathText.innerText = calculatedPath.join(' → ');
-            if (distText) distText.innerText = `${totalSeekDistance} Tracks`;
-            
-            if (badge) {
-                if (totalSeekDistance < 250) {
-                    badge.innerText = "최상 (우수성)";
-                    badge.className = "font-bold text-emerald-400 text-xs bg-emerald-950/50 px-2.5 py-1 rounded";
-                } else if (totalSeekDistance < 350) {
-                    badge.innerText = "양호 (적합)";
-                    badge.className = "font-bold text-amber-400 text-xs bg-amber-950/50 px-2.5 py-1 rounded";
-                } else {
-                    badge.innerText = "비효율 (병목심각)";
-                    badge.className = "font-bold text-rose-400 text-xs bg-rose-950/50 px-2.5 py-1 rounded";
-                }
-            }
-        }
-
-        function animateScheduling() {
-            function draw() {
-                const width = canvasSched.width;
-                const height = canvasSched.height;
-                const paddingLeft = 50;
-                const paddingRight = 50;
-                const scaleWidth = width - paddingLeft - paddingRight;
-
-                function getX(trackValue) {
-                    return paddingLeft + (trackValue / 200) * scaleWidth;
-                }
-
-                ctxSched.clearRect(0, 0, width, height);
-
-                // 1. 디스크 트랙 실선 가이드 스케일 그리기
-                ctxSched.strokeStyle = '#475569';
-                ctxSched.lineWidth = 2;
-                ctxSched.beginPath();
-                ctxSched.moveTo(paddingLeft, 40);
-                ctxSched.lineTo(width - paddingRight, 40);
-                ctxSched.stroke();
-
-                // 모바일/일반 디스플레이 대응 반응형 폰트 크기 변경
-                ctxSched.font = width < 550 ? 'bold 8px JetBrains Mono' : 'bold 10px JetBrains Mono';
-                ctxSched.textAlign = 'center';
-
-                const markers = [0, 14, 37, 53, 65, 67, 98, 122, 124, 183, 200];
-                markers.forEach((m, idx) => {
-                    const mx = getX(m);
-                    ctxSched.strokeStyle = m === startHead ? '#6366f1' : '#334155';
-                    ctxSched.lineWidth = m === startHead ? 2 : 1;
-                    
-                    ctxSched.beginPath();
-                    ctxSched.moveTo(mx, 35);
-                    ctxSched.lineTo(mx, 45);
-                    ctxSched.stroke();
-
-                    ctxSched.fillStyle = m === startHead ? '#818cf8' : '#94a3b8';
-                    
-                    // 가로폭이 아주 좁은 스마트폰 환경에서 숫자끼리 겹치지 않도록 홀/짝 인덱스를 지그재그(Staggered) 배치
-                    const textY = (width < 550 && idx % 2 === 0) ? 15 : 25;
-                    ctxSched.fillText(m, mx, textY);
-                });
-
-                // 2. 가로폭 진행선 이음선
-                const stepHeight = (height - 80) / calculatedPath.length;
-                ctxSched.strokeStyle = '#818cf8';
-                ctxSched.lineWidth = 3;
-                ctxSched.lineJoin = 'round';
-                ctxSched.beginPath();
-
-                pathDrawProgress += 0.05;
-                const activeLimit = Math.min(pathDrawProgress, calculatedPath.length);
-
-                for (let i = 0; i < activeLimit; i++) {
-                    const px = getX(calculatedPath[i]);
-                    const py = 60 + i * stepHeight;
-                    if (i === 0) {
-                        ctxSched.moveTo(px, py);
-                    } else {
-                        if (i > activeLimit - 1) {
-                            const prevX = getX(calculatedPath[i-1]);
-                            const prevY = 60 + (i-1) * stepHeight;
-                            const interpX = prevX + (px - prevX) * (activeLimit % 1);
-                            const interpY = prevY + (py - prevY) * (activeLimit % 1);
-                            ctxSched.lineTo(interpX, interpY);
-                        } else {
-                            ctxSched.lineTo(px, py);
-                        }
-                    }
-                }
-                ctxSched.stroke();
-
-                // 3. 노드 원 스팟 및 순서 넘버링 마킹
-                for (let i = 0; i < activeLimit; i++) {
-                    const px = getX(calculatedPath[i]);
-                    const py = 60 + i * stepHeight;
-
-                    ctxSched.fillStyle = i === 0 ? '#ef4444' : '#10b981';
-                    ctxSched.beginPath();
-                    ctxSched.arc(px, py, 6, 0, Math.PI * 2);
-                    ctxSched.fill();
-
-                    // 노드 방문 인덱스 순서 표기
-                    ctxSched.fillStyle = '#ffffff';
-                    ctxSched.font = 'bold 8px Pretendard';
-                    ctxSched.textAlign = 'center';
-                    ctxSched.fillText(i, px, py + 3);
-                }
-
-                if (pathDrawProgress < calculatedPath.length) {
-                    schedAnimationId = requestAnimationFrame(draw);
-                } else {
-                    schedAnimationId = null;
-                }
-            }
-            draw();
-        }
-    </script>
-</body>
-</html>
+</div>
+</div>
+</div>
+<div class="callout ok">
+<b>직관적 비유: 피자 주문과 택배 수령</b>
+<p style="margin: 4px 0 0 0; font-size: 13px;">
+          - <strong>폴링(Polling)</strong>: 피자를 주문해 두고, 인터폰 앞에 서서 10초에 한 번씩 "피자 왔나요?"라고 계속 확인하며 아무 일도 못 하는 상태.<br/>
+          - <strong>인터럽트(Interrupt)</strong>: 피자를 주문해 두고 방에서 밀린 공부를 하다가 초인종이 울리면 문을 열어주는 방식.<br/>
+          - <strong>DMA</strong>: 100박스의 대형 이삿짐이 올 때, 내가 직접 받아서 정리하지 않고, <strong>이삿짐 센터 직원(DMA Controller)</strong>에게 "안방에 전부 놓아주시고 완료되면 사인만 해주세요"하고 자리를 비우는 방식.
+        </p>
+</div>
+<div class="mini" style="margin-top: 18px;">
+<h3>[시뮬레이터] Polling vs Interrupt vs DMA 작동 흐름 시각화</h3>
+<p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">아래 버튼들을 클릭하여 세 가지 통신 프로토콜 실행 방식을 비교해 보세요. CPU가 언제 유휴 상태(Idle)가 되는지 확인해 보세요.</p>
+<div style="background: #111; padding: 18px; border-radius: 18px;">
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+<button class="btn active" id="btn-polling" onclick="selectProtocol('polling')">1. Polling &amp; PIO</button>
+<button class="btn" id="btn-interrupt" onclick="selectProtocol('interrupt')">2. Interrupt</button>
+<button class="btn" id="btn-dma" onclick="selectProtocol('dma')">3. DMA Controller</button>
+<button class="btn" id="btn-reset-proto" onclick="resetProtocolSim()" style="margin-left: auto; background: var(--accent3); color: white;">재생 / 리셋</button>
+</div>
+<div class="canvas-container" style="height: 220px;">
+<canvas id="canvas-proto" style="width: 100%; height: 100%;"></canvas>
+</div>
+<div style="margin-top: 12px; padding: 12px; background: #222; border-radius: 10px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; color: #fff;">
+<span><strong>상태 설명:</strong> <span id="proto-status-text">프로토콜을 선택하고 리셋을 눌러 애니메이션을 시작하세요.</span></span>
+<span id="proto-cpu-efficiency" style="color: var(--accent);">CPU 효율성: - %</span>
+</div>
+</div>
+</div>
+</div></section><section class="card" id="examples"><h2>4. 예제</h2><p>예제와 절차형 설명은 원본 학습 흐름 안에 보존되어 있다.</p></section><section class="card" id="pitfalls"><h2>5. 자주 틀리는 부분</h2><p>주의할 오해와 시험 함정은 관련 개념 섹션의 callout 및 강조 문단에 보존되어 있다.</p></section><section class="card" id="interactive"><h2>6. 인터랙티브 실험</h2><div class="mini source-section" id="sec-scheduling">
+<h3 class="legacy-section-title">4. 디스크 스케줄링 알고리즘 (Disk Scheduling Visualizer)</h3>
+<div class="grid">
+<div class="mini">
+<h3>💡 개념 정의</h3>
+<p class="font-bold">"하드웨어 기계적 움직임을 최소화하고 데이터 처리 처리량을 높이기 위해, 들어온 요청들을 재배치하여 효율적인 순서대로 디스크 트랙을 방문하게 제어하는 기법이다."</p>
+</div>
+<div class="mini">
+<h3>핵심 5대 알고리즘 분석</h3>
+<p>탐색 시간($T_{seek}$)을 극도로 줄이기 위해, 무조건 먼저 들어온 요청 순서대로 헤드를 가차 없이 왔다 갔다 하는 비효율을 고쳐야 합니다.</p>
+</div>
+</div>
+<table>
+<thead>
+<tr>
+<th>알고리즘</th>
+<th>원리 및 장점</th>
+<th>단점 / 한계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><b>FCFS (First-Come, First-Served)</b></td>
+<td>선착순 처리. 극도로 직관적이며 기아 상태(Starvation)가 일어나지 않음.</td>
+<td>요청이 꼬여있을 때 헤드가 지그재그로 디스크 전체를 계속 왕복하여 탐색 성능이 매우 처참함.</td>
+</tr>
+<tr>
+<td style="color: var(--accent);"><b>SSTF (Shortest Seek Time First)</b></td>
+<td>현재 헤드 위치에서 가장 가까운 트랙 거리를 지닌 요청부터 찾아가서 즉각 해결함.</td>
+<td><strong>기아 상태(Starvation)</strong> 유발 가능. 외곽 트랙의 요청들은 헤드가 가운데 트랙을 맴도는 과정에서 평생 굶을 수 있음.</td>
+</tr>
+<tr>
+<td style="color: var(--accent2);"><b>SCAN (엘리베이터)</b></td>
+<td>엘리베이터처럼 한 방향으로 끝까지 쭉 움직이면서 싹 쓸고 해결한 뒤, 반대로 틀어서 다시 복귀하며 해결함.</td>
+<td>가장자리 트랙은 평균 대기 시간이 증가하는 불균형 발생. 또한 회전 방향 전환 지연 무시.</td>
+</tr>
+<tr>
+<td style="color: var(--accent3);"><b>C-SCAN (Circular SCAN)</b></td>
+<td>한 방향으로만 가며 스위핑한 뒤, 끝에 닿으면 데이터를 훑지 않고 시작 지점으로 빠르게 무부하 고속 복구 후 다시 한 방향으로만 일방 처리.</td>
+<td>평균적인 응답 속도가 SCAN보다 더 고르고 안정적이지만 복귀 시 일시적 지연 발생.</td>
+</tr>
+<tr>
+<td><b>SPTF (Shortest Positioning Time First)</b></td>
+<td>트랙 거리만 고려하지 않고, <strong>회전 시간 지연까지 복합 계산</strong>하여 가장 빠르게 도착할 수 있는 트랙과 섹터 선택.</td>
+<td>운영체제가 하드웨어 드라이브의 미세한 기기 특성을 실시간 예측하기 매우 어렵고 구현이 무거움.</td>
+</tr>
+</tbody>
+</table>
+<div class="mini" style="margin-top: 18px;">
+<h3>디스크 스케줄링 시뮬레이션 연구소 (Scheduler Visualizer)</h3>
+<p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">
+          슬라이드 기본 예제 큐: <span style="color: var(--accent); font-weight: bold;">98, 183, 37, 122, 14, 124, 65, 67</span> (헤드 시작 위치: <span style="color: var(--accent2); font-weight: bold;">53</span>) <br/>
+          원하는 알고리즘 탭을 눌러 스케줄러가 헤드를 움직여 나가는 이동 경로와 헤드의 총 누적 물리적 탐색 거리(Seek Distance)의 대격차를 체감하세요.
+        </p>
+<div style="background: #111; padding: 18px; border-radius: 18px;">
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+<button class="btn active" id="tab-FCFS" onclick="runScheduling('FCFS')">FCFS</button>
+<button class="btn" id="tab-SSTF" onclick="runScheduling('SSTF')">SSTF</button>
+<button class="btn" id="tab-SCAN" onclick="runScheduling('SCAN')">SCAN (감소 방향 우선)</button>
+<button class="btn" id="tab-CSCAN" onclick="runScheduling('CSCAN')">C-SCAN (증가 방향 일방)</button>
+</div>
+<div class="canvas-container" style="height: 380px;">
+<canvas id="canvas-schedule" style="width: 100%; height: 100%;"></canvas>
+</div>
+<div class="grid" style="margin-top: 12px; gap: 8px; color: #fff;">
+<div style="background: #222; padding: 12px; border-radius: 10px; font-size: 12px;">
+<span style="color: #aaa; display: block; margin-bottom: 4px;">헤드 방문 및 추적 처리 시퀀스</span>
+<span id="sched-path-text" style="font-weight: 800; color: var(--accent);">시작 버튼 클릭 대기 중...</span>
+</div>
+<div style="background: #222; padding: 12px; border-radius: 10px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+<div>
+<span style="color: #aaa; display: block; margin-bottom: 4px;">총 이동 디스크 트랙 실거리 (Seek Distance)</span>
+<span id="sched-distance-text" style="font-weight: 800; color: var(--accent2); font-size: 18px;">계산 중...</span>
+</div>
+<div class="pill" id="sched-perf-badge" style="background: var(--soft); color: var(--ink);">보통</div>
+</div>
+</div>
+</div>
+</div>
+</div></section><section class="card" id="exam"><h2>7. 시험/복습용 핵심 정리</h2><p>위 내용을 구두로 설명할 수 있는지 점검하라: 핵심 정의, 작동 순서, 대표 함정, 해결 기준을 한 문장씩 말할 수 있어야 한다.</p></section><section class="card quiz" id="quiz"><h2>8. 확인 문제와 해설</h2><p>원본 확인 문제가 없으면 각 섹션 제목을 질문으로 바꾸어 스스로 답해 보라.</p></section><section class="card" id="sources"><h2>9. 사용 자료와 출처</h2><ul><li>Course lecture notes and self-contained study note content.</li></ul></section></main>
+</div><script>
+const STORAGE_KEY='masterclass-study-note-theme';
+function toggleTheme(){
+  document.documentElement.classList.toggle('dark');
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem(STORAGE_KEY,document.documentElement.classList.contains('dark')?'dark':'light');
+}
+(function(){
+  const t=localStorage.getItem(STORAGE_KEY);
+  if(t==='dark'){
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }else{
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }
+})();
+function updateDemo(){
+  const slider=document.getElementById('demoSlider');
+  const value=document.getElementById('demoValue');
+  const bar=document.getElementById('demoBar');
+  const out=document.getElementById('demoOut');
+  if(!slider||!value||!bar||!out) return;
+  const v=parseFloat(slider.value);
+  value.textContent=v.toFixed(0);
+  bar.style.width=v+'%';
+  out.textContent=`현재 값: ${v}\n여기에 개념별 계산 결과나 해석을 연결하면 된다.`;
+}
+window.addEventListener('DOMContentLoaded', updateDemo);
+</script><script>
+// 전역 상태 관리 변수들
+      let curProtocol = 'polling';
+      let protoAnimationId = null;
+      let protoProgress = 0;
+
+      let hddAnimationId = null;
+      let hddRotationAngle = 0;
+      let targetHddRatio = 0.7; // 외곽: 0.9, 중간: 0.7, 안쪽: 0.5 (화면 크기 비례 동적 배율)
+      let currentHddRatio = 0.7;
+      let sectorFlashTimer = 0;
+      let flashingSector = -1;
+
+      let schedAnimationId = null;
+      const requestsQueue = [98, 183, 37, 122, 14, 124, 65, 67];
+      const startHead = 53;
+      let selectedAlgo = 'FCFS';
+      let calculatedPath = [];
+      let totalSeekDistance = 0;
+      let pathDrawProgress = 0;
+
+      // 윈도우 로드 및 리사이즈 대응 초기화
+      window.onload = function() {
+          resizeAndInitCanvases();
+          window.addEventListener('resize', resizeAndInitCanvases);
+      };
+
+      // 완벽 반응형 캔버스 리사이즈 앤 리셋 함수
+      function resizeAndInitCanvases() {
+          const canvasProto = document.getElementById('canvas-proto');
+          const canvasHdd = document.getElementById('canvas-hdd');
+          const canvasSched = document.getElementById('canvas-schedule');
+
+          if (!canvasProto || !canvasHdd || !canvasSched) return;
+
+          // 디바이스 및 부모 영역 크기 구한 뒤, 캔버스 물리 크기 설정
+          [canvasProto, canvasHdd, canvasSched].forEach(canvas => {
+              const parent = canvas.parentElement;
+              canvas.width = (parent.clientWidth || parent.offsetWidth || 500) * window.devicePixelRatio;
+              canvas.height = (parent.clientHeight || parent.offsetHeight || 250) * window.devicePixelRatio;
+              canvas.style.width = '100%';
+              canvas.style.height = (parent.clientHeight || parent.offsetHeight || 250) + 'px';
+          });
+
+          // 1. 프로토콜 시뮬레이션 재가동
+          resetProtocolSim();
+
+          // 2. HDD 기하학 시뮬레이션 중복 방지 가동
+          if (hddAnimationId) cancelAnimationFrame(hddAnimationId);
+          drawHdd();
+
+          // 3. 디스크 스케줄러 시뮬레이션 가동
+          runScheduling(selectedAlgo);
+      }
+
+      // --- CANVAS 1: I/O PROTOCOLS TIMELINE ---
+      const canvasProto = document.getElementById('canvas-proto');
+      const ctxProto = canvasProto.getContext('2d');
+
+      function selectProtocol(proto) {
+          document.getElementById('btn-polling').classList.remove('active');
+          document.getElementById('btn-interrupt').classList.remove('active');
+          document.getElementById('btn-dma').classList.remove('active');
+
+          document.getElementById(`btn-${proto}`).classList.add('active');
+          curProtocol = proto;
+          resetProtocolSim();
+      }
+
+      function resetProtocolSim() {
+          if (protoAnimationId) cancelAnimationFrame(protoAnimationId);
+          protoProgress = 0;
+          runProtocolSimulation();
+      }
+
+      function runProtocolSimulation() {
+          const statusText = document.getElementById('proto-status-text');
+          const efficiencyText = document.getElementById('proto-cpu-efficiency');
+          const dpr = window.devicePixelRatio;
+
+          function animate() {
+              const width = canvasProto.width / dpr;
+              const height = canvasProto.height / dpr;
+              ctxProto.clearRect(0, 0, width, height);
+
+              const labelWidth = 60;
+              const startX = labelWidth + 20;
+              const timelineWidth = width - startX - 20;
+
+              // 타임라인 슬라이더 증가 속도 제어
+              protoProgress += 1.5;
+              if (protoProgress > timelineWidth) {
+                  protoProgress = 0; // 무한 반복 루프
+              }
+
+              // 배경 가이드 실선 렌더링
+              ctxProto.strokeStyle = '#334155';
+              ctxProto.lineWidth = 1;
+
+              // CPU 라인
+              ctxProto.beginPath();
+              ctxProto.moveTo(startX, 60); ctxProto.lineTo(width - 20, 60);
+              ctxProto.stroke();
+
+              // Disk 라인
+              ctxProto.beginPath();
+              ctxProto.moveTo(startX, 130); ctxProto.lineTo(width - 20, 130);
+              ctxProto.stroke();
+
+              if (curProtocol === 'dma') {
+                  // DMA 전용 라인 추가
+                  ctxProto.beginPath();
+                  ctxProto.moveTo(startX, 180); ctxProto.lineTo(width - 20, 180);
+                  ctxProto.stroke();
+              }
+
+              // 텍스트 타이틀
+              ctxProto.fillStyle = '#94a3b8';
+              ctxProto.font = 'bold 12px sans-serif';
+              ctxProto.textAlign = 'left';
+              ctxProto.fillText('CPU', 20, 64);
+              ctxProto.fillText('Disk', 20, 134);
+              if (curProtocol === 'dma') {
+                  ctxProto.fillText('DMA', 20, 184);
+              }
+
+              const blockY_cpu = 45;
+              const blockY_disk = 115;
+              const blockHeight = 30;
+
+              // 타임축 루프 그리기
+              for (let x = startX; x < width - 20; x += 1) {
+                  const timePoint = x - startX;
+                  const cycle = 240;
+                  const phase = timePoint % cycle;
+
+                  if (x > protoProgress + startX) continue;
+
+                  if (curProtocol === 'polling') {
+                      if (phase < 60) {
+                          ctxProto.fillStyle = '#2f6f68'; // 초록: 연산 중
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+                      } else if (phase >= 60 && phase < 180) {
+                          ctxProto.fillStyle = '#b95145'; // 빨강: 폴링 루프 낭비 중
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+
+                          ctxProto.fillStyle = '#7a5aa6'; // 보라: 디스크 구동 중
+                          ctxProto.fillRect(x, blockY_disk, 1, blockHeight);
+                      } else {
+                          ctxProto.fillStyle = '#2f6f68';
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+                      }
+                      if (x === Math.floor(protoProgress + startX)) {
+                          statusText.innerText = phase >= 60 && phase < 180 ?
+                              '폴링 중... CPU가 다른 작업을 못하고 디스크 완료 여부만 무한히 감시하며 낭비 중!' : '프로세스 순수 연산 수행 중';
+                          efficiencyText.innerText = 'CPU 효율성: 극악 (약 15%)';
+                      }
+
+                  } else if (curProtocol === 'interrupt') {
+                      if (phase < 60) {
+                          ctxProto.fillStyle = '#2f6f68'; // 프로세스 1 연산
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+                      } else if (phase >= 60 && phase < 180) {
+                          ctxProto.fillStyle = '#9a4f32'; // 갈색: 다른 프로세스 2 연산 (병렬 처리!)
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+
+                          ctxProto.fillStyle = '#7a5aa6'; // 디스크 구동
+                          ctxProto.fillRect(x, blockY_disk, 1, blockHeight);
+                      } else {
+                          ctxProto.fillStyle = '#2f6f68';
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+                      }
+
+                      // 짧은 가로 인터럽트 트리거 펄스 바늘 그리기
+                      if (phase === 180) {
+                          ctxProto.strokeStyle = '#f43f5e';
+                          ctxProto.lineWidth = 2;
+                          ctxProto.beginPath();
+                          ctxProto.moveTo(x, 130);
+                          ctxProto.lineTo(x, 60);
+                          ctxProto.stroke();
+                      }
+
+                      if (x === Math.floor(protoProgress + startX)) {
+                          statusText.innerText = phase >= 60 && phase < 180 ?
+                              '인터럽트 진가 발휘: 디스크가 읽는 동안, CPU는 백그라운드 2번째 프로세스를 쉬지 않고 실행!' : '메인 작업 처리 중';
+                          efficiencyText.innerText = 'CPU 효율성: 양호 (약 85%)';
+                      }
+
+                  } else if (curProtocol === 'dma') {
+                      if (phase < 60) {
+                          ctxProto.fillStyle = '#2f6f68'; // CPU 연산
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+                      } else if (phase >= 60 && phase < 75) {
+                          ctxProto.fillStyle = '#b95145'; // CPU가 DMA 세팅
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+                      } else if (phase >= 75 && phase < 180) {
+                          ctxProto.fillStyle = '#9a4f32'; // CPU 자유 연산
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+
+                          ctxProto.fillStyle = '#7a5aa6'; // Disk에서 데이터 나옴
+                          ctxProto.fillRect(x, blockY_disk, 1, blockHeight);
+
+                          ctxProto.fillStyle = '#ef4444'; // DMA 가 버스 전송 대행
+                          ctxProto.fillRect(x, 165, 1, blockHeight);
+                      } else {
+                          ctxProto.fillStyle = '#2f6f68';
+                          ctxProto.fillRect(x, blockY_cpu, 1, blockHeight);
+                      }
+
+                      if (x === Math.floor(protoProgress + startX)) {
+                          statusText.innerText = phase >= 75 && phase < 180 ?
+                              'DMA 컨트롤러가 버스를 잡고 메모리로 직접 고속 복사(Copying). CPU는 전혀 신경 쓰지 않고 연산 몰입!' : 'CPU가 DMA 환경 세팅 및 동작 준비';
+                          efficiencyText.innerText = 'CPU 효율성: 극상 (약 98%)';
+                      }
+                  }
+              }
+
+              // 타임축 수직 재생 바늘 그리기
+              ctxProto.strokeStyle = '#ef4444';
+              ctxProto.lineWidth = 1.5;
+              ctxProto.beginPath();
+              ctxProto.moveTo(protoProgress + startX, 20);
+              ctxProto.lineTo(protoProgress + startX, height - 20);
+              ctxProto.stroke();
+
+              protoAnimationId = requestAnimationFrame(animate);
+          }
+          ctxProto.scale(dpr, dpr);
+          animate();
+      }
+
+      // --- CANVAS 2: PHYSICAL HDD ROTATION & ARM MOVE ---
+      const canvasHdd = document.getElementById('canvas-hdd');
+      const ctxHdd = canvasHdd.getContext('2d');
+      const seekSlider = document.getElementById('seek-slider');
+
+      if (seekSlider) {
+          seekSlider.addEventListener('input', function() {
+              const val = parseInt(seekSlider.value);
+              // 반경 비율 매핑
+              if (val === 1) targetHddRatio = 0.85;
+              else if (val === 2) targetHddRatio = 0.65;
+              else targetHddRatio = 0.45;
+          });
+      }
+
+      function triggerReadSector() {
+          flashingSector = Math.floor(Math.random() * 8);
+          sectorFlashTimer = 60; // 60프레임(1초) 동안 점멸광 효과
+          document.getElementById('hdd-read-status').innerText = `섹터 ${flashingSector}번 읽기 명령 수행 중... (Seeking)`;
+          document.getElementById('hdd-read-status').classList.add('text-indigo-400');
+      }
+
+      function drawHdd() {
+          const dpr = window.devicePixelRatio;
+          const width = canvasHdd.width / dpr;
+          const height = canvasHdd.height / dpr;
+
+          ctxHdd.clearRect(0, 0, width, height);
+
+          const centerX = width / 2 - 40;
+          const centerY = height / 2;
+          const maxRadius = Math.min(width, height) / 2 - 25;
+
+          // 1. HDD 메인 알루미늄 플래터 원판 배경판
+          ctxHdd.fillStyle = '#334155';
+          ctxHdd.beginPath();
+          ctxHdd.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
+          ctxHdd.fill();
+          ctxHdd.strokeStyle = '#475569';
+          ctxHdd.lineWidth = 3;
+          ctxHdd.stroke();
+
+          // 2. 동심원 트랙 실선 3개 그리기
+          const trackRatios = [0.85, 0.65, 0.45];
+          trackRatios.forEach((ratio, idx) => {
+              ctxHdd.strokeStyle = '#4b5563';
+              ctxHdd.lineWidth = 1.5;
+              ctxHdd.beginPath();
+              ctxHdd.arc(centerX, centerY, maxRadius * ratio, 0, Math.PI * 2);
+              ctxHdd.stroke();
+
+              ctxHdd.fillStyle = '#94a3b8';
+              ctxHdd.font = '9px monospace';
+              ctxHdd.fillText(`Track ${idx+1}`, centerX + maxRadius * ratio - 10, centerY - 4);
+          });
+
+          // 3. 플래터 섹터 피자 분할 가이드라인과 텍스트 번호 표기
+          hddRotationAngle += 0.015; // 플래터 초당 고속 회전값 누적
+
+          ctxHdd.save();
+          ctxHdd.translate(centerX, centerY);
+          ctxHdd.rotate(hddRotationAngle);
+
+          for (let s = 0; s < 8; s++) {
+              const angle = (s * Math.PI) / 4;
+              ctxHdd.strokeStyle = 'rgba(75,85,99,0.4)';
+              ctxHdd.lineWidth = 1;
+              ctxHdd.beginPath();
+              ctxHdd.moveTo(0, 0);
+              ctxHdd.lineTo(Math.cos(angle) * maxRadius, Math.sin(angle) * maxRadius);
+              ctxHdd.stroke();
+
+              // 섹터 번호 텍스트
+              ctxHdd.fillStyle = '#6b7280';
+              ctxHdd.font = 'bold 8px monospace';
+              const textDist = maxRadius * 0.75;
+              ctxHdd.fillText(s, Math.cos(angle + 0.2) * textDist, Math.sin(angle + 0.2) * textDist);
+
+              // 해당 섹터 점멸 강조 연출
+              if (s === flashingSector) {
+                  ctxHdd.fillStyle = 'rgba(239,68,68,0.3)';
+                  ctxHdd.beginPath();
+                  ctxHdd.moveTo(0,0);
+                  ctxHdd.arc(0, 0, maxRadius, angle, angle + Math.PI/4);
+                  ctxHdd.closePath();
+                  ctxHdd.fill();
+              }
+          }
+          ctxHdd.restore();
+
+          // 4. 모터 중심 축 스핀들
+          ctxHdd.fillStyle = '#1e293b';
+          ctxHdd.beginPath();
+          ctxHdd.arc(centerX, centerY, 15, 0, Math.PI * 2);
+          ctxHdd.fill();
+          ctxHdd.strokeStyle = '#64748b';
+          ctxHdd.lineWidth = 2;
+          ctxHdd.stroke();
+
+          // 5. 헤드 액츄에이터 암 (Actuator Arm) 및 물리 움직임 물리 연산 보간
+          const armPivotX = width - 40;
+          const armPivotY = height / 2;
+
+          // 헤드 움직임 스프링 댐핑 관성 보간 처리
+          currentHddRatio += (targetHddRatio - currentHddRatio) * 0.08;
+
+          const headRadius = maxRadius * currentHddRatio;
+
+          // 삼각법 기반 디스크 암 결합점 좌표 산출
+          // 원판 중심(centerX, centerY)에서 반지름 headRadius 인 지점과
+          // 우측 피벗(armPivotX, armPivotY) 사이의 기하학적 헤드 좌표
+          const headX = centerX + headRadius * Math.cos(Math.PI / 6);
+          const headY = centerY + headRadius * Math.sin(Math.PI / 6);
+
+          // 액츄에이터 피벗 렌더링
+          ctxHdd.fillStyle = '#64748b';
+          ctxHdd.beginPath();
+          ctxHdd.arc(armPivotX, armPivotY, 14, 0, Math.PI * 2);
+          ctxHdd.fill();
+
+          // 디스크 암 전선 몸통 라인
+          ctxHdd.strokeStyle = '#94a3b8';
+          ctxHdd.lineWidth = 6;
+          ctxHdd.lineCap = 'round';
+          ctxHdd.beginPath();
+          ctxHdd.moveTo(armPivotX, armPivotY);
+          ctxHdd.lineTo(headX, headY);
+          ctxHdd.stroke();
+
+          // 바늘 끝단 판독 헤드 칩
+          ctxHdd.fillStyle = '#ef4444';
+          ctxHdd.fillRect(headX - 6, headY - 6, 12, 12);
+          ctxHdd.strokeStyle = '#ffffff';
+          ctxHdd.lineWidth = 1;
+          ctxHdd.strokeRect(headX - 6, headY - 6, 12, 12);
+
+          // 타이머 업데이트
+          if (sectorFlashTimer > 0) {
+              sectorFlashTimer--;
+              if (sectorFlashTimer === 0) {
+                  flashingSector = -1;
+                  document.getElementById('hdd-read-status').innerText = "데이터 블록 읽기 완료!";
+                  document.getElementById('hdd-read-status').classList.remove('text-indigo-400');
+              }
+          }
+
+          hddAnimationId = requestAnimationFrame(drawHdd);
+      }
+
+      // --- CANVAS 3: DISK SCHEDULING VISUALIZER ---
+      const canvasSched = document.getElementById('canvas-schedule');
+      const ctxSched = canvasSched.getContext('2d');
+
+      function runScheduling(algo) {
+          selectedAlgo = algo;
+
+          const tabs = ['FCFS', 'SSTF', 'SCAN', 'CSCAN'];
+          tabs.forEach(t => {
+              const btn = document.getElementById(`tab-${t}`);
+              if (btn) btn.classList.remove('active');
+          });
+          const activeBtn = document.getElementById(`tab-${algo}`);
+          if (activeBtn) activeBtn.classList.add('active');
+
+          calculateSchedule(algo);
+          pathDrawProgress = 0;
+
+          // 기존 가동 중이던 스케줄러 애니메이션 루프 종료 후 청결히 재가동
+          if (schedAnimationId) cancelAnimationFrame(schedAnimationId);
+          animateScheduling();
+      }
+
+      function calculateSchedule(algo) {
+          let queue = [...requestsQueue];
+          let head = startHead;
+          calculatedPath = [head];
+          totalSeekDistance = 0;
+
+          if (algo === 'FCFS') {
+              calculatedPath = [head, ...queue];
+          } else if (algo === 'SSTF') {
+              while (queue.length > 0) {
+                  let closestIdx = 0;
+                  let minDiff = Math.abs(queue[0] - head);
+                  for (let i = 1; i < queue.length; i++) {
+                      let diff = Math.abs(queue[i] - head);
+                      if (diff < minDiff) {
+                          minDiff = diff;
+                          closestIdx = i;
+                      }
+                  }
+                  head = queue[closestIdx];
+                  calculatedPath.push(head);
+                  queue.splice(closestIdx, 1);
+              }
+          } else if (algo === 'SCAN') {
+              let left = queue.filter(r => r < head).sort((a,b) => b-a);
+              let right = queue.filter(r => r >= head).sort((a,b) => a-b);
+              calculatedPath = [head, ...left, ...right];
+          } else if (algo === 'CSCAN') {
+              let right = queue.filter(r => r >= head).sort((a,b) => a-b);
+              let left = queue.filter(r => r < head).sort((a,b) => a-b);
+              calculatedPath = [head, ...right, ...left];
+          }
+
+          for (let i = 0; i < calculatedPath.length - 1; i++) {
+              totalSeekDistance += Math.abs(calculatedPath[i+1] - calculatedPath[i]);
+          }
+
+          const pathText = document.getElementById('sched-path-text');
+          const distText = document.getElementById('sched-distance-text');
+          const badge = document.getElementById('sched-perf-badge');
+
+          if (pathText) pathText.innerText = calculatedPath.join(' → ');
+          if (distText) distText.innerText = `${totalSeekDistance} Tracks`;
+
+          if (badge) {
+              if (totalSeekDistance < 250) {
+                  badge.innerText = "최상 (우수성)";
+                  badge.className = "pill";
+                  badge.style.background = "rgba(47,111,104,.15)";
+                  badge.style.color = "var(--accent2)";
+              } else if (totalSeekDistance < 350) {
+                  badge.innerText = "양호 (적합)";
+                  badge.className = "pill";
+                  badge.style.background = "rgba(154,79,50,.15)";
+                  badge.style.color = "var(--accent)";
+              } else {
+                  badge.innerText = "비효율 (병목심각)";
+                  badge.className = "pill";
+                  badge.style.background = "rgba(185,81,69,.15)";
+                  badge.style.color = "#b95145";
+              }
+          }
+      }
+
+      function animateScheduling() {
+          const dpr = window.devicePixelRatio;
+          function draw() {
+              const width = canvasSched.width / dpr;
+              const height = canvasSched.height / dpr;
+              const paddingLeft = 50;
+              const paddingRight = 50;
+              const scaleWidth = width - paddingLeft - paddingRight;
+
+              function getX(trackValue) {
+                  return paddingLeft + (trackValue / 200) * scaleWidth;
+              }
+
+              ctxSched.clearRect(0, 0, width, height);
+
+              // 1. 디스크 트랙 실선 가이드 스케일 그리기
+              ctxSched.strokeStyle = '#475569';
+              ctxSched.lineWidth = 2;
+              ctxSched.beginPath();
+              ctxSched.moveTo(paddingLeft, 40);
+              ctxSched.lineTo(width - paddingRight, 40);
+              ctxSched.stroke();
+
+              // 모바일/일반 디스플레이 대응 반응형 폰트 크기 변경
+              ctxSched.font = width < 550 ? 'bold 8px monospace' : 'bold 10px monospace';
+              ctxSched.textAlign = 'center';
+
+              const markers = [0, 14, 37, 53, 65, 67, 98, 122, 124, 183, 200];
+              markers.forEach((m, idx) => {
+                  const mx = getX(m);
+                  ctxSched.strokeStyle = m === startHead ? '#ef4444' : '#334155';
+                  ctxSched.lineWidth = m === startHead ? 2 : 1;
+
+                  ctxSched.beginPath();
+                  ctxSched.moveTo(mx, 35);
+                  ctxSched.lineTo(mx, 45);
+                  ctxSched.stroke();
+
+                  ctxSched.fillStyle = m === startHead ? '#ef4444' : '#94a3b8';
+
+                  // 가로폭이 아주 좁은 스마트폰 환경에서 숫자끼리 겹치지 않도록 홀/짝 인덱스를 지그재그(Staggered) 배치
+                  const textY = (width < 550 && idx % 2 === 0) ? 15 : 25;
+                  ctxSched.fillText(m, mx, textY);
+              });
+
+              // 2. 가로폭 진행선 이음선
+              const stepHeight = (height - 80) / calculatedPath.length;
+              ctxSched.strokeStyle = '#ef4444';
+              ctxSched.lineWidth = 3;
+              ctxSched.lineJoin = 'round';
+              ctxSched.beginPath();
+
+              pathDrawProgress += 0.05;
+              const activeLimit = Math.min(pathDrawProgress, calculatedPath.length);
+
+              for (let i = 0; i < activeLimit; i++) {
+                  const px = getX(calculatedPath[i]);
+                  const py = 60 + i * stepHeight;
+                  if (i === 0) {
+                      ctxSched.moveTo(px, py);
+                  } else {
+                      if (i > activeLimit - 1) {
+                          const prevX = getX(calculatedPath[i-1]);
+                          const prevY = 60 + (i-1) * stepHeight;
+                          const interpX = prevX + (px - prevX) * (activeLimit % 1);
+                          const interpY = prevY + (py - prevY) * (activeLimit % 1);
+                          ctxSched.lineTo(interpX, interpY);
+                      } else {
+                          ctxSched.lineTo(px, py);
+                      }
+                  }
+              }
+              ctxSched.stroke();
+
+              // 3. 노드 원 스팟 및 순서 넘버링 마킹
+              for (let i = 0; i < activeLimit; i++) {
+                  const px = getX(calculatedPath[i]);
+                  const py = 60 + i * stepHeight;
+
+                  ctxSched.fillStyle = i === 0 ? '#ef4444' : '#10b981';
+                  ctxSched.beginPath();
+                  ctxSched.arc(px, py, 6, 0, Math.PI * 2);
+                  ctxSched.fill();
+
+                  // 노드 방문 인덱스 순서 표기
+                  ctxSched.fillStyle = '#ffffff';
+                  ctxSched.font = 'bold 8px sans-serif';
+                  ctxSched.textAlign = 'center';
+                  ctxSched.fillText(i, px, py + 3);
+              }
+
+              if (pathDrawProgress < calculatedPath.length) {
+                  schedAnimationId = requestAnimationFrame(draw);
+              } else {
+                  schedAnimationId = null;
+              }
+          }
+          ctxSched.scale(dpr, dpr);
+          draw();
+      }
+</script></body></html>

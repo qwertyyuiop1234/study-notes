@@ -1,26 +1,66 @@
+<!doctype html>
 <!DOCTYPE html>
-<html class="scroll-smooth" lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pipeline Hazards, Forwarding, and Stalls · Computer Architecture</title>
-  <meta name="description" content="Korean interactive study note on MIPS pipeline hazards: structural hazards, data hazards, forwarding control, load-use stalls, hazard detection, and code scheduling." />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    window.tailwind=window.tailwind||{};
-    tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Geist','Inter','Noto Sans KR','system-ui','sans-serif'],mono:['Geist Mono','JetBrains Mono','ui-monospace','monospace']}}}};
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Pipeline Hazards, Forwarding, and Stalls · Computer Architecture</title>
+<meta content="Korean interactive study note on MIPS pipeline hazards: structural hazards, data hazards, forwarding control, load-use stalls, hazard detection, and code scheduling." name="description"/>
+<script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-  <script>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"]]},svg:{fontCache:'global'}};</script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-  <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
-  <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-  <style>
-    :root{color-scheme:dark}html:not(.dark){color-scheme:light}body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    .code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+    :root{--bg:#f7f4ee;--paper:#fffdfa;--ink:#28231d;--muted:#70675d;--line:#e4d9cc;--accent:#9a4f32;--accent2:#2f6f68;--accent3:#7a5aa6;--soft:#f0e7dc;--code:#24211f;--codefg:#f7efe4;--shadow:0 20px 60px rgba(64,42,22,.12)}
+    html.dark{--bg:#171514;--paper:#211f1d;--ink:#f4eee6;--muted:#c6b9aa;--line:#3d3731;--accent:#e19a73;--accent2:#7fd0c7;--accent3:#c4a5ff;--soft:#2b2723;--code:#111;--codefg:#f8efe3;--shadow:0 22px 70px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(154,79,50,.11),transparent 36%),linear-gradient(180deg,var(--bg),#efe7dc);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;line-height:1.75;letter-spacing:-.01em}
+    html.dark body{background:radial-gradient(circle at 20% 0%,rgba(225,154,115,.12),transparent 36%),linear-gradient(180deg,var(--bg),#111)}
+    .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:28px}
+    aside{position:sticky;top:24px;height:calc(100vh - 48px);overflow:auto;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    html.dark aside{background:rgba(30,28,26,.6)}
+    main{min-width:0}.hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+    .hero{padding:44px;margin-bottom:24px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(47,111,104,.18),transparent 70%);border-radius:50%}
+    .card{padding:34px;margin:20px 0}.mini{padding:18px;border-radius:18px;background:var(--soft);border:1px solid var(--line)}
+    h1{font-size:clamp(34px,5vw,64px);line-height:1.05;margin:0 0 16px}h2{font-size:clamp(26px,3vw,40px);line-height:1.15;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}h3{font-size:24px;margin:28px 0 12px}h4{font-size:19px;margin:22px 0 8px}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--accent);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.08em}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:6px 11px;border-radius:999px;margin:4px;font-size:13px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .brand{font-size:20px;font-weight:900;margin-bottom:14px}.sourcebox{font-size:13px;color:var(--muted);background:var(--soft);border:1px solid var(--line);padding:12px;border-radius:16px;margin:12px 0 16px}
+    .toc a{display:block;color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:12px;font-size:14px}.toc a:hover{background:var(--soft);color:var(--ink)}
+    .sticky-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.btn:hover{transform:translateY(-1px)}
+    .callout{border-left:5px solid var(--accent2);background:var(--soft);padding:16px 18px;border-radius:18px;margin:18px 0}.callout.ok{border-left-color:var(--accent2)}.callout.warn{border-left-color:#c58a2d}.callout.danger{border-left-color:#b95145}
+    .term{font-weight:900;color:var(--accent)}.formula{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:16px;overflow:auto;margin:14px 0}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--soft);text-align:left}tr:last-child td{border-bottom:0}
+    pre{background:var(--code);color:var(--codefg);border-radius:18px;padding:16px;overflow:auto}code{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px}.figure{margin:20px 0;text-align:center}.figure img{max-width:100%;border-radius:18px;border:1px solid var(--line);background:white}.caption{font-size:13px;color:var(--muted);margin-top:8px}.svgbox{overflow:auto;background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:10px}.svgbox svg{max-width:100%;height:auto}.timeline{display:grid;gap:12px}.step{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}.num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:900}.quiz details{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0}.quiz summary{cursor:pointer}
+    .simrow{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center;margin:10px 0}.bar{height:16px;background:var(--line);border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%}
+    @media(max-width:900px){.wrap{display:block;padding:14px}aside{position:relative;height:auto;margin-bottom:18px}.grid,.grid3{grid-template-columns:1fr}.hero,.card{padding:24px}.simrow{grid-template-columns:1fr}}
+    @media print{aside,.sticky-actions{display:none}.wrap{display:block;max-width:none}.card,.hero{box-shadow:none;break-inside:avoid}body{background:white}}
+
+
+    /* Masterclass compatibility layer for pre-existing interactive note content */
+    .source-section{margin:16px 0}.source-section>h3:first-child{margin-top:0}.source-section .card{box-shadow:none}.legacy-section-title{margin-top:0;color:var(--accent)}
+    .hidden{display:none!important}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.items-center{align-items:center}.items-start{align-items:flex-start}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.flex-wrap{flex-wrap:wrap}.flex-col{flex-direction:column}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.space-y-2>*+*{margin-top:.5rem}.space-y-3>*+*{margin-top:.75rem}.space-y-4>*+*{margin-top:1rem}.space-x-2>*+*{margin-left:.5rem}.space-x-3>*+*{margin-left:.75rem}
+    .w-full{width:100%}.max-w-none{max-width:none}.overflow-auto{overflow:auto}.overflow-x-auto{overflow-x:auto}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.align-top{vertical-align:top}.font-semibold{font-weight:600}.font-bold{font-weight:800}.font-black{font-weight:900}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:.04em}
+    .text-xs{font-size:12px}.text-sm{font-size:14px}.text-base{font-size:16px}.text-lg{font-size:18px}.text-xl{font-size:20px}.text-2xl{font-size:24px}.leading-relaxed{line-height:1.75}.leading-tight{line-height:1.2}
+    .p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}
+    .m-0{margin:0}.mt-0{margin-top:0}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mb-0{margin-bottom:0}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mx-auto{margin-left:auto;margin-right:auto}
+    .rounded-lg{border-radius:12px}.rounded-xl{border-radius:16px}.rounded-2xl{border-radius:20px}.rounded-full{border-radius:999px}.border{border:1px solid var(--line)}.border-2{border:2px solid var(--line)}.shadow,.shadow-lg{box-shadow:var(--shadow)}
+    .bg-slate-50,.bg-white,.bg-rose-50,.bg-blue-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-purple-50,.bg-gray-50{background:var(--soft)}.bg-slate-900,.bg-slate-950,.bg-black{background:var(--code);color:var(--codefg)}.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600{color:var(--muted)}.text-slate-800,.text-slate-900,.text-white{color:var(--ink)}.text-blue-400,.text-blue-500,.text-indigo-500,.text-indigo-600,.text-rose-500,.text-rose-600,.text-emerald-500,.text-emerald-600,.text-amber-500,.text-amber-600{color:var(--accent)}
+    button,.quiz-btn,input[type="button"],input[type="submit"]{font-family:inherit}.quiz-btn,.quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;transition:all .2s}.quiz-btn:hover,.quiz-option:hover{transform:translateY(-1px);border-color:var(--accent)}.quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}.quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}
+    input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px}input[type="range"]{padding:0;accent-color:var(--accent)}label{font-weight:700}canvas{max-width:100%;background:var(--paper);border:1px solid var(--line);border-radius:18px}.math-scroll{overflow-x:auto;overflow-y:hidden}
+    @media(min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.md\:flex{display:flex}.md\:block{display:block}}
+
+
+/* Page specific styles recovered from previous note */
+.code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
     .stage-cell{min-height:2.35rem;border-radius:.75rem;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-weight:800;font-size:.78rem}
     .stage-empty{background:rgba(148,163,184,.08);color:rgba(148,163,184,.55);border:1px solid rgba(148,163,184,.12)}
     .stage-on{background:rgba(59,130,246,.18);color:#bfdbfe;border:1px solid rgba(96,165,250,.38)}
@@ -30,167 +70,30 @@
     .puzzle-card:hover{transform:translateY(-2px)}
     ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
     .prose-lite code{font-family:'Geist Mono',monospace;font-weight:700;color:#bfdbfe;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.22);padding:.08rem .35rem;border-radius:.45rem}
-    .prose-lite pre{background:#020617;border:1px solid rgba(255,255,255,.12);border-radius:1rem;padding:1rem;overflow:auto;color:#e2e8f0;margin-top:.8rem;font-family:'Geist Mono',monospace}
-  </style>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-  <div class="wrap">
-    <aside class="sop-note-toc">
-      <div class="brand">🦞 MIPS Hazards</div>
-      <div class="sticky-actions">
-        <button class="btn" type="button" data-sop-theme>테마 전환</button>
-        <button class="btn" type="button" data-sop-print>PDF 저장</button>
-      </div>
-      <div class="sourcebox">명령어 간의 자원 충돌, 데이터 의존성, 분기 판단 지연 등 파이프라인의 효율을 떨어뜨리는 해저드의 실체를 분석하고 포워딩과 스케줄링으로 이를 돌파하는 기법을 탐구합니다.</div>
-      <nav class="toc">
-        <a href="#sec-intro">0. 파이프라인 해저드 개요</a>
-        <a href="#sec-structural">1. Structural Hazard (자원 충돌)</a>
-        <a href="#sec-data">2. Data Hazard (데이터 의존성)</a>
-        <a href="#sec-forwarding">3. Forward Unit 조건문 해부</a>
-        <a href="#sec-load-use">4. Load-use Hazard (물리적 한계)</a>
-        <a href="#sec-scheduling">5. Code Scheduling 기법</a>
-        <a href="#sec-interactive-simulator">Interactive Hazard Sim</a>
-        <a href="#sec-scheduling-challenge">Code Scheduling Puzzle</a>
-      </nav>
-    </aside>
-
-    <main class="prose-lite">
-      <section class="hero" id="top">
-        <span class="eyebrow">Computer Architecture · Hazards &amp; Optimizations · Lab Note</span>
-        <h1>Pipeline Hazards &amp; Solutions</h1>
-        <p style="font-size:20px;color:var(--muted);max-width:950px">MIPS 5-stage pipeline에서 structural hazard, data hazard, forwarding, load-use stall, hazard detection unit, code scheduling을 한 번에 연결해서 공부하는 인터랙티브 학습 대시보드.</p>
-        <div>
-          <span class="pill">Structural Hazards</span>
-          <span class="pill">Data Hazards (RAW)</span>
-          <span class="pill">Forwarding Control</span>
-          <span class="pill">Load-use Stalls</span>
-          <span class="pill">Instruction Scheduling</span>
-        </div>
-      </section>
-
-      <!-- Section 0 -->
-      <section class="card" id="sec-intro">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 0</span>
-          <h2 style="border:none;padding:0;margin:0">파이프라인의 그림자, 해저드란 무엇인가?</h2>
-        </div>
-        <p><strong>Pipeline hazard</strong>는 다음 clock cycle에 다음 instruction을 정상적으로 시작하지 못하게 만드는 hardware 또는 dependency 상황이다. Pipeline은 여러 instruction을 동시에 겹쳐 실행하기 때문에, 값이 “논리적으로는 앞에서 만들어져야 한다”는 사실만으로 충분하지 않다. 실제 hardware stage에서 그 값이나 resource가 준비되어 있어야 한다.</p>
-        
-        <div class="grid gap-4 md:grid-cols-3 mt-4">
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0 text-cyan-600 dark:text-cyan-400">Structural</h4>
-            <p class="text-xs leading-relaxed text-slate-500">같은 cycle에 두 instruction이 같은 물리 resource를 서로 다른 방식으로 요구하는 경우. 대표 예시는 single memory conflict.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0 text-amber-600 dark:text-amber-400">Data</h4>
-            <p class="text-xs leading-relaxed text-slate-500">이전 instruction 결과가 아직 준비되지 않았는데 다음 instruction이 그 register 값을 읽거나 ALU input으로 사용하려는 경우.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0 text-rose-600 dark:text-rose-400">Control</h4>
-            <p class="text-xs leading-relaxed text-slate-500">branch condition과 target이 확정되기 전에 다음 PC를 결정해야 하는 경우. 이 노트는 주로 data hazard 해결에 집중한다.</p>
-          </div>
-        </div>
-        <p class="text-sm mt-4">
-          <strong>TL;DR:</strong> 모든 hazard는 최악의 경우 기다리면 해결된다. 하지만 기다림은 CPI를 증가시키므로, forwarding과 scheduling으로 최대한 bubble을 줄이는 것이 핵심이다.
-        </p>
-      </section>
-
-      <!-- Section 1 -->
-      <section class="card" id="sec-structural">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 1</span>
-          <h2 style="border:none;padding:0;margin:0">Structural Hazard: 단일 메모리의 병목</h2>
-        </div>
-        <p><strong>Structural hazard</strong>는 resource conflict다. 5-stage MIPS pipeline에서 IF stage는 매 cycle instruction memory를 읽고, MEM stage의 <code>lw</code>/<code>sw</code>는 data memory를 읽거나 쓴다. 두 memory가 하나의 physical memory라면 IF와 MEM이 동시에 memory port를 요구하는 cycle에서 conflict가 생긴다.</p>
-        
-        <div class="overflow-x-auto mt-4">
-          <table class="w-full min-w-[500px] overflow-hidden rounded-xl text-sm">
-            <thead class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300">
-              <tr>
-                <th class="p-3 text-left">해결책</th>
-                <th class="p-3 text-left">효과</th>
-                <th class="p-3 text-left">Trade-off</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
-              <tr>
-                <td class="p-3 font-bold">Stall / bubble</td>
-                <td class="p-3">Instruction fetch를 잠시 멈춰 correctness 보장</td>
-                <td class="p-3">Throughput 감소, CPI 증가</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-bold">Instruction/Data memory 분리</td>
-                <td class="p-3">IF와 MEM의 동시 접근 허용 (Harvard Architecture)</td>
-                <td class="p-3">Cache/Memory 구조와 비용 증가</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-bold">Multi-port memory</td>
-                <td class="p-3">한 cycle에 복수 접근 허용</td>
-                <td class="p-3">회로 복잡도와 면적 증가</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <h4 class="font-bold mt-6">Register file은 왜 덜 문제가 되는가?</h4>
-        <p class="text-sm leading-relaxed">
-          MIPS-style pipeline은 흔히 register write를 cycle의 first half, register read를 second half에 수행하는 split-phase timing을 가정한다. 그래서 WB stage가 같은 cycle 앞부분에 write한 값을 ID stage가 뒤부분에 읽을 수 있어 hazard 확률을 절반으로 낮춘다.
-        </p>
-      </section>
-
-      <!-- Section 2 -->
-      <section class="card" id="sec-data">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 2</span>
-          <h2 style="border:none;padding:0;margin:0">Data Hazard: RAW 의존성과 시간 역행 화살표</h2>
-        </div>
-        <p>Data hazard의 대표는 <strong>RAW(Read After Write)</strong>이다. 뒤 instruction이 읽어야 할 값이 앞 instruction의 write 이후에야 architectural register file에 반영되는 상황이다.</p>
-        
-        <pre><code>sub $2,  $1, $3   # $2 생성
-and $12, $2, $5   # $2 즉시 사용: 위험!
-or  $13, $6, $2   # $2 사용: 위험 가능
-add $14, $2, $2   # timing에 따라 split-phase로 안전 가능
-sw  $15, 100($2)  # base register로 $2 사용</code></pre>
-        
-        <p>단순 해결책은 compiler가 <code>nop</code>을 삽입하거나 hardware가 stall을 걸어 기다리는 것이다. 하지만 이 방식은 correctness는 보장해도 pipeline throughput을 떨어뜨린다. 그래서 hardware는 가능한 경우 <strong>forwarding</strong>을 사용한다.</p>
-        
-        <div class="grid gap-4 md:grid-cols-2 mt-4">
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0 text-slate-800 dark:text-white">Stall 기법</h4>
-            <p class="text-xs leading-relaxed">값이 register file에 write될 때까지 기다린다. 구현은 단순하지만 bubble이 발생하여 CPI 손실을 유발한다.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0 text-indigo-600 dark:text-indigo-400">Forwarding / bypassing 기법</h4>
-            <p class="text-xs leading-relaxed">EX/MEM 또는 MEM/WB pipeline register의 임시 연산 결과를 ALU input으로 직접 Bypass 전달한다. 추가적인 Mux 회로가 필요하다.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 3 -->
-      <section class="card" id="sec-forwarding">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 3</span>
-          <h2 style="border:none;padding:0;margin:0">Forward Unit 조건문 해부</h2>
-        </div>
-        <p>Forwarding은 ALU input 앞에 mux를 추가하고, <code>ForwardA</code>, <code>ForwardB</code> control signal로 어느 값을 사용할지 선택한다.</p>
-        
-        <div class="grid gap-3 md:grid-cols-3 mt-4 text-xs">
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <b class="font-mono text-lg text-slate-500">00</b>
-            <p class="mt-1">Normal input: ID/EX pipeline register 값 사용.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <b class="font-mono text-lg text-emerald-500">10</b>
-            <p class="mt-1">EX/MEM에서 forwarding. 바로 이전 instruction 결과.</p>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <b class="font-mono text-lg text-amber-500">01</b>
-            <p class="mt-1">MEM/WB에서 forwarding. 두 instruction 앞 결과.</p>
-          </div>
-        </div>
-
-        <h4 class="font-bold mt-6">EX/MEM hazard 조건문</h4>
-        <pre><code>if (EX/MEM.RegWrite
+    .prose-lite pre{background:#020617;border:1px solid rgba(255,255,255,.12);border-radius:1rem;padding:1rem;overflow:auto;color:#e2e8f0;margin-top:.8rem;font-family:'Geist Mono',monospace}</style></head>
+<body><div class="wrap"><aside><div class="brand">🦞 MIPS Hazards</div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">명령어 간의 자원 충돌, 데이터 의존성, 분기 판단 지연 등 파이프라인의 효율을 떨어뜨리는 해저드의 실체를 분석하고 포워딩과 스케줄링으로 이를 돌파하는 기법을 탐구합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<main><section class="hero" id="top"><span class="eyebrow">Computer Architecture · Hazards &amp; Optimizations · Lab Note · Masterclass Note</span><h1>Pipeline Hazards &amp; Solutions</h1><p style="font-size:20px;color:var(--muted);max-width:950px">MIPS 5-stage pipeline에서 structural hazard, data hazard, forwarding, load-use stall, hazard detection unit, code scheduling을 한 번에 연결해서 공부하는 인터랙티브 학습 대시보드.</p><div><span class="pill">Structural Hazards</span><span class="pill">Data Hazards (RAW)</span><span class="pill">Forwarding Control</span><span class="pill">Load-use Stalls</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2><p>MIPS 5-stage pipeline에서 structural hazard, data hazard, forwarding, load-use stall, hazard detection unit, code scheduling을 한 번에 연결해서 공부하는 인터랙티브 학습 대시보드.</p><div class="grid"><div class="mini"><h3>학습 흐름</h3><ul><li>파이프라인의 그림자, 해저드란 무엇인가?</li><li>Structural Hazard: 단일 메모리의 병목</li><li>Data Hazard: RAW 의존성과 시간 역행 화살표</li><li>Forward Unit 조건문 해부</li><li>Load-use Hazard: 포워딩의 물리적 한계</li><li>Code Scheduling: 빈 cycle을 유용한 instruction으로 채우기</li><li>Interactive lab: cycle-by-cycle hazard simulator</li><li>Code scheduling puzzle challenge</li></ul></div><div class="mini"><h3>핵심 태그</h3><ul><li>Structural Hazards</li><li>Data Hazards (RAW)</li><li>Forwarding Control</li><li>Load-use Stalls</li></ul></div></div><div class="callout ok"><b>읽는 법:</b> 왼쪽 목차의 0–9 구조를 따라 개념 → 정의/수식 → 직관 → 예제 → 함정 → 실험 → 복습 순서로 읽으면 된다.</div></section><section class="card" id="concept"><h2>1. 핵심 개념</h2><p>원본 개념 섹션을 이 Masterclass 구조에 맞춰 보존했다.</p></section><section class="card" id="math"><h2>2. 수식과 정의</h2><div class="mini source-section" id="sec-forwarding">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 3</span>
+<h3 class="legacy-section-title">Forward Unit 조건문 해부</h3>
+</div>
+<p>Forwarding은 ALU input 앞에 mux를 추가하고, <code>ForwardA</code>, <code>ForwardB</code> control signal로 어느 값을 사용할지 선택한다.</p>
+<div class="grid gap-3 md:grid-cols-3 mt-4 text-xs">
+<div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800 mini">
+<b class="font-mono text-lg text-slate-500">00</b>
+<p class="mt-1">Normal input: ID/EX pipeline register 값 사용.</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800 mini">
+<b class="font-mono text-lg text-emerald-500">10</b>
+<p class="mt-1">EX/MEM에서 forwarding. 바로 이전 instruction 결과.</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800 mini">
+<b class="font-mono text-lg text-amber-500">01</b>
+<p class="mt-1">MEM/WB에서 forwarding. 두 instruction 앞 결과.</p>
+</div>
+</div>
+<h4 class="font-bold mt-6">EX/MEM hazard 조건문</h4>
+<pre><code>if (EX/MEM.RegWrite
     and EX/MEM.RegisterRd != 0
     and EX/MEM.RegisterRd == ID/EX.RegisterRs)
     ForwardA = 10;
@@ -199,58 +102,51 @@ if (EX/MEM.RegWrite
     and EX/MEM.RegisterRd != 0
     and EX/MEM.RegisterRd == ID/EX.RegisterRt)
     ForwardB = 10;</code></pre>
-
-        <h4 class="font-bold mt-4">MEM/WB hazard와 최신 결과 우선순위 (Priority logic)</h4>
-        <p>MEM/WB도 source register와 destination register가 같으면 forwarding 후보가 된다. 그러나 EX/MEM과 MEM/WB가 동시에 match되면 <strong>EX/MEM이 더 최신 결과</strong>이므로 우선해야 한다.</p>
-        <pre><code>if (MEM/WB.RegWrite
+<h4 class="font-bold mt-4">MEM/WB hazard와 최신 결과 우선순위 (Priority logic)</h4>
+<p>MEM/WB도 source register와 destination register가 같으면 forwarding 후보가 된다. 그러나 EX/MEM과 MEM/WB가 동시에 match되면 <strong>EX/MEM이 더 최신 결과</strong>이므로 우선해야 한다.</p>
+<pre><code>if (MEM/WB.RegWrite
     and MEM/WB.RegisterRd != 0
     and MEM/WB.RegisterRd == ID/EX.RegisterRs
     and not(EX/MEM.RegWrite
             and EX/MEM.RegisterRd != 0
             and EX/MEM.RegisterRd == ID/EX.RegisterRs))
     ForwardA = 01;</code></pre>
-        <div class="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-200 dark:border-amber-900/30 mt-4 text-xs">
-          <strong>📌 시험 포인트:</strong> 조건문 서술 시에는 단순 register match뿐 아니라 <code>RegWrite = 1</code> 여부, <code>RegisterRd != 0</code>(제공자가 $zero가 아닐 것) 조건, 그리고 최신 결과를 먼저 가져오는 우선순위 로직(not EX/MEM match)이 반드시 명시되어야 만점을 받습니다.
+<div class="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-200 dark:border-amber-900/30 mt-4 text-xs mini">
+<strong>📌 시험 포인트:</strong> 조건문 서술 시에는 단순 register match뿐 아니라 <code>RegWrite = 1</code> 여부, <code>RegisterRd != 0</code>(제공자가 $zero가 아닐 것) 조건, 그리고 최신 결과를 먼저 가져오는 우선순위 로직(not EX/MEM match)이 반드시 명시되어야 만점을 받습니다.
         </div>
-      </section>
-
-      <!-- Section 4 -->
-      <section class="card" id="sec-load-use">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 4</span>
-          <h2 style="border:none;padding:0;margin:0">Load-use Hazard: 포워딩의 물리적 한계</h2>
-        </div>
-        <p><code>lw</code> 결과는 MEM stage 끝에서야 준비된다. 바로 다음 instruction이 EX stage에서 그 값을 필요로 하면, forwarding으로도 시간을 거슬러 값을 전달할 수 없다.</p>
-        <pre><code>lw  $2, 20($1)    # loaded data is ready after MEM
-and $4, $2, $5    # needs $2 at EX too early</code></pre>
-        <p>따라서 load-use hazard는 1-cycle stall을 삽입하고, 그 다음 cycle에 forwarding으로 해결한다.</p>
-        
-        <h4 class="font-bold mt-4">Hazard detection condition (ID stage에서 작동)</h4>
-        <pre><code>if (ID/EX.MemRead
-    and ((ID/EX.RegisterRt == IF/ID.RegisterRs)
-      or (ID/EX.RegisterRt == IF/ID.RegisterRt)))
-    stall_the_pipeline();</code></pre>
-        
-        <h4 class="font-bold mt-4">Stall hardware가 실제로 하는 일 (Bubble 삽입)</h4>
-        <ul class="list-disc list-inside pl-4 space-y-1 text-sm">
-          <li><strong>PCWrite = 0:</strong> PC update를 막아 새 instruction fetch를 멈춘다.</li>
-          <li><strong>IF/IDWrite = 0:</strong> ID stage instruction을 같은 위치에 유지한다 (freeze).</li>
-          <li><strong>ID/EX control = 0:</strong> EX로 nop/bubble을 보낸다 (RegWrite=0, MemWrite=0을 넣어 side effect 완전 차단).</li>
-        </ul>
-      </section>
-
-      <!-- Section 5 -->
-      <section class="card" id="sec-scheduling">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 5</span>
-          <h2 style="border:none;padding:0;margin:0">Code Scheduling: 빈 cycle을 유용한 instruction으로 채우기</h2>
-        </div>
-        <p>Compiler는 program semantics를 보존하면서 independent instruction을 load-use gap에 끼워 넣어 stall을 줄일 수 있다.</p>
-        
-        <div class="grid gap-4 md:grid-cols-2 mt-4">
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0 text-rose-500">스케줄링 전 (Stall 2개 발생)</h4>
-            <pre class="text-xs"><code>lw  $t1, 0($t0)    # B
+</div></section><section class="card" id="intuition"><h2>3. 직관과 그림</h2><div class="mini source-section" id="sec-intro">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 0</span>
+<h3 class="legacy-section-title">파이프라인의 그림자, 해저드란 무엇인가?</h3>
+</div>
+<p><strong>Pipeline hazard</strong>는 다음 clock cycle에 다음 instruction을 정상적으로 시작하지 못하게 만드는 hardware 또는 dependency 상황이다. Pipeline은 여러 instruction을 동시에 겹쳐 실행하기 때문에, 값이 “논리적으로는 앞에서 만들어져야 한다”는 사실만으로 충분하지 않다. 실제 hardware stage에서 그 값이나 resource가 준비되어 있어야 한다.</p>
+<div class="grid gap-4 md:grid-cols-3 mt-4">
+<div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 mini">
+<h4 class="font-bold mt-0 text-cyan-600 dark:text-cyan-400">Structural</h4>
+<p class="text-xs leading-relaxed text-slate-500">같은 cycle에 두 instruction이 같은 물리 resource를 서로 다른 방식으로 요구하는 경우. 대표 예시는 single memory conflict.</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 mini">
+<h4 class="font-bold mt-0 text-amber-600 dark:text-amber-400">Data</h4>
+<p class="text-xs leading-relaxed text-slate-500">이전 instruction 결과가 아직 준비되지 않았는데 다음 instruction이 그 register 값을 읽거나 ALU input으로 사용하려는 경우.</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 mini">
+<h4 class="font-bold mt-0 text-rose-600 dark:text-rose-400">Control</h4>
+<p class="text-xs leading-relaxed text-slate-500">branch condition과 target이 확정되기 전에 다음 PC를 결정해야 하는 경우. 이 노트는 주로 data hazard 해결에 집중한다.</p>
+</div>
+</div>
+<p class="text-sm mt-4">
+<strong>TL;DR:</strong> 모든 hazard는 최악의 경우 기다리면 해결된다. 하지만 기다림은 CPI를 증가시키므로, forwarding과 scheduling으로 최대한 bubble을 줄이는 것이 핵심이다.
+        </p>
+</div></section><section class="card" id="examples"><h2>4. 예제</h2><div class="mini source-section" id="sec-scheduling">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 5</span>
+<h3 class="legacy-section-title">Code Scheduling: 빈 cycle을 유용한 instruction으로 채우기</h3>
+</div>
+<p>Compiler는 program semantics를 보존하면서 independent instruction을 load-use gap에 끼워 넣어 stall을 줄일 수 있다.</p>
+<div class="grid gap-4 md:grid-cols-2 mt-4">
+<div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 mini">
+<h4 class="font-bold mt-0 text-rose-500">스케줄링 전 (Stall 2개 발생)</h4>
+<pre class="text-xs"><code>lw  $t1, 0($t0)    # B
 lw  $t2, 4($t0)    # E
 stall
 add $t3, $t1, $t2  # A = B + E
@@ -260,10 +156,10 @@ stall
 add $t5, $t1, $t4  # C = B + F
 sw  $t5, 16($t0)
 # 총 13 cycles</code></pre>
-          </div>
-          <div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 class="font-bold mt-0 text-emerald-500">스케줄링 후 (Stall 완전 제거)</h4>
-            <pre class="text-xs"><code>lw  $t1, 0($t0)    # B
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 mini">
+<h4 class="font-bold mt-0 text-emerald-500">스케줄링 후 (Stall 완전 제거)</h4>
+<pre class="text-xs"><code>lw  $t1, 0($t0)    # B
 lw  $t2, 4($t0)    # E
 lw  $t4, 8($t0)    # F (위로 이동시켜 gap 채움!)
 add $t3, $t1, $t2  # A = B + E
@@ -271,82 +167,176 @@ sw  $t3, 12($t0)
 add $t5, $t1, $t4  # C = B + F
 sw  $t5, 16($t0)
 # 총 11 cycles</code></pre>
-          </div>
-        </div>
-        <p class="text-sm mt-4">
+</div>
+</div>
+<p class="text-sm mt-4">
           핵심은 load 직후 결과를 쓰는 instruction 사이에 의존성이 없는 작업을 배치하는 것이다. “순서를 바꿔도 같은 의미인가?”와 “load-use gap을 메웠는가?”를 동시에 확인해야 한다.
         </p>
-      </section>
-
-      <!-- Section 6 - Simulator -->
-      <section class="card" id="sec-interactive-simulator">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-full">Simulator</span>
-          <h2 style="border:none;padding:0;margin:0">Interactive lab: cycle-by-cycle hazard simulator</h2>
-        </div>
-        <p class="text-sm mb-4">Preset을 바꾸고 cycle을 이동하면서 stall과 forwarding이 pipeline grid에 어떻게 나타나는지 확인해보자.</p>
-        
-        <div class="grid gap-3 md:grid-cols-3 mt-4">
-          <button onclick="loadSimulatorPreset(1)" id="preset-btn-1" class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-left font-black hover:bg-slate-100 dark:hover:bg-slate-900 text-xs transition">🔴 No forwarding: stalls</button>
-          <button onclick="loadSimulatorPreset(2)" id="preset-btn-2" class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-left font-black hover:bg-slate-100 dark:hover:bg-slate-900 text-xs transition">💚 Forwarding</button>
-          <button onclick="loadSimulatorPreset(3)" id="preset-btn-3" class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-left font-black hover:bg-slate-100 dark:hover:bg-slate-900 text-xs transition">🟣 Load-use stall</button>
-        </div>
-
-        <div class="mt-5 bg-slate-900 p-6 rounded-2xl border border-slate-800">
-          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <span class="text-[10px] font-bold uppercase tracking-[.22em] text-slate-400">Current code</span>
-              <div id="sim-code-preview" class="mt-2 font-mono text-sm text-blue-200 font-bold"></div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button onclick="stepSim(-1)" class="rounded-xl bg-slate-800 px-4 py-3 font-black text-white hover:bg-slate-700 transition">←</button>
-              <div class="rounded-xl bg-slate-950 px-5 py-3 text-center min-w-[70px] border border-slate-800">
-                <span class="block text-[9px] uppercase text-slate-500">Clock</span>
-                <b id="current-cc-text" class="font-mono text-blue-400 text-sm">CC 1</b>
-              </div>
-              <button onclick="stepSim(1)" class="rounded-xl bg-slate-800 px-4 py-3 font-black text-white hover:bg-slate-700 transition">→</button>
-            </div>
-          </div>
-
-          <div class="mt-5 overflow-x-auto">
-            <div class="min-w-[650px]">
-              <div class="grid grid-cols-11 gap-2 border-b border-slate-800 pb-2 text-center text-[10px] font-black uppercase text-slate-500">
-                <div class="col-span-2 text-left">Instruction</div>
-                <div class="col-span-9 grid grid-cols-9 gap-2">
-                  <span>CC1</span><span>CC2</span><span>CC3</span><span>CC4</span><span>CC5</span><span>CC6</span><span>CC7</span><span>CC8</span><span>CC9</span>
-                </div>
-              </div>
-              <div id="sim-rows" class="mt-3 space-y-2"></div>
-            </div>
-          </div>
-          
-          <div id="forward-explain-box" class="mt-5 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs leading-relaxed text-slate-300"></div>
-        </div>
-      </section>
-
-      <!-- Section 7 - Puzzle Challenge -->
-      <section class="card" id="sec-scheduling-challenge">
-        <div class="flex items-center space-x-3 mb-6">
-          <span class="py-1 px-3 bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-full">Puzzle</span>
-          <h2 style="border:none;padding:0;margin:0">Code scheduling puzzle challenge</h2>
-        </div>
-        <p class="text-sm">아래 instruction card 순서를 위/아래로 이동해서 load-use stall이 발생하지 않는 11-cycle 순서를 만들어 보자.</p>
-        
-        <div id="challenge-notification" class="mt-4 hidden rounded-2xl p-4 text-xs font-bold border"></div>
-        <div id="puzzle-list" class="mt-5 space-y-2"></div>
-        
-        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
-          <button onclick="evaluatePuzzle()" class="rounded-full bg-blue-600 px-6 py-3 font-black text-white hover:bg-blue-700 transition shadow-lg shadow-blue-500/15">스케줄링 평가하기</button>
-          <button onclick="resetPuzzle()" class="rounded-full bg-slate-600 px-6 py-3 font-black text-white hover:bg-slate-700 transition">초기화</button>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    let simPreset=1;
+</div><div class="mini source-section" id="sec-scheduling-challenge">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-full">Puzzle</span>
+<h3 class="legacy-section-title">Code scheduling puzzle challenge</h3>
+</div>
+<p class="text-sm">아래 instruction card 순서를 위/아래로 이동해서 load-use stall이 발생하지 않는 11-cycle 순서를 만들어 보자.</p>
+<div class="mt-4 hidden rounded-2xl p-4 text-xs font-bold border mini" id="challenge-notification"></div>
+<div class="mt-5 space-y-2" id="puzzle-list"></div>
+<div class="mt-5 flex flex-col gap-3 sm:flex-row">
+<button class="rounded-full bg-blue-600 px-6 py-3 font-black text-white hover:bg-blue-700 transition shadow-lg shadow-blue-500/15 btn" onclick="evaluatePuzzle()">스케줄링 평가하기</button>
+<button class="rounded-full bg-slate-600 px-6 py-3 font-black text-white hover:bg-slate-700 transition btn" onclick="resetPuzzle()">초기화</button>
+</div>
+</div></section><section class="card" id="pitfalls"><h2>5. 자주 틀리는 부분</h2><div class="mini source-section" id="sec-structural">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 1</span>
+<h3 class="legacy-section-title">Structural Hazard: 단일 메모리의 병목</h3>
+</div>
+<p><strong>Structural hazard</strong>는 resource conflict다. 5-stage MIPS pipeline에서 IF stage는 매 cycle instruction memory를 읽고, MEM stage의 <code>lw</code>/<code>sw</code>는 data memory를 읽거나 쓴다. 두 memory가 하나의 physical memory라면 IF와 MEM이 동시에 memory port를 요구하는 cycle에서 conflict가 생긴다.</p>
+<div class="overflow-x-auto mt-4">
+<table class="w-full min-w-[500px] overflow-hidden rounded-xl text-sm">
+<thead class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300">
+<tr>
+<th class="p-3 text-left">해결책</th>
+<th class="p-3 text-left">효과</th>
+<th class="p-3 text-left">Trade-off</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
+<tr>
+<td class="p-3 font-bold">Stall / bubble</td>
+<td class="p-3">Instruction fetch를 잠시 멈춰 correctness 보장</td>
+<td class="p-3">Throughput 감소, CPI 증가</td>
+</tr>
+<tr>
+<td class="p-3 font-bold">Instruction/Data memory 분리</td>
+<td class="p-3">IF와 MEM의 동시 접근 허용 (Harvard Architecture)</td>
+<td class="p-3">Cache/Memory 구조와 비용 증가</td>
+</tr>
+<tr>
+<td class="p-3 font-bold">Multi-port memory</td>
+<td class="p-3">한 cycle에 복수 접근 허용</td>
+<td class="p-3">회로 복잡도와 면적 증가</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 class="font-bold mt-6">Register file은 왜 덜 문제가 되는가?</h4>
+<p class="text-sm leading-relaxed">
+          MIPS-style pipeline은 흔히 register write를 cycle의 first half, register read를 second half에 수행하는 split-phase timing을 가정한다. 그래서 WB stage가 같은 cycle 앞부분에 write한 값을 ID stage가 뒤부분에 읽을 수 있어 hazard 확률을 절반으로 낮춘다.
+        </p>
+</div><div class="mini source-section" id="sec-data">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 2</span>
+<h3 class="legacy-section-title">Data Hazard: RAW 의존성과 시간 역행 화살표</h3>
+</div>
+<p>Data hazard의 대표는 <strong>RAW(Read After Write)</strong>이다. 뒤 instruction이 읽어야 할 값이 앞 instruction의 write 이후에야 architectural register file에 반영되는 상황이다.</p>
+<pre><code>sub $2,  $1, $3   # $2 생성
+and $12, $2, $5   # $2 즉시 사용: 위험!
+or  $13, $6, $2   # $2 사용: 위험 가능
+add $14, $2, $2   # timing에 따라 split-phase로 안전 가능
+sw  $15, 100($2)  # base register로 $2 사용</code></pre>
+<p>단순 해결책은 compiler가 <code>nop</code>을 삽입하거나 hardware가 stall을 걸어 기다리는 것이다. 하지만 이 방식은 correctness는 보장해도 pipeline throughput을 떨어뜨린다. 그래서 hardware는 가능한 경우 <strong>forwarding</strong>을 사용한다.</p>
+<div class="grid gap-4 md:grid-cols-2 mt-4">
+<div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 mini">
+<h4 class="font-bold mt-0 text-slate-800 dark:text-white">Stall 기법</h4>
+<p class="text-xs leading-relaxed">값이 register file에 write될 때까지 기다린다. 구현은 단순하지만 bubble이 발생하여 CPI 손실을 유발한다.</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 mini">
+<h4 class="font-bold mt-0 text-indigo-600 dark:text-indigo-400">Forwarding / bypassing 기법</h4>
+<p class="text-xs leading-relaxed">EX/MEM 또는 MEM/WB pipeline register의 임시 연산 결과를 ALU input으로 직접 Bypass 전달한다. 추가적인 Mux 회로가 필요하다.</p>
+</div>
+</div>
+</div><div class="mini source-section" id="sec-load-use">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">Chapter 4</span>
+<h3 class="legacy-section-title">Load-use Hazard: 포워딩의 물리적 한계</h3>
+</div>
+<p><code>lw</code> 결과는 MEM stage 끝에서야 준비된다. 바로 다음 instruction이 EX stage에서 그 값을 필요로 하면, forwarding으로도 시간을 거슬러 값을 전달할 수 없다.</p>
+<pre><code>lw  $2, 20($1)    # loaded data is ready after MEM
+and $4, $2, $5    # needs $2 at EX too early</code></pre>
+<p>따라서 load-use hazard는 1-cycle stall을 삽입하고, 그 다음 cycle에 forwarding으로 해결한다.</p>
+<h4 class="font-bold mt-4">Hazard detection condition (ID stage에서 작동)</h4>
+<pre><code>if (ID/EX.MemRead
+    and ((ID/EX.RegisterRt == IF/ID.RegisterRs)
+      or (ID/EX.RegisterRt == IF/ID.RegisterRt)))
+    stall_the_pipeline();</code></pre>
+<h4 class="font-bold mt-4">Stall hardware가 실제로 하는 일 (Bubble 삽입)</h4>
+<ul class="list-disc list-inside pl-4 space-y-1 text-sm">
+<li><strong>PCWrite = 0:</strong> PC update를 막아 새 instruction fetch를 멈춘다.</li>
+<li><strong>IF/IDWrite = 0:</strong> ID stage instruction을 같은 위치에 유지한다 (freeze).</li>
+<li><strong>ID/EX control = 0:</strong> EX로 nop/bubble을 보낸다 (RegWrite=0, MemWrite=0을 넣어 side effect 완전 차단).</li>
+</ul>
+</div></section><section class="card" id="interactive"><h2>6. 인터랙티브 실험</h2><div class="mini source-section" id="sec-interactive-simulator">
+<div class="flex items-center space-x-3 mb-6">
+<span class="py-1 px-3 bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-full">Simulator</span>
+<h3 class="legacy-section-title">Interactive lab: cycle-by-cycle hazard simulator</h3>
+</div>
+<p class="text-sm mb-4">Preset을 바꾸고 cycle을 이동하면서 stall과 forwarding이 pipeline grid에 어떻게 나타나는지 확인해보자.</p>
+<div class="grid gap-3 md:grid-cols-3 mt-4">
+<button class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-left font-black hover:bg-slate-100 dark:hover:bg-slate-900 text-xs transition btn" id="preset-btn-1" onclick="loadSimulatorPreset(1)">🔴 No forwarding: stalls</button>
+<button class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-left font-black hover:bg-slate-100 dark:hover:bg-slate-900 text-xs transition btn" id="preset-btn-2" onclick="loadSimulatorPreset(2)">💚 Forwarding</button>
+<button class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-left font-black hover:bg-slate-100 dark:hover:bg-slate-900 text-xs transition btn" id="preset-btn-3" onclick="loadSimulatorPreset(3)">🟣 Load-use stall</button>
+</div>
+<div class="mt-5 bg-slate-900 p-6 rounded-2xl border border-slate-800 mini">
+<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+<div>
+<span class="text-[10px] font-bold uppercase tracking-[.22em] text-slate-400">Current code</span>
+<div class="mt-2 font-mono text-sm text-blue-200 font-bold" id="sim-code-preview"></div>
+</div>
+<div class="flex items-center gap-2">
+<button class="rounded-xl bg-slate-800 px-4 py-3 font-black text-white hover:bg-slate-700 transition btn" onclick="stepSim(-1)">←</button>
+<div class="rounded-xl bg-slate-950 px-5 py-3 text-center min-w-[70px] border border-slate-800 mini">
+<span class="block text-[9px] uppercase text-slate-500">Clock</span>
+<b class="font-mono text-blue-400 text-sm" id="current-cc-text">CC 1</b>
+</div>
+<button class="rounded-xl bg-slate-800 px-4 py-3 font-black text-white hover:bg-slate-700 transition btn" onclick="stepSim(1)">→</button>
+</div>
+</div>
+<div class="mt-5 overflow-x-auto">
+<div class="min-w-[650px]">
+<div class="grid grid-cols-11 gap-2 border-b border-slate-800 pb-2 text-center text-[10px] font-black uppercase text-slate-500 mini">
+<div class="col-span-2 text-left">Instruction</div>
+<div class="col-span-9 grid grid-cols-9 gap-2">
+<span>CC1</span><span>CC2</span><span>CC3</span><span>CC4</span><span>CC5</span><span>CC6</span><span>CC7</span><span>CC8</span><span>CC9</span>
+</div>
+</div>
+<div class="mt-3 space-y-2" id="sim-rows"></div>
+</div>
+</div>
+<div class="mt-5 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs leading-relaxed text-slate-300 mini" id="forward-explain-box"></div>
+</div>
+</div></section><section class="card" id="exam"><h2>7. 시험/복습용 핵심 정리</h2><p>위 내용을 구두로 설명할 수 있는지 점검하라: 핵심 정의, 작동 순서, 대표 함정, 해결 기준을 한 문장씩 말할 수 있어야 한다.</p></section><section class="card quiz" id="quiz"><h2>8. 확인 문제와 해설</h2><p>원본 확인 문제가 없으면 각 섹션 제목을 질문으로 바꾸어 스스로 답해 보라.</p></section><section class="card" id="sources"><h2>9. 사용 자료와 출처</h2><ul><li>Course lecture notes and self-contained study note content.</li></ul></section></main>
+</div><script>
+const STORAGE_KEY='masterclass-study-note-theme';
+function toggleTheme(){
+  document.documentElement.classList.toggle('dark');
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem(STORAGE_KEY,document.documentElement.classList.contains('dark')?'dark':'light');
+}
+(function(){
+  const t=localStorage.getItem(STORAGE_KEY);
+  if(t==='dark'){
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }else{
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }
+})();
+function updateDemo(){
+  const slider=document.getElementById('demoSlider');
+  const value=document.getElementById('demoValue');
+  const bar=document.getElementById('demoBar');
+  const out=document.getElementById('demoOut');
+  if(!slider||!value||!bar||!out) return;
+  const v=parseFloat(slider.value);
+  value.textContent=v.toFixed(0);
+  bar.style.width=v+'%';
+  out.textContent=`현재 값: ${v}\n여기에 개념별 계산 결과나 해석을 연결하면 된다.`;
+}
+window.addEventListener('DOMContentLoaded', updateDemo);
+</script><script>
+let simPreset=1;
     let simCC=1;
-    
+
     const presets={
       1:{
         title:'데이터 해저드: forwarding 없음',
@@ -409,7 +399,7 @@ sw  $t5, 16($t0)
         }
       }
     };
-    
+
     function loadSimulatorPreset(id){
       simPreset=id;
       simCC=1;
@@ -419,13 +409,13 @@ sw  $t5, 16($t0)
       });
       renderSimulator();
     }
-    
+
     function stepSim(dir){
       const max=simPreset===2?7:(simPreset===3?8:9);
       simCC=Math.max(1,Math.min(max,simCC+dir));
       renderSimulator();
     }
-    
+
     function renderSimulator(){
       const p=presets[simPreset];
       document.getElementById('sim-code-preview').textContent=p.code.join(' | ');
@@ -439,7 +429,7 @@ sw  $t5, 16($t0)
         label.className='col-span-2 overflow-hidden text-ellipsis whitespace-nowrap text-left font-mono font-bold text-slate-400 dark:text-slate-350';
         label.textContent=inst;
         row.appendChild(label);
-        
+
         const grid=document.createElement('div');
         grid.className='col-span-9 grid grid-cols-9 gap-2';
         for(let c=1;c<=9;c++){
@@ -454,7 +444,7 @@ sw  $t5, 16($t0)
       });
       document.getElementById('forward-explain-box').innerHTML='<b class="text-blue-400">CC '+simCC+'</b> · '+(p.explain[simCC]||'Cycle을 이동해보자.');
     }
-    
+
     const initialPuzzleState=[
       {id:'p1',code:'lw $t1, 0($t0)',desc:'B load'},
       {id:'p2',code:'lw $t2, 4($t0)',desc:'E load'},
@@ -465,7 +455,7 @@ sw  $t5, 16($t0)
       {id:'p7',code:'sw $t5, 16($t0)',desc:'store C'}
     ];
     let currentPuzzle=[...initialPuzzleState];
-    
+
     function renderPuzzle(){
       const el=document.getElementById('puzzle-list');
       el.innerHTML='';
@@ -484,28 +474,28 @@ sw  $t5, 16($t0)
         el.appendChild(div)
       });
     }
-    
+
     function movePuzzleItem(index,dir){
       const t=index+dir;
       if(t<0||t>=currentPuzzle.length) return;
       [currentPuzzle[index],currentPuzzle[t]]=[currentPuzzle[t],currentPuzzle[index]];
       renderPuzzle();
     }
-    
+
     function resetPuzzle(){
       currentPuzzle=[...initialPuzzleState];
       const n=document.getElementById('challenge-notification');
       n.className='mt-4 hidden rounded-2xl p-4 text-xs font-bold border';
       renderPuzzle();
     }
-    
+
     function evaluatePuzzle(){
       const n=document.getElementById('challenge-notification');
       n.classList.remove('hidden');
       n.className='mt-4 rounded-2xl p-4 text-xs font-bold border';
       let stalls=0;
       let log=[];
-      
+
       for(let i=0;i<currentPuzzle.length-1;i++){
         const a=currentPuzzle[i],b=currentPuzzle[i+1];
         if(a.id==='p1'&&(b.id==='p3'||b.id==='p6')){
@@ -521,20 +511,20 @@ sw  $t5, 16($t0)
           log.push('$t4 load 직후 C 계산이 온다.')
         }
       }
-      
+
       const pos=id=>currentPuzzle.findIndex(x=>x.id===id);
       let err='';
       if(pos('p1')>pos('p3')||pos('p2')>pos('p3')) err='B와 E를 load한 뒤 A를 계산해야 한다.';
       else if(pos('p1')>pos('p6')||pos('p5')>pos('p6')) err='B와 F를 load한 뒤 C를 계산해야 한다.';
       else if(pos('p3')>pos('p4')) err='A를 계산한 뒤 store해야 한다.';
       else if(pos('p6')>pos('p7')) err='C를 계산한 뒤 store해야 한다.';
-      
+
       if(err){
         n.classList.add('bg-rose-50','text-rose-800','border-rose-200','dark:bg-rose-950/20','dark:text-rose-300','dark:border-rose-900/30');
         n.textContent='논리 오류: '+err;
         return;
       }
-      
+
       if(stalls===0){
         n.classList.add('bg-emerald-50','text-emerald-800','border-emerald-200','dark:bg-emerald-950/20','dark:text-emerald-300','dark:border-emerald-900/30');
         n.textContent='정답! Semantics를 보존하면서 load-use stall을 완전히 제거했다. 예상 11 cycles.';
@@ -543,11 +533,9 @@ sw  $t5, 16($t0)
         n.innerHTML='동작은 맞지만 '+stalls+'개의 load-use stall이 남아 있다. 예상 '+(11+stalls)+' cycles.<ul class="mt-2 list-disc pl-5 text-[10px]">'+log.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
       }
     }
-    
+
     document.addEventListener('DOMContentLoaded',()=>{
       loadSimulatorPreset(1);
       renderPuzzle();
     });
-  </script>
-</body>
-</html>
+</script></body></html>

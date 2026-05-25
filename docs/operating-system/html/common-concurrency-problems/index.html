@@ -1,570 +1,323 @@
+<!doctype html>
 <!DOCTYPE html>
-<html class="scroll-smooth" lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Common Concurrency Problems · Operating System</title>
-  <meta name="description" content="Study note on common concurrency problems: semaphores recap, atomicity violations, order violations, deadlock, prevention, avoidance, recovery, CAS, pitfalls, and exam questions." />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Geist','Inter','Noto Sans KR','system-ui','sans-serif'], mono: ['Geist Mono','JetBrains Mono','ui-monospace','monospace'] }, animation: { float: 'float 14s ease-in-out infinite', 'float-delayed': 'float 18s ease-in-out 2s infinite', 'fade-in-up': 'fadeInUp .7s ease-out forwards' }, keyframes: { float: { '0%,100%': { transform:'translate(0,0) scale(1)' }, '33%': { transform:'translate(24px,-32px) scale(1.05)' }, '66%': { transform:'translate(-18px,22px) scale(.97)' } }, fadeInUp: { '0%': { opacity:'0', transform:'translateY(20px)' }, '100%': { opacity:'1', transform:'translateY(0)' } } } } } };
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Common Concurrency Problems · Operating System</title>
+<meta content="Study note on common concurrency problems: semaphores recap, atomicity violations, order violations, deadlock, prevention, avoidance, recovery, CAS, pitfalls, and exam questions." name="description"/>
+<script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <script>(function(){const saved=localStorage.getItem('study-notes-theme');document.documentElement.classList.toggle('dark', saved ? saved==='dark' : false);})();</script>
-  <style>
-    :root{color-scheme:dark}html:not(.dark){color-scheme:light}body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    .code{background:rgba(2,6,23,.88);border:1px solid rgba(255,255,255,.10);color:#e2e8f0}
-    .step.active{border-color:rgba(139,92,246,.7);background:rgba(139,92,246,.14)}
-    .step.complete{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.09)}
-    .quiz-option.correct{border-color:rgba(16,185,129,.75);background:rgba(16,185,129,.14)}
-    .quiz-option.wrong{border-color:rgba(248,113,113,.75);background:rgba(248,113,113,.13)}
-    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
-  </style>
-  <link href="../../../assets/css/study-os-pro.css?v=theme-polish-20260525d" rel="stylesheet"/>
-  <script defer src="../../../assets/js/study-os-pro.js?v=theme-polish-20260525d"></script>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-  <div class="wrap">
-    <aside class="sop-note-toc">
-      <div class="brand">🦞 OS Concurrency</div>
-      <div class="sticky-actions">
-        <button class="btn" type="button" data-sop-theme>테마 전환</button>
-        <button class="btn" type="button" data-sop-print>PDF 저장</button>
-      </div>
-      <div class="sourcebox">스레드 모델에서 발생하는 대표적인 동시성 오류(비데드락 버그, 데드락 버그)의 원인과 예방/회피 기법을 학습합니다.</div>
-      <nav class="toc">
-        <a href="#semaphores">1. 전체 지도 및 개요</a>
-        <a href="#classification">2. Concurrency Bug 분류</a>
-        <a href="#atomicity">3. Atomicity Violation</a>
-        <a href="#ordering">4. Order Violation</a>
-        <a href="#deadlock">5. Deadlock 정의 및 원인</a>
-        <a href="#conditions">6. Deadlock 발생 4대 조건</a>
-        <a href="#prevention">7. Deadlock 예방 (Prevention)</a>
-        <a href="#cas">8. Lock-free & CAS 기법</a>
-        <a href="#avoidance">9. Deadlock 회피 및 탐지</a>
-        <a href="#exam">10. 시험 대비 문제 & Pitfalls</a>
-        <a href="#quiz">11. Self-check Quiz</a>
-      </nav>
-    </aside>
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+    :root{--bg:#f7f4ee;--paper:#fffdfa;--ink:#28231d;--muted:#70675d;--line:#e4d9cc;--accent:#9a4f32;--accent2:#2f6f68;--accent3:#7a5aa6;--soft:#f0e7dc;--code:#24211f;--codefg:#f7efe4;--shadow:0 20px 60px rgba(64,42,22,.12)}
+    html.dark{--bg:#171514;--paper:#211f1d;--ink:#f4eee6;--muted:#c6b9aa;--line:#3d3731;--accent:#e19a73;--accent2:#7fd0c7;--accent3:#c4a5ff;--soft:#2b2723;--code:#111;--codefg:#f8efe3;--shadow:0 22px 70px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(154,79,50,.11),transparent 36%),linear-gradient(180deg,var(--bg),#efe7dc);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;line-height:1.75;letter-spacing:-.01em}
+    html.dark body{background:radial-gradient(circle at 20% 0%,rgba(225,154,115,.12),transparent 36%),linear-gradient(180deg,var(--bg),#111)}
+    .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:28px}
+    aside{position:sticky;top:24px;height:calc(100vh - 48px);overflow:auto;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    html.dark aside{background:rgba(30,28,26,.6)}
+    main{min-width:0}.hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+    .hero{padding:44px;margin-bottom:24px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(47,111,104,.18),transparent 70%);border-radius:50%}
+    .card{padding:34px;margin:20px 0}.mini{padding:18px;border-radius:18px;background:var(--soft);border:1px solid var(--line)}
+    h1{font-size:clamp(34px,5vw,64px);line-height:1.05;margin:0 0 16px}h2{font-size:clamp(26px,3vw,40px);line-height:1.15;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}h3{font-size:24px;margin:28px 0 12px}h4{font-size:19px;margin:22px 0 8px}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--accent);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.08em}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:6px 11px;border-radius:999px;margin:4px;font-size:13px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .brand{font-size:20px;font-weight:900;margin-bottom:14px}.sourcebox{font-size:13px;color:var(--muted);background:var(--soft);border:1px solid var(--line);padding:12px;border-radius:16px;margin:12px 0 16px}
+    .toc a{display:block;color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:12px;font-size:14px}.toc a:hover{background:var(--soft);color:var(--ink)}
+    .sticky-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.btn:hover{transform:translateY(-1px)}
+    .callout{border-left:5px solid var(--accent2);background:var(--soft);padding:16px 18px;border-radius:18px;margin:18px 0}.callout.ok{border-left-color:var(--accent2)}.callout.warn{border-left-color:#c58a2d}.callout.danger{border-left-color:#b95145}
+    .term{font-weight:900;color:var(--accent)}.formula{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:16px;overflow:auto;margin:14px 0}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--soft);text-align:left}tr:last-child td{border-bottom:0}
+    pre{background:var(--code);color:var(--codefg);border-radius:18px;padding:16px;overflow:auto}code{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 6px}.figure{margin:20px 0;text-align:center}.figure img{max-width:100%;border-radius:18px;border:1px solid var(--line);background:white}.caption{font-size:13px;color:var(--muted);margin-top:8px}.svgbox{overflow:auto;background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:10px}.svgbox svg{max-width:100%;height:auto}.timeline{display:grid;gap:12px}.step{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}.num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:900}.quiz details{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0}.quiz summary{cursor:pointer}
+    .simrow{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center;margin:10px 0}.bar{height:16px;background:var(--line);border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%}
+    @media(max-width:900px){.wrap{display:block;padding:14px}aside{position:relative;height:auto;margin-bottom:18px}.grid,.grid3{grid-template-columns:1fr}.hero,.card{padding:24px}.simrow{grid-template-columns:1fr}}
+    @media print{aside,.sticky-actions{display:none}.wrap{display:block;max-width:none}.card,.hero{box-shadow:none;break-inside:avoid}body{background:white}}
 
-    <main class="prose-lite">
-      <section class="hero" id="top">
-        <span class="eyebrow">Operating System · Concurrency · Concept Note</span>
-        <h1>Common Concurrency Problems</h1>
-        <p style="font-size:20px;color:var(--muted);max-width:950px">A study note on semaphore recap, non-deadlock bugs, deadlock causes, the four conditions, prevention, avoidance, recovery, CAS, exam prompts, and concurrency pitfalls.</p>
-        <div>
-          <span class="pill">Semaphores</span>
-          <span class="pill">Non-deadlock Bugs</span>
-          <span class="pill">Deadlocks</span>
-          <span class="pill">CAS & Lock-free</span>
-        </div>
-      </section>
 
-      <section class="card" id="semaphores">
-        <h2>0. From semaphores to real concurrency bugs</h2>
-        <p>This note continues from the synchronization tools introduced earlier. Semaphores provide a general mechanism for coordinating threads, but real programs still fail when programmers protect the wrong region, forget a required ordering, or acquire locks in an unsafe pattern.</p>
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-3 not-prose mt-6">
-          <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">Lock</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">A binary semaphore can implement mutual exclusion: only one thread enters a critical section.</p>
-          </div>
-          <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">Ordering</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">A semaphore can force B to wait until A has completed.</p>
-          </div>
-          <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">Producer/Consumer</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">Empty/full counters plus a mutex coordinate bounded-buffer access.</p>
-          </div>
-          <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">Reader/Writer</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">Multiple readers may share access, while writers need exclusive access.</p>
-          </div>
-        </div>
-        <p class="mt-6">The central question is: <strong>if locks, condition variables, and semaphores exist, why do concurrency bugs still appear in large applications?</strong> The answer is that synchronization is not only about using a primitive; it is about matching the primitive to the guarantee the program needs.</p>
-      </section>
+    /* Masterclass compatibility layer for pre-existing interactive note content */
+    .source-section{margin:16px 0}.source-section>h3:first-child{margin-top:0}.source-section .card{box-shadow:none}.legacy-section-title{margin-top:0;color:var(--accent)}
+    .hidden{display:none!important}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.items-center{align-items:center}.items-start{align-items:flex-start}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.flex-wrap{flex-wrap:wrap}.flex-col{flex-direction:column}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.space-y-2>*+*{margin-top:.5rem}.space-y-3>*+*{margin-top:.75rem}.space-y-4>*+*{margin-top:1rem}.space-x-2>*+*{margin-left:.5rem}.space-x-3>*+*{margin-left:.75rem}
+    .w-full{width:100%}.max-w-none{max-width:none}.overflow-auto{overflow:auto}.overflow-x-auto{overflow-x:auto}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.align-top{vertical-align:top}.font-semibold{font-weight:600}.font-bold{font-weight:800}.font-black{font-weight:900}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:.04em}
+    .text-xs{font-size:12px}.text-sm{font-size:14px}.text-base{font-size:16px}.text-lg{font-size:18px}.text-xl{font-size:20px}.text-2xl{font-size:24px}.leading-relaxed{line-height:1.75}.leading-tight{line-height:1.2}
+    .p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}
+    .m-0{margin:0}.mt-0{margin-top:0}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mb-0{margin-bottom:0}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mx-auto{margin-left:auto;margin-right:auto}
+    .rounded-lg{border-radius:12px}.rounded-xl{border-radius:16px}.rounded-2xl{border-radius:20px}.rounded-full{border-radius:999px}.border{border:1px solid var(--line)}.border-2{border:2px solid var(--line)}.shadow,.shadow-lg{box-shadow:var(--shadow)}
+    .bg-slate-50,.bg-white,.bg-rose-50,.bg-blue-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-purple-50,.bg-gray-50{background:var(--soft)}.bg-slate-900,.bg-slate-950,.bg-black{background:var(--code);color:var(--codefg)}.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600{color:var(--muted)}.text-slate-800,.text-slate-900,.text-white{color:var(--ink)}.text-blue-400,.text-blue-500,.text-indigo-500,.text-indigo-600,.text-rose-500,.text-rose-600,.text-emerald-500,.text-emerald-600,.text-amber-500,.text-amber-600{color:var(--accent)}
+    button,.quiz-btn,input[type="button"],input[type="submit"]{font-family:inherit}.quiz-btn,.quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-weight:700;transition:all .2s}.quiz-btn:hover,.quiz-option:hover{transform:translateY(-1px);border-color:var(--accent)}.quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}.quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}
+    input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px}input[type="range"]{padding:0;accent-color:var(--accent)}label{font-weight:700}canvas{max-width:100%;background:var(--paper);border:1px solid var(--line);border-radius:18px}.math-scroll{overflow-x:auto;overflow-y:hidden}
+    @media(min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.md\:flex{display:flex}.md\:block{display:block}}
 
-      <section class="card" id="classification">
-        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
-          <div>
-            <h2 style="border:none;padding:0;margin:0">1. The main classification</h2>
-            <p class="text-slate-600 dark:text-white/55 mt-2">Start by deciding whether the problem is a wrong value, a wrong order, or no progress.</p>
-          </div>
-          <div class="flex flex-wrap gap-2" id="tabs">
-            <button class="tab active px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-bold" data-tab="atomicity">Atomicity</button>
-            <button class="tab px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-bold" data-tab="order">Order</button>
-            <button class="tab px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-bold" data-tab="deadlock">Deadlock</button>
-          </div>
-        </div>
-        <div class="grid lg:grid-cols-[.95fr_1.05fr] gap-6" id="tab-content"></div>
-        <div class="grid md:grid-cols-3 gap-3 mt-6">
-          <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-slate-900 dark:text-white" style="margin-top:0">Atomicity violation</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">The program expected a group of operations to be indivisible, but another thread interleaved inside it.</p>
-          </div>
-          <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-slate-900 dark:text-white" style="margin-top:0">Order violation</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">The program expected A before B, but the scheduler allowed B before A.</p>
-          </div>
-          <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-slate-900 dark:text-white" style="margin-top:0">Deadlock</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">Threads wait forever because each one needs a resource held by another thread in a cycle.</p>
-          </div>
-        </div>
-      </section>
 
-      <section class="card" id="atomicity">
-        <h2>2. Non-deadlock bug: atomicity violation</h2>
-        <h3>Definition</h3>
-        <p>An <strong>atomicity violation</strong> occurs when multiple memory accesses were intended to behave as one serializable unit, but that atomicity was not enforced during execution. The bug is not simply “two threads touched the same variable”; the bug is that a region that should have been one indivisible action was split by an interleaving.</p>
-        <ul>
-          <li><strong>Intention:</strong> the whole code region should be atomic.</li>
-          <li><strong>Reality:</strong> without a common lock discipline, the scheduler may run another thread in the middle.</li>
-          <li><strong>Result:</strong> check-then-use errors, stale reads, lost updates, or inconsistent state.</li>
-        </ul>
-        <h3>Canonical check-then-use failure</h3>
-        <p>One thread checks whether a pointer is non-null and later uses it. Another thread can set the same pointer to null after the check but before the use.</p>
-        <pre><code>// Thread 1
+/* Page Specific simulator & tab styles in terms of the design variables */
+    .tab{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:700;font-family:inherit;transition:all 0.2s}
+    .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .step{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--soft);padding:14px;border-radius:18px;margin:8px 0;cursor:pointer;font-family:inherit;transition:all 0.2s}
+    .step.active{border-color:var(--accent);background:var(--paper)}
+    .quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:10px 14px;border-radius:12px;margin:6px 0;cursor:pointer;font-weight:700;font-family:inherit;transition:all 0.2s}
+    .quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}
+    .quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}</style></head>
+<body><div class="wrap"><aside><div class="brand">🦞 OS Concurrency</div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드 모델에서 발생하는 대표적인 동시성 오류(비데드락 버그, 데드락 버그)의 원인과 예방/회피 기법을 학습합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
+<main><section class="hero" id="top"><span class="eyebrow">Operating System · Concurrency · Masterclass Note</span><h1>Common Concurrency Problems</h1><p style="font-size:20px;color:var(--muted);max-width:950px">A study note on semaphore recap, non-deadlock bugs, deadlock causes, the four conditions, prevention, avoidance, recovery, CAS, exam prompts, and concurrency pitfalls.</p><div><span class="pill">Semaphores</span><span class="pill">Non-deadlock Bugs</span><span class="pill">Deadlocks</span><span class="pill">CAS &amp; Lock-free</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2>
+<p>세마포어와 뮤텍스를 활용하여 상호 배제와 순서 제어를 구현하더라도, 개발자의 미흡한 락 설계나 흐름 판단 누락으로 인해 실제 시스템에는 다양한 동시성 오류가 발생합니다. 이 노트의 목적은 동시성 버그를 체계적으로 분류하고, 발생 조건과 수학적 회피 공식을 학습하여 결함 없는 멀티스레드 코드를 도출하는 것입니다.</p>
+<div class="grid">
+<div class="mini"><h3>먼저 이해할 것</h3><ul><li>뮤텍스 및 세마포어 API의 기본 연산 방식</li><li>공유 변수 접근 경쟁 상황(Race Condition)</li><li>OS 스레드 context switch 메커니즘</li></ul></div>
+<div class="mini"><h3>최종적으로 할 수 있어야 할 것</h3><ul><li>Atomicity Violation과 Order Violation의 명확한 차이 증명</li><li>데드락이 성립하는 4대 필수 불가결한 하드웨어/소프트웨어 조건 나열</li><li>CAS(Compare-And-Swap) 기반의 Lock-free 연산식 해석</li></ul></div>
+</div>
+</section><section class="card" id="concept"><h2>1. 핵심 개념</h2>
+<div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+<h2 style="border:none;padding:0;margin:0">1. 핵심 개념: 동시성 오류의 분류</h2>
+<div class="sticky-actions" id="tabs">
+<button class="tab active btn" data-tab="atomicity">Atomicity</button>
+<button class="tab btn" data-tab="order">Order</button>
+<button class="tab btn" data-tab="deadlock">Deadlock</button>
+</div>
+</div>
+<div class="grid" id="tab-content"></div>
+</section><section class="card" id="math"><h2>2. 수식과 정의</h2>
+<p>데드락이나 락 오버헤드를 근본적으로 해결하기 위해 하드웨어가 제공하는 atomic 원자적 기화 연산인 **Compare-And-Swap(CAS)**의 논리입니다.</p>
+<div class="formula">
+  $$\text{CAS}(\text{address}, \text{expected}, \text{new}) \implies \begin{cases} \text{write new to address and return true}, &amp; \text{if } *\text{address} == \text{expected} \\ \text{return false}, &amp; \text{otherwise} \end{cases}$$
+</div>
+<p>이를 기반으로 락 없이 경쟁을 회피하여 값을 더하는 Lock-free 어셈블리 큐 패턴입니다.</p>
+<pre><code>void add(int value) {
+    do {
+        int expected = counter;
+    } while (!CompareAndSwap(&amp;counter, expected, expected + value));
+}</code></pre>
+</section><section class="card" id="intuition"><h2>3. 직관과 그림</h2>
+<p>소프트웨어의 결합도가 올라갈수록 락 획득 순서가 모듈 깊이 속에 숨어버려 데드락이 발생하기 쉬워집니다.</p>
+<div class="svgbox figure">
+<svg aria-label="template diagram" role="img" viewbox="0 0 760 180"><defs><marker id="arr" markerheight="10" markerwidth="10" orient="auto" refx="9" refy="3"><path d="M0,0 L10,3 L0,6 Z" fill="#9a4f32"></path></marker></defs><rect fill="#fffdfa" height="70" rx="18" stroke="#9a4f32" width="160" x="40" y="55"></rect><text font-weight="700" text-anchor="middle" x="120" y="98">가상메모리(VMS)</text><path d="M205 90 H315" marker-end="url(#arr)" stroke="#9a4f32" stroke-width="3"></path><rect fill="#fffdfa" height="70" rx="18" stroke="#2f6f68" width="160" x="320" y="55"></rect><text font-weight="700" text-anchor="middle" x="400" y="98">파일시스템(FS)</text><path d="M485 90 H595" marker-end="url(#arr)" stroke="#9a4f32" stroke-width="3"></path><rect fill="#fffdfa" height="70" rx="18" stroke="#7a5aa6" width="120" x="600" y="55"></rect><text font-weight="700" text-anchor="middle" x="660" y="98">락 순환대기(데드락)</text></svg>
+<div class="caption">의존성 캡슐화에 의해 하위 시스템 간의 락 획득 순서가 꼬이는 원형 대기 그래프의 전형적인 모습.</div>
+</div>
+</section><section class="card" id="examples"><h2>4. 예제</h2>
+<div class="grid">
+<div class="mini">
+<h3 class="mt-0">1) Atomicity Violation (원자성 위반) 예제</h3>
+<pre><code>// Thread 1
 if (proc_info) {
-    ...
     fputs(proc_info, ...);
-    ...
 }
 
 // Thread 2
 proc_info = NULL;</code></pre>
-        <ol>
-          <li>Thread 1 checks <code>proc_info</code> and sees a non-null value.</li>
-          <li>Thread 1 is interrupted before the call that uses the pointer.</li>
-          <li>Thread 2 runs and sets <code>proc_info = NULL</code>.</li>
-          <li>Thread 1 resumes and uses a value that is no longer valid.</li>
-        </ol>
-        <h3>Fix: protect all related accesses with the same lock</h3>
-        <p>The check, the use, and the write that changes the pointer must follow the same lock discipline. Adding a lock in only one place is not enough; all related accesses to the shared state must agree on the same protection rule.</p>
-        <pre><code>pthread_mutex_t proc_info_lock = PTHREAD_MUTEX_INITIALIZER;
-
-// Thread 1
-pthread_mutex_lock(&proc_info_lock);
-if (proc_info) {
-    ...
-    fputs(proc_info, ...);
-    ...
-}
-pthread_mutex_unlock(&proc_info_lock);
-
-// Thread 2
-pthread_mutex_lock(&proc_info_lock);
-proc_info = NULL;
-pthread_mutex_unlock(&proc_info_lock);</code></pre>
-        <p><strong>Key lesson:</strong> an atomicity bug is fixed by identifying the logical operation that must be atomic, then ensuring every access participating in that operation is protected consistently.</p>
-      </section>
-
-      <section class="card" id="ordering">
-        <h2>3. Non-deadlock bug: order violation</h2>
-        <h3>Definition</h3>
-        <p>An <strong>order violation</strong> occurs when two memory accesses or two groups of operations must happen in a particular order, but that order is not enforced. In other words, A must always happen before B, but the execution allows B to happen first.</p>
-        <ul>
-          <li><strong>Intention:</strong> initialization must complete before use.</li>
-          <li><strong>Reality:</strong> a newly created thread may run immediately, before the creator finishes setting fields.</li>
-          <li><strong>Result:</strong> use-before-initialization, null pointer dereference, or reading an invalid state.</li>
-        </ul>
-        <h3>Thread creation does not imply initialization order</h3>
-        <p>Suppose one thread creates another and stores the created thread handle in a shared variable. The worker may run immediately after creation and read the variable before the creator has finished setting it.</p>
-        <pre><code>// Thread 1
+<p class="text-xs">T1이 조건 점검 후 실행하기 직전 선점(preempt)당해 T2가 NULL로 지우면 NULL Pointer Dereference 폭발이 일어남.</p>
+</div>
+<div class="mini">
+<h3 class="mt-0">2) Order Violation (순서 위반) 예제</h3>
+<pre><code>// Thread 1
 void init() {
-    ...
-    workerThread = createThread(workerMain, ...);
-    ...
+    worker = createThread(workerMain);
+    initialized = true;
 }
 
 // Thread 2
-void workerMain(...) {
-    ...
-    state = workerThread->state;
-    ...
+void workerMain() {
+    state = worker-&gt;state;
 }</code></pre>
-        <p>The bug is not primarily a mutual-exclusion problem. The key missing guarantee is a <strong>happens-before relationship</strong>: initialization must complete before the worker reads the initialized state.</p>
-        <h3>Fix: condition variable and an explicit predicate</h3>
-        <p>Use a mutex, a condition variable, and a predicate such as <code>initialized</code>. The waiting thread does not proceed until the predicate says the required order has been achieved.</p>
-        <div class="grid lg:grid-cols-2 gap-4 not-prose">
-          <pre><code>// Thread 1
-pthread_mutex_lock(&mtLock);
-initialized = 1;
-pthread_cond_signal(&mtCond);
-pthread_mutex_unlock(&mtLock);</code></pre>
-          <pre><code>// Thread 2
-pthread_mutex_lock(&mtLock);
-while (initialized == 0)
-    pthread_cond_wait(&mtCond, &mtLock);
-pthread_mutex_unlock(&mtLock);
-state = workerThread->state;</code></pre>
-        </div>
-        <p class="mt-4"><strong>Why a while loop?</strong> A condition-variable wait may return even when the condition is not true, and another thread can change the condition before the woken thread runs. Therefore, the predicate must be checked in a loop, not an <code>if</code>.</p>
-      </section>
+<p class="text-xs">T1이 initialized 플래그를 미처 1로 켜기도 전에 스케줄러가 T2를 먼저 가동시키면 초기화되지 않은 구조체를 사용해 크래시 유발.</p>
+</div>
+</div>
+</section><section class="card" id="pitfalls"><h2>5. 자주 틀리는 부분</h2>
+<div class="grid">
+<div class="mini"><h3>오해 1</h3><p>동시성 버그는 전부 데드락이다? 아닙니다. 통계적으로 70%에 육박하는 버그들이 순서 위반이나 원자성 위반 같은 비데드락(Non-deadlock) 형태입니다.</p></div>
+<div class="mini"><h3>오해 2</h3><p>스레드 생성(create)만 하면 생성 즉시 동기화가 맞춰진다? 아닙니다. 스케줄러는 비결정적이기 때문에 락이나 CV로 순서(happens-before)를 강제해야 합니다.</p></div>
+<div class="mini"><h3>오해 3</h3><p>CAS는 CPU 부하가 전혀 없다? 아닙니다. 지속적으로 <code>do-while</code> 스핀을 돌기 때문에 지속적인 경쟁 시 CPU 낭비가 발생합니다.</p></div>
+</div>
+<div class="callout danger"><b>시험 함정:</b> 데드락 예방을 하겠다며 모든 락 획득 시 <code>pthread_mutex_trylock()</code> 만을 난발하여 루프를 돌리면, 두 스레드가 서로 락을 풀었다 쥐었다를 무한 반복하는 **Livelock (라이브락)**의 수렁에 빠져 CPU 이용률만 100%로 낭비하게 됩니다.</div>
+</section><section class="card" id="interactive"><h2>6. 인터랙티브 실험</h2>
+<p>데드락이 발생하려면 아래 4가지 조건이 단 하나도 빠짐없이 동시에 성립해야 합니다. 버튼을 눌러 상세 설명을 확인해보세요.</p>
+<div class="space-y-2" id="deadlock-conditions"></div>
+<div class="mini mt-6">
+<h4 class="mt-0">실시간 동기화 상태 시뮬레이션</h4>
+<p class="text-xs text-slate-500">아래 버튼들을 클릭해 락이 획득되는 흐름과 Livelock, Random Backoff 해결법의 거동 차이를 분석해보세요.</p>
+<div class="sticky-actions" style="margin-bottom:14px">
+<button class="btn text-xs" id="sim-deadlock">데드락 상황 재현</button>
+<button class="btn text-xs" id="sim-livelock">라이브락 상황 재현</button>
+<button class="btn text-xs" id="sim-random">랜덤 백오프 해결</button>
+</div>
+<ul class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs font-mono text-emerald-400 space-y-1" id="sim-output" style="min-height:100px;list-style:none;padding-left:14px">
+<li>실험 Preset 버튼을 선택하세요.</li>
+</ul>
+</div>
+</section><section class="card" id="exam"><h2>7. 시험/복습용 핵심 정리</h2>
+<div class="grid">
+<div class="mini"><h3>반드시 대답할 수 있어야 하는 것</h3><ul><li>데드락 발생 4가지 필수조건 (상호배제, 점유대기, 비선점, 순환대기)</li><li>임계 영역 크기를 최소화하는 이유</li><li>Livelock과 Deadlock의 본질적 차이</li></ul></div>
+<div class="mini"><h3>비교해서 구분할 것</h3><ul><li>Deadlock Prevention (예방 - 자원 제약으로 발생 방지)</li><li>Deadlock Avoidance (회피 - 동적 세이프 상태 모니터링)</li><li>Deadlock Detection (탐지 - 주기적 주기 그래프 순환 점검)</li></ul></div>
+</div>
+<div class="callout"><b>구두시험 답변 템플릿:</b> "동시성 오류는 원자성 위반, 순서 위반, 교착 상태로 나뉘며, 교착 상태는 4대 성립 조건 중 순환 대기(Circular Wait)를 락 획득의 엄격한 선형적 순서화(Lock Ordering)를 통해 격파함으로써 예방할 수 있습니다."</div>
+</section><section class="card quiz" id="quiz"><h2>8. 확인 문제와 해설</h2>
+<div id="quiz-container"></div>
+<div class="callout" id="quiz-feedback" style="display:none"></div>
+</section><section class="card" id="sources"><h2>9. 사용 자료와 출처</h2>
+<p>Common Concurrency Problems는 현대 OS 병렬 컴퓨팅 설계에서 다루는 버그 패턴의 바이블입니다.</p>
+<div class="mini">
+<p style="margin:0;font-size:13px;line-height:1.7">
+<strong>최종 한 줄 요약:</strong> 모든 동시성 오류는 락 획득 순서 강제(happens-before)와 원자적 범위 단일화, 그리고 데드락 4조건 중 최소 하나의 고리를 락 순서화(ordering) 등으로 격파함으로써 완전 방지할 수 있습니다.
+  </p>
+</div>
+</section></main>
+</div><script>
+const STORAGE_KEY='masterclass-study-note-theme';
+function toggleTheme(){
+  document.documentElement.classList.toggle('dark');
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem(STORAGE_KEY,document.documentElement.classList.contains('dark')?'dark':'light');
+}
+(function(){
+  const t=localStorage.getItem(STORAGE_KEY);
+  if(t==='dark'){
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }else{
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }
+})();
+function updateDemo(){
+  const slider=document.getElementById('demoSlider');
+  const value=document.getElementById('demoValue');
+  const bar=document.getElementById('demoBar');
+  const out=document.getElementById('demoOut');
+  if(!slider||!value||!bar||!out) return;
+  const v=parseFloat(slider.value);
+  value.textContent=v.toFixed(0);
+  bar.style.width=v+'%';
+  out.textContent=`현재 값: ${v}\n여기에 개념별 계산 결과나 해석을 연결하면 된다.`;
+}
+window.addEventListener('DOMContentLoaded', updateDemo);
+</script><script>
 
-      <section class="card" id="deadlock">
-        <h2>4. Deadlock bug</h2>
-        <h3>Basic lock-order conflict</h3>
-        <p>Two threads can deadlock if they acquire the same locks in opposite orders. Each thread holds one lock and waits for the other lock forever.</p>
-        <pre><code>// Thread 1
-pthread_mutex_lock(L1);
-pthread_mutex_lock(L2);
 
-// Thread 2
-pthread_mutex_lock(L2);
-pthread_mutex_lock(L1);</code></pre>
-        <ol>
-          <li>Thread 1 acquires <code>L1</code>.</li>
-          <li>Thread 2 acquires <code>L2</code>.</li>
-          <li>Thread 1 waits for <code>L2</code> while holding <code>L1</code>.</li>
-          <li>Thread 2 waits for <code>L1</code> while holding <code>L2</code>.</li>
-          <li>Neither can proceed, because each is waiting for the other.</li>
-        </ol>
-        <p>This is a cycle in the wait-for relation, often represented using a resource-allocation graph.</p>
-      </section>
 
-      <section class="card" id="real-systems">
-        <h2>5. Why deadlocks occur in real systems</h2>
-        <h3>Large-codebase dependencies</h3>
-        <p>In a large system, one subsystem may call another while holding a lock. A virtual memory subsystem might call a file subsystem to page in data from disk. The file subsystem might later need memory and call back into the virtual memory subsystem. If both sides hold internal locks, a circular dependency can emerge.</p>
-        <div class="not-prose my-5 flex flex-wrap items-center gap-2 text-sm font-bold">
-          <span class="px-3 py-2 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-500/20">VMS</span>
-          <span class="text-violet-400">→</span>
-          <span class="px-3 py-2 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20">File System</span>
-          <span class="text-violet-400">→</span>
-          <span class="px-3 py-2 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-500/20">VMS</span>
-        </div>
-        <h3>Encapsulation</h3>
-        <p>Encapsulation hides implementation details, including internal locks. That is good software design, but it can make global lock ordering difficult. For example, a container method that adds all elements from another container may need to lock both the receiver and the argument. Two threads calling the method in opposite directions can acquire those hidden locks in opposite orders.</p>
-        <pre><code>// Thread 1
-v1.addAll(v2);
-
-// Thread 2
-v2.addAll(v1);</code></pre>
-      </section>
-
-      <section class="grid lg:grid-cols-2 gap-6 mb-10" id="conditions">
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-3" style="border:none;padding:0">6. The four necessary conditions</h2>
-          <p class="text-slate-600 dark:text-white/55 mb-5">Deadlock can occur only when all four conditions hold simultaneously. Prevention breaks at least one.</p>
-          <div class="space-y-3" id="deadlock-conditions"></div>
-        </div>
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-3" style="border:none;padding:0">Interactive: trylock and livelock</h2>
-          <p class="text-slate-600 dark:text-white/55 mb-5">Releasing and retrying can prevent deadlock, but synchronized retries can produce livelock.</p>
-          <pre id="sim-code">T1: lock(L1), trylock(L2)
-T2: lock(L2), trylock(L1)</pre>
-          <div class="grid sm:grid-cols-3 gap-3 mb-4 mt-4">
-            <button class="px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold" id="sim-deadlock">Show deadlock</button>
-            <button class="px-4 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold" id="sim-livelock">Show livelock</button>
-            <button class="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold" id="sim-random">Add random delay</button>
-          </div>
-          <ol class="space-y-2 text-sm text-slate-700 dark:text-white/65 list-decimal pl-5" id="sim-output"></ol>
-        </div>
-      </section>
-
-      <section class="card" id="prevention">
-        <h2>7. Deadlock prevention strategies</h2>
-        <p>The practical way to reason about deadlock prevention is to connect each strategy to the deadlock condition it breaks. The answer is not just memorizing the four conditions; it is knowing what design move removes one of them and what trade-off that move creates.</p>
-        <div class="grid md:grid-cols-2 gap-4 not-prose mt-6">
-          <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">7.1 Break circular wait: lock ordering</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">Define a total or partial ordering over locks and require all threads to acquire locks in that order. If every thread acquires <code>L1</code> before <code>L2</code>, a two-lock cycle cannot form.</p>
-            <p class="text-sm text-slate-500 dark:text-white/45 mt-2"><strong>Trade-off:</strong> practical and common, but difficult to enforce across large codebases and hidden library locks.</p>
-          </article>
-          <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">7.2 Break hold-and-wait: acquire all at once</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">Acquire all required locks during a single protected acquisition phase, so a thread does not hold some locks while waiting for others.</p>
-            <p class="text-sm text-slate-500 dark:text-white/45 mt-2"><strong>Trade-off:</strong> can reduce concurrency and may require knowing all needed locks in advance.</p>
-          </article>
-          <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">7.3 Relax no preemption: trylock</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">Use <code>pthread_mutex_trylock()</code>; if the second lock is unavailable, release the first lock and retry instead of waiting while holding it.</p>
-            <p class="text-sm text-slate-500 dark:text-white/45 mt-2"><strong>Trade-off:</strong> prevents the wait-while-holding pattern but can create livelock and requires careful cleanup of all resources.</p>
-          </article>
-          <article class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-            <h3 class="font-extrabold text-violet-600 dark:text-violet-300" style="margin-top:0">7.4 Reduce mutual exclusion: lock-free design</h3>
-            <p class="text-sm text-slate-600 dark:text-white/55 mt-2">Use atomic primitives such as compare-and-swap to update shared state without a traditional mutex.</p>
-            <p class="text-sm text-slate-500 dark:text-white/45 mt-2"><strong>Trade-off:</strong> not automatically simpler or faster; retry loops, ABA, memory reclamation, and starvation can be hard.</p>
-          </article>
-        </div>
-        <h3 class="mt-6">Acquire-all-at-once pattern</h3>
-        <pre><code>pthread_mutex_lock(prevention);   // begin lock acquisition
-pthread_mutex_lock(L1);
-pthread_mutex_lock(L2);
-...
-pthread_mutex_unlock(prevention); // end acquisition phase</code></pre>
-        <h3>Trylock pattern and cleanup warning</h3>
-        <pre><code>top:
-pthread_mutex_lock(L1);
-if (pthread_mutex_trylock(L2) != 0) {
-    pthread_mutex_unlock(L1);
-    goto top;
-}</code></pre>
-        <p>If the code acquired any other resource before jumping back to <code>top</code>, it must release that resource too: other locks, memory allocations, file handles, or temporary state. Otherwise the retry loop may create leaks or new synchronization bugs.</p>
-      </section>
-
-      <section class="card" id="cas">
-        <h2>8. Lock-free approach and compare-and-swap</h2>
-        <p>Lock-free techniques attempt to reduce dependence on mutual exclusion. The central primitive here is <strong>Compare-And-Swap (CAS)</strong>: update a memory location only if it still contains the value you expected.</p>
-        <pre><code>int CompareAndSwap(int *address, int expected, int new_value) {
-    if (*address == expected) {
-        *address = new_value;
-        return 1; // success
+  const tabs = {
+    atomicity: {
+      title: 'Atomicity violation',
+      badge: 'wrong atomic region',
+      summary: 'A group of memory operations was intended to behave like one indivisible critical section, but another thread ran in the middle.',
+      code: `// Thread 1\nif (ptr != NULL) {\n    use(ptr);\n}\n\n// Thread 2\nptr = NULL;`,
+      bullets: ['The check and the use must be serialized together.', 'Fix by protecting every related access to the shared state with the same lock discipline.', 'Typical symptoms: stale check, null dereference, lost update, or inconsistent state.']
+    },
+    order: {
+      title: 'Order violation',
+      badge: 'missing happens-before',
+      summary: 'Operation A must happen before operation B, but the program never enforces that ordering.',
+      code: `// Thread 1\nworker = createThread(workerMain);\ninitialized = true;\n\n// Thread 2\nstate = worker->state;`,
+      bullets: ['Thread creation does not guarantee that initialization has completed.', 'Fix with condition variables, semaphores, join, or another ordering primitive.', 'Use a while loop around condition-variable waits to re-check the predicate.']
+    },
+    deadlock: {
+      title: 'Deadlock',
+      badge: 'progress failure by cycle',
+      summary: 'Threads wait forever because each is holding a resource the next thread needs.',
+      code: `// Thread 1\nlock(L1); lock(L2);\n\n// Thread 2\nlock(L2); lock(L1);`,
+      bullets: ['Deadlock is about a wait-for cycle, not simply slow progress.', 'Large systems make cycles easy because modules hide locks behind abstractions.', 'Prevention breaks at least one of the four necessary conditions.']
     }
-    return 0;     // failure
-}</code></pre>
-        <h3>Atomic increment</h3>
-        <p>The thread repeatedly reads the old value and tries to replace it with <code>old + amount</code>. If another thread changed the value first, CAS fails and the loop retries with a fresh old value.</p>
-        <pre><code>void AtomicIncrement(int *value, int amount) {
-    do {
-        int old = *value;
-    } while (CompareAndSwap(value, old, old + amount) == 0);
-}</code></pre>
-        <h3>List insertion: from race to lock to CAS</h3>
-        <p>A naive linked-list insert has a race because multiple threads can read the same head and overwrite one another’s update.</p>
-        <div class="grid lg:grid-cols-3 gap-4 not-prose my-5">
-          <div>
-            <div class="text-xs font-mono text-red-500 dark:text-red-300 mb-2">Race-prone</div>
-            <pre style="padding:12px; font-size:12px"><code>void insert(int value) {
-    node_t *n = malloc(sizeof(node_t));
-    n->value = value;
-    n->next = head;
-    head = n;
-}</code></pre>
-          </div>
-          <div>
-            <div class="text-xs font-mono text-violet-600 dark:text-violet-300 mb-2">Mutex-based</div>
-            <pre style="padding:12px; font-size:12px"><code>void insert(int value) {
-    node_t *n = malloc(sizeof(node_t));
-    n->value = value;
-    pthread_mutex_lock(listlock);
-    n->next = head;
-    head = n;
-    pthread_mutex_unlock(listlock);
-}</code></pre>
-          </div>
-          <div>
-            <div class="text-xs font-mono text-emerald-600 dark:text-emerald-300 mb-2">CAS-based</div>
-            <pre style="padding:12px; font-size:12px"><code>void insert(int value) {
-    node_t *n = malloc(sizeof(node_t));
-    n->value = value;
-    do {
-        n->next = head;
-    } while (CompareAndSwap(&head, n->next, n) == 0);
-}</code></pre>
-          </div>
-        </div>
-        <p>The CAS version succeeds only if <code>head</code> still equals the value stored in <code>n-&gt;next</code>. If another thread changed <code>head</code>, the CAS fails, the loop refreshes <code>n-&gt;next</code>, and the thread tries again.</p>
-        <p class="mt-4"><strong>Important caveat:</strong> lock-free does not mean “free.” It can introduce ABA problems, memory-reclamation difficulties, retry overhead, and starvation. For this note, the key idea is that CAS weakens the need for mutual exclusion, thereby attacking one condition that enables deadlock.</p>
-      </section>
+  };
 
-      <section class="grid lg:grid-cols-2 gap-6 mb-10" id="avoidance">
-        <div class="glass rounded-3xl p-6 sm:p-8 prose-lite">
-          <h2 style="border:none;padding:0;margin:0">9. Deadlock avoidance via scheduling</h2>
-          <p class="text-slate-600 dark:text-white/55 mb-4 mt-2">If the system knows in advance which locks each thread may need, it can avoid scheduling dangerous combinations at the same time. For example:</p>
-          <div class="overflow-x-auto not-prose mt-5">
-            <table class="w-full text-sm border-separate border-spacing-y-2">
-              <thead>
-                <tr class="text-left text-slate-500 dark:text-white/40">
-                  <th class="px-3 py-2">Thread</th>
-                  <th class="px-3 py-2">Needs L1?</th>
-                  <th class="px-3 py-2">Needs L2?</th>
-                </tr>
-              </thead>
-              <tbody class="text-slate-700 dark:text-white/65">
-                <tr class="bg-white/70 dark:bg-white/[.035]">
-                  <td class="px-3 py-2 rounded-l-xl font-bold">T1</td>
-                  <td class="px-3 py-2">Yes</td>
-                  <td class="px-3 py-2 rounded-r-xl">Yes</td>
-                </tr>
-                <tr class="bg-white/70 dark:bg-white/[.035]">
-                  <td class="px-3 py-2 rounded-l-xl font-bold">T2</td>
-                  <td class="px-3 py-2">Yes</td>
-                  <td class="px-3 py-2 rounded-r-xl">Yes</td>
-                </tr>
-                <tr class="bg-white/70 dark:bg-white/[.035]">
-                  <td class="px-3 py-2 rounded-l-xl font-bold">T3</td>
-                  <td class="px-3 py-2">No</td>
-                  <td class="px-3 py-2 rounded-r-xl">Yes</td>
-                </tr>
-                <tr class="bg-white/70 dark:bg-white/[.035]">
-                  <td class="px-3 py-2 rounded-l-xl font-bold">T4</td>
-                  <td class="px-3 py-2">No</td>
-                  <td class="px-3 py-2 rounded-r-xl">No</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="mt-4">This approach is only useful in limited environments, such as embedded systems, because general-purpose systems rarely know every future lock requirement in advance.</p>
-        </div>
-        <div class="glass rounded-3xl p-6 sm:p-8 prose-lite">
-          <h2 style="border:none;padding:0;margin:0">10. Detect and recover</h2>
-          <p class="text-slate-600 dark:text-white/55 mt-2">Another strategy is to allow deadlocks to occur occasionally, detect them, and recover. This is reasonable when deadlocks are rare and the recovery cost is lower than complex prevention.</p>
-          <ul class="mt-3 space-y-1 pl-5 list-disc text-sm">
-            <li>Kill or restart a stuck thread/process.</li>
-            <li>Roll back a transaction.</li>
-            <li>Restart a service or subsystem.</li>
-          </ul>
-          <p class="mt-4">The blunt recovery strategy is simply: <strong>restart</strong>. It is not elegant, but it can be economically rational when failure is rare and restart is cheap.</p>
-        </div>
-      </section>
+  function escapeHTML(s) { return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+  function renderTab(key) {
+    const data = tabs[key];
+    document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === key));
+    document.getElementById('tab-content').innerHTML = `
+      <div class="mini">
+        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:8px">${data.badge}</div>
+        <h3 style="margin-top:0">${data.title}</h3>
+        <p style="font-size:14px;color:var(--muted)">${data.summary}</p>
+        <ul style="font-size:13px;padding-left:18px">${data.bullets.map(x => `<li>${x}</li>`).join('')}</ul>
+      </div>
+      <pre><code>${escapeHTML(data.code)}</code></pre>`;
+  }
+  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => renderTab(btn.dataset.tab)));
+  renderTab('atomicity');
 
-      <section class="card" id="summary">
-        <h2>11. Comparison table</h2>
-        <div class="overflow-x-auto not-prose mt-4">
-          <table class="w-full text-sm border-separate border-spacing-y-2">
-            <thead>
-              <tr class="text-left text-slate-500 dark:text-white/40">
-                <th class="px-3 py-2">Problem</th>
-                <th class="px-3 py-2">Cause</th>
-                <th class="px-3 py-2">Symptom</th>
-                <th class="px-3 py-2">Typical tools</th>
-              </tr>
-            </thead>
-            <tbody class="text-slate-700 dark:text-white/65">
-              <tr class="bg-white/70 dark:bg-white/[.035]">
-                <td class="px-3 py-3 rounded-l-xl font-bold">Atomicity violation</td>
-                <td class="px-3 py-3">Another thread enters the middle of a region that should be atomic.</td>
-                <td class="px-3 py-3">check-then-use bug, inconsistent state</td>
-                <td class="px-3 py-3 rounded-r-xl">mutex, critical section</td>
-              </tr>
-              <tr class="bg-white/70 dark:bg-white/[.035]">
-                <td class="px-3 py-3 rounded-l-xl font-bold">Order violation</td>
-                <td class="px-3 py-3">A required A-before-B relation is not enforced.</td>
-                <td class="px-3 py-3">use-before-initialization, null dereference</td>
-                <td class="px-3 py-3 rounded-r-xl">condition variable, semaphore ordering</td>
-              </tr>
-              <tr class="bg-white/70 dark:bg-white/[.035]">
-                <td class="px-3 py-3 rounded-l-xl font-bold">Deadlock</td>
-                <td class="px-3 py-3">Threads wait in a circular dependency.</td>
-                <td class="px-3 py-3">system stops making progress</td>
-                <td class="px-3 py-3 rounded-r-xl">lock ordering, trylock, lock-free design, avoidance, recovery</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+  const conditions = [
+    ['Mutual exclusion (상호 배제)', '적어도 하나의 자원은 한 번에 오직 하나의 스레드만 점유할 수 있어야 합니다. 락(lock)이 가장 직관적인 증명입니다.'],
+    ['Hold-and-wait (점유 및 대기)', '스레드가 이미 획득한 자원을 손에 쥔 채로, 다른 스레드가 점유하고 있는 추가 자원을 대기하는 교착 상태입니다.'],
+    ['No preemption (비선점)', '다른 스레드가 이미 선점하여 소유하고 있는 자원을 강제적으로 중간에 빼앗아 올 수 없는 강제 제약입니다.'],
+    ['Circular wait (순환 대기)', '스레드와 자원들이 원형 체인 꼬리잡기 형태로 맞물려 서로가 가진 자원을 영원히 내놓으라 대기하는 상태입니다.']
+  ];
 
-      <section class="grid lg:grid-cols-[1fr_.85fr] gap-6 mb-10" id="exam">
-        <div class="glass rounded-3xl p-6 sm:p-8 prose-lite">
-          <h2 style="border:none;padding:0;margin:0">12. Likely exam questions</h2>
-          <ol class="list-decimal pl-5 mt-3 space-y-1 text-sm">
-            <li>Define atomicity violation and order violation, then explain the difference with an interleaving example.</li>
-            <li>Why is the pattern <code>if (ptr) use(ptr)</code> dangerous in a multithreaded program?</li>
-            <li>When fixing an order violation with a condition variable, why should the wait be wrapped in a <code>while</code> loop?</li>
-            <li>List the four necessary conditions for deadlock and connect each one to a prevention technique.</li>
-            <li>Explain how lock ordering breaks circular wait and why it is hard to enforce in a large codebase.</li>
-            <li>Why can a <code>pthread_mutex_trylock()</code>-based solution produce livelock, and how can random delay help?</li>
-            <li>Compare mutex-based list insertion with CAS-based lock-free insertion.</li>
-            <li>Why is deadlock avoidance via scheduling more realistic in embedded systems than in general-purpose operating systems?</li>
-          </ol>
-        </div>
-        <div class="glass rounded-3xl p-6 sm:p-8 prose-lite">
-          <h2 style="border:none;padding:0;margin:0">13. Common pitfalls</h2>
-          <ul class="list-disc pl-5 mt-3 space-y-1 text-sm">
-            <li>Calling every atomicity violation just a “race condition” without explaining the missing atomic region.</li>
-            <li>Trying to fix an order violation only with mutual exclusion, when the real missing guarantee is ordering.</li>
-            <li>Memorizing the four deadlock conditions without connecting them to prevention strategies.</li>
-            <li>Assuming <code>trylock</code> automatically solves everything; livelock and cleanup problems remain.</li>
-            <li>Assuming lock-free code is always faster or safer; CAS loops and memory management are difficult.</li>
-          </ul>
-        </div>
-      </section>
+  document.getElementById('deadlock-conditions').innerHTML = conditions.map((c, i) => `
+    <button class="step" data-i="${i}">
+      <div style="display:flex;justify-content:space-between;font-weight:700">
+        <span>${i+1}. ${c[0]}</span>
+        <span style="color:var(--accent)">+</span>
+      </div>
+      <p style="display:none;margin:8px 0 0;font-size:13px;color:var(--muted);font-weight:400">${c[1]}</p>
+    </button>`).join('');
 
-      <section class="grid lg:grid-cols-[1fr_.85fr] gap-6 mb-10" id="quiz">
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <h2 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-4" style="border:none;padding:0">Quick self-check</h2>
-          <div class="space-y-3" id="quiz-container"></div>
-          <div class="mt-4 text-sm font-semibold text-slate-600 dark:text-white/65" id="quiz-feedback"></div>
-        </div>
-        <div class="glass-strong rounded-3xl p-6 sm:p-8 prose-lite">
-          <h2 style="border:none;padding:0;margin:0">14. One-sentence summary</h2>
-          <p class="text-slate-600 dark:text-white/55 mt-2">Common concurrency bugs can be organized as <strong>atomicity violations</strong>, <strong>order violations</strong>, and <strong>deadlocks</strong>; the corresponding fixes are to make the right region atomic, establish the necessary happens-before relation, or break at least one of the deadlock conditions.</p>
-        </div>
-      </section>
-    </main>
-  </div>
+  document.querySelectorAll('.step').forEach(btn => btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    const p = btn.querySelector('p');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  }));
 
-  <footer class="relative z-10 border-t border-slate-200 dark:border-white/[.05] py-8 mt-10">
-    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p class="text-xs text-slate-500 dark:text-white/35">Study Notes · Operating System · Common Concurrency Problems</p>
-      <a class="text-xs font-mono text-violet-600 dark:text-violet-300 hover:underline" href="../../">Back to OS notes</a>
-    </div>
-  </footer>
+  const simOutput = document.getElementById('sim-output');
+  function showSim(lines) { simOutput.innerHTML = lines.map(x => `<li>${x}</li>`).join(''); }
 
-  <script>
-    const tabs = {
-      atomicity: {
-        title: 'Atomicity violation',
-        badge: 'wrong atomic region',
-        summary: 'A group of memory operations was intended to behave like one indivisible critical section, but another thread ran in the middle.',
-        code: `// Thread 1\nif (ptr != NULL) {\n    use(ptr);\n}\n\n// Thread 2\nptr = NULL;`,
-        bullets: ['The check and the use must be serialized together.', 'Fix by protecting every related access to the shared state with the same lock discipline.', 'Typical symptoms: stale check, null dereference, lost update, or inconsistent state.']
-      },
-      order: {
-        title: 'Order violation',
-        badge: 'missing happens-before',
-        summary: 'Operation A must happen before operation B, but the program never enforces that ordering.',
-        code: `// Thread 1\nworker = createThread(workerMain);\ninitialized = true;\n\n// Thread 2\nstate = worker->state;`,
-        bullets: ['Thread creation does not guarantee that initialization has completed.', 'Fix with condition variables, semaphores, join, or another ordering primitive.', 'Use a while loop around condition-variable waits to re-check the predicate.']
-      },
-      deadlock: {
-        title: 'Deadlock',
-        badge: 'progress failure by cycle',
-        summary: 'Threads wait forever because each is holding a resource the next thread needs.',
-        code: `// Thread 1\nlock(L1); lock(L2);\n\n// Thread 2\nlock(L2); lock(L1);`,
-        bullets: ['Deadlock is about a wait-for cycle, not simply slow progress.', 'Large systems make cycles easy because modules hide locks behind abstractions.', 'Prevention breaks at least one of the four necessary conditions.']
-      }
-    };
+  document.getElementById('sim-deadlock').addEventListener('click', () => showSim([
+    'Thread 1: L1 획득 성공.',
+    'Thread 2: L2 획득 성공.',
+    'Thread 1: L2를 획득하기 위해 Lock 대기 상태 진입 (L1 쥔 채로)',
+    'Thread 2: L1을 획득하기 위해 Lock 대기 상태 진입 (L2 쥔 채로)',
+    '두 스레드가 영원히 꼬리를 무는 환형 순환 대기 형성 -> [교착 상태 확정]'
+  ]));
 
-    function escapeHTML(s) { return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-    function renderTab(key) {
-      const data = tabs[key];
-      document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === key));
-      document.getElementById('tab-content').innerHTML = `
-        <div class="rounded-2xl p-5 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08]">
-          <div class="text-xs font-mono font-bold uppercase tracking-widest text-violet-600 dark:text-violet-300 mb-3">${data.badge}</div>
-          <h3 class="text-2xl font-extrabold text-slate-950 dark:text-white mb-3" style="margin-top:0">${data.title}</h3>
-          <p class="text-slate-600 dark:text-white/60 leading-relaxed">${data.summary}</p>
-          <ul class="mt-5 space-y-3 text-sm text-slate-600 dark:text-white/60">${data.bullets.map(x => `<li class="flex gap-3"><span class="text-violet-500">•</span><span>${x}</span></li>`).join('')}</ul>
-        </div>
-        <div class="code rounded-2xl p-5 overflow-x-auto"><pre class="not-prose" style="background:transparent; border:none; padding:0"><code>${escapeHTML(data.code)}</code></pre></div>`;
+  document.getElementById('sim-livelock').addEventListener('click', () => showSim([
+    'Thread 1: L1 획득 성공, trylock(L2) 실패! 자원 충돌 방지를 위해 L1을 즉시 반납합니다.',
+    'Thread 2: L2 획득 성공, trylock(L1) 실패! 자원 충돌 방지를 위해 L2를 즉시 반납합니다.',
+    '두 스레드가 동일한 밀리초 뒤에 동시에 락 획득을 똑같이 시도합니다.',
+    'Thread 1 & 2가 영원히 정중하게 서로 락을 양보하고 뺏는 것을 반복 -> [Livelock(라이브락) 수렁]'
+  ]));
+
+  document.getElementById('sim-random').addEventListener('click', () => showSim([
+    'Thread 1: trylock(L2) 실패 후 [임의의 난수 밀리초] 동안 대기 회피(Random Backoff)에 들어갑니다.',
+    'Thread 2: 상대방이 쉬는 사이 재시도하여 L2와 L1을 차례로 안전하게 독점 획득합니다.',
+    'Thread 2: 작업 연산 무사 완료 후 락 해제.',
+    'Thread 1: 잠에서 깨어나 빈 락들을 손쉽게 획득 후 안전 성공 -> [경쟁 충돌 극복 완료]'
+  ]));
+
+  const quiz = [
+    { q: 'Which bug type is best described as “check succeeded, but the value changed before use”?', options: ['Order violation', 'Atomicity violation', 'Deadlock'], answer: 1 },
+    { q: 'Which deadlock condition does global lock ordering directly break?', options: ['Circular wait', 'Mutual exclusion', 'No preemption'], answer: 0 },
+    { q: 'Why should condition-variable waits be wrapped in a while loop?', options: ['Because the predicate must be re-checked after wakeup', 'Because mutexes cannot protect predicates', 'Because condition variables are locks'], answer: 0 },
+    { q: 'What is the main risk of a naive trylock-and-retry loop?', options: ['It can never release locks', 'It may create livelock', 'It removes all race conditions'], answer: 1 },
+    { q: 'What does CAS test before updating a memory location?', options: ['Whether the scheduler is preemptive', 'Whether the current value still equals the expected value', 'Whether all locks are free'], answer: 1 }
+  ];
+
+  document.getElementById('quiz-container').innerHTML = quiz.map((item, qi) => `
+    <div class="mini" style="margin-bottom:12px">
+      <p style="font-weight:700;margin-top:0">${qi+1}. ${item.q}</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${item.options.map((o, oi) => `<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`).join('')}
+      </div>
+    </div>`).join('');
+
+  document.querySelectorAll('.quiz-option').forEach(btn => btn.addEventListener('click', () => {
+    const qi = Number(btn.dataset.q), oi = Number(btn.dataset.o);
+    document.querySelectorAll(`.quiz-option[data-q="${qi}"]`).forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.o) === quiz[qi].answer) b.classList.add('correct');
+    });
+    const fb = document.getElementById('quiz-feedback');
+    fb.style.display = 'block';
+    if (oi === quiz[qi].answer) {
+      btn.classList.add('correct');
+      fb.className = 'callout ok';
+      fb.innerHTML = `<strong>✅ Correct!</strong> Keep connecting the symptom to the violated guarantee.`;
+    } else {
+      btn.classList.add('wrong');
+      fb.className = 'callout danger';
+      fb.innerHTML = `<strong>❌ Incorrect.</strong> Re-read the relevant section and try again.`;
     }
-    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => renderTab(btn.dataset.tab)));
-    renderTab('atomicity');
-
-    const conditions = [
-      ['Mutual exclusion', 'At least one resource can be held by only one thread at a time. A lock is the canonical example.'],
-      ['Hold-and-wait', 'A thread holds resources it already acquired while waiting for additional resources.'],
-      ['No preemption', 'A resource cannot be forcibly taken away from the thread that currently holds it.'],
-      ['Circular wait', 'There is a circular chain of threads where each waits for a resource held by the next.']
-    ];
-    document.getElementById('deadlock-conditions').innerHTML = conditions.map((c, i) => `<button class="step w-full text-left rounded-2xl p-4 border border-slate-200 dark:border-white/[.08] hover:border-violet-400/60 transition" data-i="${i}"><div class="flex items-center justify-between"><span class="font-extrabold text-slate-900 dark:text-white">${i+1}. ${c[0]}</span><span class="text-violet-500">+</span></div><p class="hidden mt-2 text-sm text-slate-600 dark:text-white/60">${c[1]}</p></button>`).join('');
-    document.querySelectorAll('.step').forEach(btn => btn.addEventListener('click', () => { btn.classList.toggle('active'); btn.querySelector('p').classList.toggle('hidden'); }));
-
-    const simOutput = document.getElementById('sim-output');
-    function showSim(lines) { simOutput.innerHTML = lines.map(x => `<li>${x}</li>`).join(''); }
-    document.getElementById('sim-deadlock').addEventListener('click', () => showSim(['T1 acquires L1.', 'T2 acquires L2.', 'T1 waits for L2 while holding L1.', 'T2 waits for L1 while holding L2.', 'The wait-for graph has a cycle: deadlock.']));
-    document.getElementById('sim-livelock').addEventListener('click', () => showSim(['T1 gets L1 and fails trylock(L2), so it releases L1.', 'T2 gets L2 and fails trylock(L1), so it releases L2.', 'Both retry at the same time.', 'They keep politely stepping aside together: livelock.']));
-    document.getElementById('sim-random').addEventListener('click', () => showSim(['T1 fails and waits a random delay.', 'T2 retries earlier and acquires both locks.', 'After T2 finishes, T1 retries and succeeds.', 'Random backoff breaks synchronized retry patterns.']));
-
-    const quiz = [
-      { q: 'Which bug type is best described as “check succeeded, but the value changed before use”?', options: ['Order violation', 'Atomicity violation', 'Deadlock'], answer: 1 },
-      { q: 'Which deadlock condition does global lock ordering directly break?', options: ['Circular wait', 'Mutual exclusion', 'No preemption'], answer: 0 },
-      { q: 'Why should condition-variable waits be wrapped in a while loop?', options: ['Because the predicate must be re-checked after wakeup', 'Because mutexes cannot protect predicates', 'Because condition variables are locks'], answer: 0 },
-      { q: 'What is the main risk of a naive trylock-and-retry loop?', options: ['It can never release locks', 'It may create livelock', 'It removes all race conditions'], answer: 1 },
-      { q: 'What does CAS test before updating a memory location?', options: ['Whether the scheduler is preemptive', 'Whether the current value still equals the expected value', 'Whether all locks are free'], answer: 1 }
-    ];
-    document.getElementById('quiz-container').innerHTML = quiz.map((item, qi) => `<div class="rounded-2xl p-4 bg-white/70 dark:bg-white/[.035] border border-slate-200 dark:border-white/[.08] mb-3"><p class="font-bold text-slate-900 dark:text-white mb-3">${qi+1}. ${item.q}</p><div class="space-y-2">${item.options.map((o, oi) => `<button class="quiz-option w-full text-left rounded-xl px-3 py-2 border border-slate-200 dark:border-white/[.08] text-sm" data-q="${qi}" data-o="${oi}">${o}</button>`).join('')}</div></div>`).join('');
-    document.querySelectorAll('.quiz-option').forEach(btn => btn.addEventListener('click', () => {
-      const qi = Number(btn.dataset.q), oi = Number(btn.dataset.o);
-      document.querySelectorAll(`.quiz-option[data-q="${qi}"]`).forEach(b => b.classList.remove('correct','wrong'));
-      btn.classList.add(oi === quiz[qi].answer ? 'correct' : 'wrong');
-      document.getElementById('quiz-feedback').textContent = oi === quiz[qi].answer ? 'Correct. Keep connecting the symptom to the violated guarantee.' : 'Not quite. Re-read the relevant section and try again.';
-    }));
-  </script>
-</body>
-</html>
+  }));
+</script></body></html>
