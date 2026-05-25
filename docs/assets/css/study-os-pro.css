@@ -1041,3 +1041,27 @@ body.sop-note-page main > section[class*="grid-cols"]:not(:first-of-type):not(.s
   padding:0!important;
   border-radius:0!important;
 }
+
+/* Clickable note title/back link parity with recent masterclass notes. */
+body.sop-note-page .sop-note-toc a.sop-note-brand-link,
+body.sop-note-page .sop-note-toc .sop-note-brand.sop-note-brand-link{
+  display:block!important;
+  color:var(--sop-heading)!important;
+  text-decoration:none!important;
+  font-size:20px!important;
+  font-weight:900!important;
+  line-height:1.25!important;
+  letter-spacing:-.02em!important;
+  border-radius:14px!important;
+  padding:2px 4px!important;
+  margin:-2px -4px 14px!important;
+  background:transparent!important;
+  border:0!important;
+  transition:background .15s ease,color .15s ease,transform .15s ease!important;
+}
+body.sop-note-page .sop-note-toc a.sop-note-brand-link:hover,
+body.sop-note-page .sop-note-toc .sop-note-brand.sop-note-brand-link:hover{
+  background:var(--sop-soft)!important;
+  color:var(--sop-primary)!important;
+  transform:translateX(-1px)!important;
+}

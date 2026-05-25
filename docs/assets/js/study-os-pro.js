@@ -30,6 +30,14 @@
   }
   const prefix = getPrefix();
 
+  function getSubjectHomeHref(){
+    const subjects = ['computer-architecture','operating-system','probability-and-statistics','machine-learning'];
+    const parts = location.pathname.split('/').filter(Boolean);
+    const subject = parts.find(part => subjects.includes(part));
+    return subject ? `${prefix}${subject}/` : prefix;
+  }
+  const subjectHomeHref = getSubjectHomeHref();
+
   function icon(name){
     const attrs = 'fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
     const paths = {
@@ -67,6 +75,16 @@
     if (!printBtn) return;
     e.preventDefault();
     window.print();
+  });
+
+  document.addEventListener('click', (e) => {
+    const backLink = e.target.closest('[data-sop-note-back], [data-back-link]');
+    if (!backLink) return;
+    const referrer = document.referrer ? new URL(document.referrer, location.href) : null;
+    if (window.history.length > 1 && referrer && referrer.origin === location.origin) {
+      e.preventDefault();
+      window.history.back();
+    }
   });
 
   document.addEventListener('click', (e) => {
@@ -176,7 +194,7 @@
         const toc = document.createElement('nav');
         toc.className = 'sop-note-toc';
         toc.setAttribute('aria-label', 'Table of contents');
-        toc.innerHTML = `<div class="sop-note-brand">🦞 ${document.title.split('·')[0].trim() || 'Masterclass Note'}</div><div class="sop-note-actions"><button class="btn" type="button" data-sop-theme>테마 전환</button><button class="btn" type="button" data-sop-print>PDF 저장</button></div><div class="sop-note-sourcebox">개념 → 수식 → 직관 → 예제 → 시험 함정 순서로 읽어라. 암기보다 “왜 이 정의가 필요한가”를 먼저 잡는 것이 목표다.</div><strong>학습 목차 목록</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
+        toc.innerHTML = `<a class="sop-note-brand sop-note-brand-link" href="${subjectHomeHref}" data-sop-note-back aria-label="이전 페이지로 이동">🦞 ${document.title.split('·')[0].trim() || 'Masterclass Note'}</a><div class="sop-note-actions"><button class="btn" type="button" data-sop-theme>테마 전환</button><button class="btn" type="button" data-sop-print>PDF 저장</button></div><div class="sop-note-sourcebox">개념 → 수식 → 직관 → 예제 → 시험 함정 순서로 읽어라. 암기보다 “왜 이 정의가 필요한가”를 먼저 잡는 것이 목표다.</div><strong>학습 목차 목록</strong><div class="sop-note-toc-links">${unique.map(h=>`<a href="#${CSS.escape(h.id)}">${h.text}</a>`).join('')}</div>`;
         const firstSection = main.querySelector(':scope > section');
         if (firstSection && firstSection.nextSibling) main.insertBefore(toc, firstSection.nextSibling);
         else main.prepend(toc);
