@@ -1,10 +1,4 @@
 <!doctype html>
-<!DOCTYPE html>
-
-<!DOCTYPE html>
-
-<!DOCTYPE html>
-
 <html class="light" lang="ko"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
@@ -64,7 +58,22 @@
     .step.active{border-color:var(--accent);background:var(--paper)}
     .quiz-option{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:10px 14px;border-radius:12px;margin:6px 0;cursor:pointer;font-weight:700;font-family:inherit;transition:all 0.2s}
     .quiz-option.correct{border-color:var(--accent2);background:rgba(47,111,104,.15)}
-    .quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}</style></head>
+    .quiz-option.wrong{border-color:#b95145;background:rgba(185,81,69,.15)}
+
+    /* Theme-aware contrast fix: keep utility-color remnants readable in both modes. */
+    .card,.mini,.callout,.quiz-option,.quiz-btn,details,table,input,select,textarea{color:var(--ink)}
+    .bg-white,.bg-white\/70,.bg-slate-50,.bg-slate-50\/50,.bg-slate-100,.bg-rose-50,.bg-rose-100\/50,.bg-blue-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-purple-50,.bg-gray-50{background:var(--soft)!important;color:var(--ink)!important}
+    .bg-slate-800,.bg-slate-900,.bg-slate-950,.bg-black,.code{background:var(--code)!important;color:var(--codefg)!important}
+    .bg-slate-800.text-white,.bg-slate-900.text-white,.bg-slate-950.text-white,.bg-black.text-white,.bg-slate-800 .text-white,.bg-slate-900 .text-white,.bg-slate-950 .text-white,.bg-black .text-white{color:var(--codefg)!important}
+    .bg-slate-800 .text-slate-300,.bg-slate-900 .text-slate-300,.bg-slate-950 .text-slate-300,.bg-black .text-slate-300,.bg-slate-800 .text-slate-350,.bg-slate-900 .text-slate-350,.bg-slate-950 .text-slate-350,.bg-black .text-slate-350{color:#d8cfc4!important}
+    .bg-blue-600,.bg-blue-700,.bg-indigo-650,.bg-indigo-750,.bg-emerald-600,.bg-rose-600,.bg-slate-600{background:var(--accent2)!important;color:#fff!important;border-color:transparent!important}
+    .bg-blue-600.text-white,.bg-blue-700.text-white,.bg-indigo-650.text-white,.bg-indigo-750.text-white,.bg-emerald-600.text-white,.bg-rose-600.text-white,.bg-slate-600.text-white,.bg-blue-600 .text-white,.bg-blue-700 .text-white,.bg-indigo-650 .text-white,.bg-indigo-750 .text-white,.bg-emerald-600 .text-white,.bg-rose-600 .text-white,.bg-slate-600 .text-white{color:#fff!important}
+    .text-white{color:var(--ink)!important}.text-slate-50,.text-slate-100,.text-slate-200,.text-slate-300,.text-slate-350,.text-slate-400,.text-gray-300,.text-gray-400{color:var(--muted)!important}.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600{color:var(--muted)!important}.text-slate-800,.text-slate-850,.text-slate-900{color:var(--ink)!important}
+    .text-blue-200,.text-blue-300,.text-blue-400,.text-blue-500,.text-blue-600,.text-cyan-400,.text-cyan-600,.text-indigo-300,.text-indigo-400,.text-indigo-500,.text-indigo-600,.text-purple-500{color:var(--accent3)!important}.text-emerald-300,.text-emerald-400,.text-emerald-500,.text-emerald-600{color:var(--accent2)!important}.text-amber-300,.text-amber-400,.text-amber-500,.text-amber-600,.text-rose-300,.text-rose-400,.text-rose-500,.text-rose-600{color:var(--accent)!important}
+    html.dark .dark\:bg-slate-900,html.dark .dark\:bg-slate-950,html.dark .dark\:bg-slate-900\/10,html.dark .dark\:bg-slate-900\/20,html.dark .dark\:bg-slate-900\/40,html.dark .dark\:bg-slate-900\/70,html.dark .dark\:bg-slate-950\/20,html.dark .dark\:bg-slate-850{background:var(--soft)!important;color:var(--ink)!important}
+    html.dark .dark\:text-white{color:var(--ink)!important}html.dark .dark\:text-slate-300,html.dark .dark\:text-slate-400{color:var(--muted)!important}html.dark .dark\:text-blue-200,html.dark .dark\:text-blue-300,html.dark .dark\:text-cyan-400,html.dark .dark\:text-indigo-300{color:var(--accent3)!important}html.dark .dark\:text-emerald-300,html.dark .dark\:text-emerald-400{color:var(--accent2)!important}html.dark .dark\:text-rose-300,html.dark .dark\:text-rose-400,html.dark .dark\:text-amber-300,html.dark .dark\:text-amber-400{color:var(--accent)!important}
+    html.light .mini:not(.bg-slate-800):not(.bg-slate-900):not(.bg-slate-950):not(.bg-black) .text-white{color:var(--ink)!important}
+</style></head>
 <body><div class="wrap"><aside><div class="brand">🦞 OS Concurrency</div><div class="sticky-actions"><button class="btn" onclick="toggleTheme()">테마 전환</button><button class="btn" onclick="window.print()">PDF 저장</button></div><div class="sourcebox">스레드 모델에서 발생하는 대표적인 동시성 오류(비데드락 버그, 데드락 버그)의 원인과 예방/회피 기법을 학습합니다.</div><nav class="toc"><a href="#overview">0. 전체 지도</a><a href="#concept">1. 핵심 개념</a><a href="#math">2. 수식과 정의</a><a href="#intuition">3. 직관과 그림</a><a href="#examples">4. 예제</a><a href="#pitfalls">5. 자주 틀리는 부분</a><a href="#interactive">6. 인터랙티브 실험</a><a href="#exam">7. 시험/복습용 핵심 정리</a><a href="#quiz">8. 확인 문제와 해설</a><a href="#sources">9. 사용 자료와 출처</a></nav></aside>
 <main><section class="hero" id="top"><span class="eyebrow">Operating System · Concurrency · Masterclass Note</span><h1>Common Concurrency Problems</h1><p style="font-size:20px;color:var(--muted);max-width:950px">A study note on semaphore recap, non-deadlock bugs, deadlock causes, the four conditions, prevention, avoidance, recovery, CAS, exam prompts, and concurrency pitfalls.</p><div><span class="pill">Semaphores</span><span class="pill">Non-deadlock Bugs</span><span class="pill">Deadlocks</span><span class="pill">CAS &amp; Lock-free</span></div></section><section class="card" id="overview"><h2>0. 전체 지도: 이 노트에서 잡아야 할 것</h2>
 <p>세마포어와 뮤텍스를 활용하여 상호 배제와 순서 제어를 구현하더라도, 개발자의 미흡한 락 설계나 흐름 판단 누락으로 인해 실제 시스템에는 다양한 동시성 오류가 발생합니다. 이 노트의 목적은 동시성 버그를 체계적으로 분류하고, 발생 조건과 수학적 회피 공식을 학습하여 결함 없는 멀티스레드 코드를 도출하는 것입니다.</p>
